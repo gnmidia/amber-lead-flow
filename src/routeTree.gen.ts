@@ -9,12 +9,78 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TransacoesRouteImport } from './routes/transacoes'
+import { Route as TarefasRouteImport } from './routes/tarefas'
+import { Route as PublicoRouteImport } from './routes/publico'
+import { Route as ProjecaoRouteImport } from './routes/projecao'
 import { Route as OverviewRouteImport } from './routes/overview'
+import { Route as MetaAdsRouteImport } from './routes/meta-ads'
+import { Route as JarvisRouteImport } from './routes/jarvis'
+import { Route as InteligenciaIaRouteImport } from './routes/inteligencia-ia'
+import { Route as FinanceiroRouteImport } from './routes/financeiro'
+import { Route as FilaRouteImport } from './routes/fila'
+import { Route as ChatBaileysRouteImport } from './routes/chat-baileys'
+import { Route as AgendamentosRouteImport } from './routes/agendamentos'
 import { Route as IndexRouteImport } from './routes/index'
 
+const TransacoesRoute = TransacoesRouteImport.update({
+  id: '/transacoes',
+  path: '/transacoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TarefasRoute = TarefasRouteImport.update({
+  id: '/tarefas',
+  path: '/tarefas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PublicoRoute = PublicoRouteImport.update({
+  id: '/publico',
+  path: '/publico',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjecaoRoute = ProjecaoRouteImport.update({
+  id: '/projecao',
+  path: '/projecao',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OverviewRoute = OverviewRouteImport.update({
   id: '/overview',
   path: '/overview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MetaAdsRoute = MetaAdsRouteImport.update({
+  id: '/meta-ads',
+  path: '/meta-ads',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JarvisRoute = JarvisRouteImport.update({
+  id: '/jarvis',
+  path: '/jarvis',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InteligenciaIaRoute = InteligenciaIaRouteImport.update({
+  id: '/inteligencia-ia',
+  path: '/inteligencia-ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FinanceiroRoute = FinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FilaRoute = FilaRouteImport.update({
+  id: '/fila',
+  path: '/fila',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChatBaileysRoute = ChatBaileysRouteImport.update({
+  id: '/chat-baileys',
+  path: '/chat-baileys',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgendamentosRoute = AgendamentosRouteImport.update({
+  id: '/agendamentos',
+  path: '/agendamentos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -25,37 +91,198 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agendamentos': typeof AgendamentosRoute
+  '/chat-baileys': typeof ChatBaileysRoute
+  '/fila': typeof FilaRoute
+  '/financeiro': typeof FinanceiroRoute
+  '/inteligencia-ia': typeof InteligenciaIaRoute
+  '/jarvis': typeof JarvisRoute
+  '/meta-ads': typeof MetaAdsRoute
   '/overview': typeof OverviewRoute
+  '/projecao': typeof ProjecaoRoute
+  '/publico': typeof PublicoRoute
+  '/tarefas': typeof TarefasRoute
+  '/transacoes': typeof TransacoesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/agendamentos': typeof AgendamentosRoute
+  '/chat-baileys': typeof ChatBaileysRoute
+  '/fila': typeof FilaRoute
+  '/financeiro': typeof FinanceiroRoute
+  '/inteligencia-ia': typeof InteligenciaIaRoute
+  '/jarvis': typeof JarvisRoute
+  '/meta-ads': typeof MetaAdsRoute
   '/overview': typeof OverviewRoute
+  '/projecao': typeof ProjecaoRoute
+  '/publico': typeof PublicoRoute
+  '/tarefas': typeof TarefasRoute
+  '/transacoes': typeof TransacoesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/agendamentos': typeof AgendamentosRoute
+  '/chat-baileys': typeof ChatBaileysRoute
+  '/fila': typeof FilaRoute
+  '/financeiro': typeof FinanceiroRoute
+  '/inteligencia-ia': typeof InteligenciaIaRoute
+  '/jarvis': typeof JarvisRoute
+  '/meta-ads': typeof MetaAdsRoute
   '/overview': typeof OverviewRoute
+  '/projecao': typeof ProjecaoRoute
+  '/publico': typeof PublicoRoute
+  '/tarefas': typeof TarefasRoute
+  '/transacoes': typeof TransacoesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/overview'
+  fullPaths:
+    | '/'
+    | '/agendamentos'
+    | '/chat-baileys'
+    | '/fila'
+    | '/financeiro'
+    | '/inteligencia-ia'
+    | '/jarvis'
+    | '/meta-ads'
+    | '/overview'
+    | '/projecao'
+    | '/publico'
+    | '/tarefas'
+    | '/transacoes'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/overview'
-  id: '__root__' | '/' | '/overview'
+  to:
+    | '/'
+    | '/agendamentos'
+    | '/chat-baileys'
+    | '/fila'
+    | '/financeiro'
+    | '/inteligencia-ia'
+    | '/jarvis'
+    | '/meta-ads'
+    | '/overview'
+    | '/projecao'
+    | '/publico'
+    | '/tarefas'
+    | '/transacoes'
+  id:
+    | '__root__'
+    | '/'
+    | '/agendamentos'
+    | '/chat-baileys'
+    | '/fila'
+    | '/financeiro'
+    | '/inteligencia-ia'
+    | '/jarvis'
+    | '/meta-ads'
+    | '/overview'
+    | '/projecao'
+    | '/publico'
+    | '/tarefas'
+    | '/transacoes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AgendamentosRoute: typeof AgendamentosRoute
+  ChatBaileysRoute: typeof ChatBaileysRoute
+  FilaRoute: typeof FilaRoute
+  FinanceiroRoute: typeof FinanceiroRoute
+  InteligenciaIaRoute: typeof InteligenciaIaRoute
+  JarvisRoute: typeof JarvisRoute
+  MetaAdsRoute: typeof MetaAdsRoute
   OverviewRoute: typeof OverviewRoute
+  ProjecaoRoute: typeof ProjecaoRoute
+  PublicoRoute: typeof PublicoRoute
+  TarefasRoute: typeof TarefasRoute
+  TransacoesRoute: typeof TransacoesRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/transacoes': {
+      id: '/transacoes'
+      path: '/transacoes'
+      fullPath: '/transacoes'
+      preLoaderRoute: typeof TransacoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tarefas': {
+      id: '/tarefas'
+      path: '/tarefas'
+      fullPath: '/tarefas'
+      preLoaderRoute: typeof TarefasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/publico': {
+      id: '/publico'
+      path: '/publico'
+      fullPath: '/publico'
+      preLoaderRoute: typeof PublicoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projecao': {
+      id: '/projecao'
+      path: '/projecao'
+      fullPath: '/projecao'
+      preLoaderRoute: typeof ProjecaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/overview': {
       id: '/overview'
       path: '/overview'
       fullPath: '/overview'
       preLoaderRoute: typeof OverviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/meta-ads': {
+      id: '/meta-ads'
+      path: '/meta-ads'
+      fullPath: '/meta-ads'
+      preLoaderRoute: typeof MetaAdsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jarvis': {
+      id: '/jarvis'
+      path: '/jarvis'
+      fullPath: '/jarvis'
+      preLoaderRoute: typeof JarvisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inteligencia-ia': {
+      id: '/inteligencia-ia'
+      path: '/inteligencia-ia'
+      fullPath: '/inteligencia-ia'
+      preLoaderRoute: typeof InteligenciaIaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/financeiro': {
+      id: '/financeiro'
+      path: '/financeiro'
+      fullPath: '/financeiro'
+      preLoaderRoute: typeof FinanceiroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/fila': {
+      id: '/fila'
+      path: '/fila'
+      fullPath: '/fila'
+      preLoaderRoute: typeof FilaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat-baileys': {
+      id: '/chat-baileys'
+      path: '/chat-baileys'
+      fullPath: '/chat-baileys'
+      preLoaderRoute: typeof ChatBaileysRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agendamentos': {
+      id: '/agendamentos'
+      path: '/agendamentos'
+      fullPath: '/agendamentos'
+      preLoaderRoute: typeof AgendamentosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -70,7 +297,18 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AgendamentosRoute: AgendamentosRoute,
+  ChatBaileysRoute: ChatBaileysRoute,
+  FilaRoute: FilaRoute,
+  FinanceiroRoute: FinanceiroRoute,
+  InteligenciaIaRoute: InteligenciaIaRoute,
+  JarvisRoute: JarvisRoute,
+  MetaAdsRoute: MetaAdsRoute,
   OverviewRoute: OverviewRoute,
+  ProjecaoRoute: ProjecaoRoute,
+  PublicoRoute: PublicoRoute,
+  TarefasRoute: TarefasRoute,
+  TransacoesRoute: TransacoesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
