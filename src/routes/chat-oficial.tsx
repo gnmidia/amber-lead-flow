@@ -287,7 +287,15 @@ function ChatOficialPage() {
 
   return (
     <div className="flex h-dvh min-h-0 flex-col overflow-hidden">
-      <PageHeader title="Chat Oficial" subtitle={`Todas as histórias (${filtered.length})`} />
+      <div className="relative">
+        <PageHeader title="Chat Oficial" subtitle={`Todas as histórias (${filtered.length})`} />
+        {isRealtimeConnected && (
+          <span className="absolute right-6 top-6 inline-flex items-center gap-1.5 rounded-full border border-success/40 bg-success/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-success">
+            <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+            Ao vivo
+          </span>
+        )}
+      </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-[360px_1fr] overflow-hidden">
         {/* Inbox */}
