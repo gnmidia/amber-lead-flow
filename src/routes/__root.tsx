@@ -29,7 +29,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "CLand Dash v1.0 — Automação de Vendas WhatsApp" },
+      { title: "Innova CRM — Automação de Vendas WhatsApp" },
       { name: "description", content: "Plataforma completa de automação de vendas via WhatsApp com IA, funis e Meta Ads." },
     ],
     links: [
