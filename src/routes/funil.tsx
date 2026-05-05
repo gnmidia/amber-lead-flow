@@ -3,7 +3,7 @@ import { PageHeader } from "../components/PageHeader";
 import { useEffect, useMemo, useState } from "react";
 import {
   Plus, ChevronDown, ChevronUp, Type, Mic, Image as ImageIcon, Video, FileText,
-  X, Trash2, GripVertical, Pencil, Upload,
+  X, Trash2, GripVertical, Pencil, Upload, Tag as TagIcon,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
