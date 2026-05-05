@@ -203,12 +203,20 @@ export type Database = {
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lead_funnel_states_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_with_last_message"
+            referencedColumns: ["id"]
+          },
         ]
       }
       leads: {
         Row: {
           created_at: string
           first_contact_at: string | null
+          ia_paused: boolean
           id: string
           instance_name: string | null
           is_new_lead: boolean
@@ -224,6 +232,7 @@ export type Database = {
         Insert: {
           created_at?: string
           first_contact_at?: string | null
+          ia_paused?: boolean
           id?: string
           instance_name?: string | null
           is_new_lead?: boolean
@@ -239,6 +248,7 @@ export type Database = {
         Update: {
           created_at?: string
           first_contact_at?: string | null
+          ia_paused?: boolean
           id?: string
           instance_name?: string | null
           is_new_lead?: boolean
@@ -302,6 +312,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_with_last_message"
             referencedColumns: ["id"]
           },
         ]
@@ -383,6 +400,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "scheduled_messages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_with_last_message"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "scheduled_messages_step_id_fkey"
             columns: ["step_id"]
             isOneToOne: false
@@ -393,7 +417,29 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      leads_with_last_message: {
+        Row: {
+          created_at: string | null
+          first_contact_at: string | null
+          ia_paused: boolean | null
+          id: string | null
+          instance_name: string | null
+          is_new_lead: boolean | null
+          last_interaction_at: string | null
+          last_message_at: string | null
+          last_message_content: string | null
+          last_message_direction: string | null
+          last_message_type: string | null
+          name: string | null
+          push_name: string | null
+          remote_jid: string | null
+          status: string | null
+          tags: string[] | null
+          updated_at: string | null
+          whatsapp_number: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_completed_funnels: { Args: never; Returns: undefined }
