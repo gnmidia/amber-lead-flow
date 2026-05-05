@@ -408,37 +408,35 @@ function ChatOficialPage() {
                 )}
               </div>
 
-              {active.ia_paused && (
-                <footer className="border-t border-border bg-card p-3">
-                  <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
-                    <button className="text-muted-foreground hover:text-primary">
-                      <Paperclip className="h-4 w-4" />
-                    </button>
-                    <input
-                      value={draft}
-                      onChange={(e) => setDraft(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          sendMessage();
-                        }
-                      }}
-                      placeholder="Digite sua mensagem..."
-                      className="flex-1 bg-transparent text-sm outline-none"
-                    />
-                    <button className="text-muted-foreground hover:text-primary">
-                      <Mic className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={sendMessage}
-                      disabled={sending || !draft.trim()}
-                      className="rounded-md bg-primary p-2 text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                    >
-                      <Send className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </footer>
-              )}
+              <footer className="border-t border-border bg-card p-3">
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
+                  <button className="text-muted-foreground hover:text-primary">
+                    <Paperclip className="h-4 w-4" />
+                  </button>
+                  <input
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                      }
+                    }}
+                    placeholder={active.ia_paused ? "Digite sua mensagem..." : "Pause a IA para enviar manualmente, ou envie assim mesmo..."}
+                    className="flex-1 bg-transparent text-sm outline-none"
+                  />
+                  <button className="text-muted-foreground hover:text-primary">
+                    <Mic className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={sendMessage}
+                    disabled={sending || !draft.trim()}
+                    className="rounded-md bg-primary p-2 text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </footer>
             </>
           )}
         </section>
