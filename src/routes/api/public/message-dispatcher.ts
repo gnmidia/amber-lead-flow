@@ -113,6 +113,31 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
             continue;
           }
 
+          // Handle tag-action steps (no message dispatch)
+          const stepType = (msg.message_type || "").toLowerCase();
+          if (stepType === "tag") {
+            const { data: stepRow } = await supabaseAdmin
+              .from("funnel_steps")
+              .select("tag_id, tag_operation")
+              .eq("id", msg.step_id)
+              .maybeSingle();
+            const tagId = (stepRow as any)?.tag_id;
+            const op = (stepRow as any)?.tag_operation;
+            if (tagId && op === "assign") {
+              await supabaseAdmin.from("lead_tags").upsert(
+                { lead_id: msg.lead_id, tag_id: tagId, assigned_by: "funnel" },
+                { onConflict: "lead_id,tag_id" } as any,
+              );
+            } else if (tagId && op === "remove") {
+              await supabaseAdmin.from("lead_tags")
+                .delete().eq("lead_id", msg.lead_id).eq("tag_id", tagId);
+            }
+            await supabaseAdmin.from("scheduled_messages")
+              .update({ status: "sent" }).eq("id", msg.id);
+            dispatched++;
+            continue;
+          }
+
           const result = await sendToEvolution(baseUrl, apiKey, msg.instance_name, msg, lead);
 
           if (result.success) {
