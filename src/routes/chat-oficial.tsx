@@ -100,9 +100,9 @@ function ChatOficialPage() {
       .from("messages")
       .select("*")
       .eq("lead_id", leadId)
-      .order("sent_at", { ascending: true })
+      .order("sent_at", { ascending: false })
       .limit(200);
-    setMessages((data || []) as Message[]);
+    setMessages(((data || []) as Message[]).slice().reverse());
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }), 50);
   };
 
