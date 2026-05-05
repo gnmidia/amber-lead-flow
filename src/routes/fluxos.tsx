@@ -98,6 +98,24 @@ function BlockCard({ block }: { block: Block }) {
       </div>
     );
   }
+  if (block.type === "tag_action") {
+    const isAssign = block.operation === "assign";
+    return (
+      <div className={`rounded-xl border p-4 ${isAssign ? "border-success/30" : "border-destructive/30"} bg-card`}>
+        <div className="flex items-center gap-3">
+          <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${isAssign ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
+            <TagIcon className="h-4 w-4" />
+          </div>
+          <div className="flex-1">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Ação de Tag</p>
+            <p className="text-sm font-semibold">
+              {isAssign ? "Atribuir" : "Remover"}: <span className={isAssign ? "text-success" : "text-destructive"}>{block.tagName}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="rounded-xl border border-warning/30 bg-card p-4">
       <div className="flex items-center gap-3">
