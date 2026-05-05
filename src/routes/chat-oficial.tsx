@@ -75,7 +75,11 @@ function ChatOficialPage() {
   const [sending, setSending] = useState(false);
   const [allTags, setAllTags] = useState<TagItem[]>([]);
   const [tagFilter, setTagFilter] = useState<Set<string>>(new Set());
+  const [unreadLeads, setUnreadLeads] = useState<Set<string>>(new Set());
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const activeIdRef = useRef<string | null>(null);
+  useEffect(() => { activeIdRef.current = activeId; }, [activeId]);
 
   const fetchAllTags = async () => {
     const { data } = await supabase.from("tags").select("id,name,color").eq("is_active", true).order("name");
@@ -127,7 +131,14 @@ function ChatOficialPage() {
   useEffect(() => {
     const ch = supabase
       .channel("chat-oficial-leads")
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+        const msg = payload.new as any;
+        if (msg.lead_id && msg.lead_id !== activeIdRef.current && msg.direction === "inbound") {
+          setUnreadLeads((prev) => new Set(prev).add(msg.lead_id));
+        }
+        fetchLeads();
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages" }, () => {
         fetchLeads();
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => {
@@ -143,7 +154,9 @@ function ChatOficialPage() {
         fetchAllTags();
         fetchLeads();
       })
-      .subscribe();
+      .subscribe((status) => {
+        setIsRealtimeConnected(status === "SUBSCRIBED");
+      });
     return () => {
       supabase.removeChannel(ch);
     };
@@ -274,7 +287,15 @@ function ChatOficialPage() {
 
   return (
     <div className="flex h-dvh min-h-0 flex-col overflow-hidden">
-      <PageHeader title="Chat Oficial" subtitle={`Todas as histórias (${filtered.length})`} />
+      <div className="relative">
+        <PageHeader title="Chat Oficial" subtitle={`Todas as histórias (${filtered.length})`} />
+        {isRealtimeConnected && (
+          <span className="absolute right-6 top-6 inline-flex items-center gap-1.5 rounded-full border border-success/40 bg-success/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-success">
+            <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+            Ao vivo
+          </span>
+        )}
+      </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-[360px_1fr] overflow-hidden">
         {/* Inbox */}
@@ -319,11 +340,20 @@ function ChatOficialPage() {
             )}
             {filtered.map((l) => {
               const isNew = l.tags?.includes("LEAD_NOVO");
+              const isUnread = unreadLeads.has(l.id);
               const display = l.push_name || l.name || l.whatsapp_number;
               return (
                 <li key={l.id}>
                   <button
-                    onClick={() => setActiveId(l.id)}
+                    onClick={() => {
+                      setActiveId(l.id);
+                      setUnreadLeads((prev) => {
+                        if (!prev.has(l.id)) return prev;
+                        const next = new Set(prev);
+                        next.delete(l.id);
+                        return next;
+                      });
+                    }}
                     className={`flex w-full items-start gap-3 border-b border-border/50 p-4 text-left transition-colors hover:bg-muted/30 ${
                       activeId === l.id ? "bg-primary/5" : ""
                     }`}
@@ -332,7 +362,7 @@ function ChatOficialPage() {
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-xs font-semibold">
                         {initialsOf(display, l.whatsapp_number)}
                       </div>
-                      {isNew && (
+                      {(isUnread || isNew) && (
                         <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card bg-orange-500 animate-pulse" />
                       )}
                     </div>
