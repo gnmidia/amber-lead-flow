@@ -342,14 +342,15 @@ function ChatOficialPage() {
                           {formatTime(l.last_message_at || l.updated_at)}
                         </span>
                       </div>
-                      {l.tags?.length > 0 && (
+                      {(l.tags_data?.length || 0) > 0 && (
                         <div className="mt-0.5 flex flex-wrap gap-1">
-                          {l.tags.slice(0, 3).map((t) => (
+                          {l.tags_data!.slice(0, 3).map((t) => (
                             <span
-                              key={t}
-                              className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-primary"
+                              key={t.id}
+                              style={{ backgroundColor: t.color + "33", color: t.color, borderColor: t.color }}
+                              className="rounded-full border px-1.5 py-0.5 text-[9px] font-semibold uppercase"
                             >
-                              {t}
+                              {t.name}
                             </span>
                           ))}
                         </div>
