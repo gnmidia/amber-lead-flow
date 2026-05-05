@@ -136,6 +136,13 @@ function ChatOficialPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "scheduled_messages" }, () => {
         fetchScheduled();
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "lead_tags" }, () => {
+        fetchLeads();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "tags" }, () => {
+        fetchAllTags();
+        fetchLeads();
+      })
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
