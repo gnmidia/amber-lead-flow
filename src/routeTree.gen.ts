@@ -31,6 +31,7 @@ import { Route as AgendamentosRouteImport } from './routes/agendamentos'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicWebhookWhatsappRouteImport } from './routes/api/public/webhook-whatsapp'
 import { Route as ApiPublicSyncChatsRouteImport } from './routes/api/public/sync-chats'
+import { Route as ApiPublicSendMessageRouteImport } from './routes/api/public/send-message'
 import { Route as ApiPublicMessageDispatcherRouteImport } from './routes/api/public/message-dispatcher'
 import { Route as ApiPublicFunnelSchedulerRouteImport } from './routes/api/public/funnel-scheduler'
 import { Route as ApiPublicEvolutionStatusRouteImport } from './routes/api/public/evolution-status'
@@ -146,6 +147,11 @@ const ApiPublicSyncChatsRoute = ApiPublicSyncChatsRouteImport.update({
   path: '/api/public/sync-chats',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicSendMessageRoute = ApiPublicSendMessageRouteImport.update({
+  id: '/api/public/send-message',
+  path: '/api/public/send-message',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicMessageDispatcherRoute =
   ApiPublicMessageDispatcherRouteImport.update({
     id: '/api/public/message-dispatcher',
@@ -189,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
+  '/api/public/send-message': typeof ApiPublicSendMessageRoute
   '/api/public/sync-chats': typeof ApiPublicSyncChatsRoute
   '/api/public/webhook-whatsapp': typeof ApiPublicWebhookWhatsappRoute
 }
@@ -216,6 +223,7 @@ export interface FileRoutesByTo {
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
+  '/api/public/send-message': typeof ApiPublicSendMessageRoute
   '/api/public/sync-chats': typeof ApiPublicSyncChatsRoute
   '/api/public/webhook-whatsapp': typeof ApiPublicWebhookWhatsappRoute
 }
@@ -244,6 +252,7 @@ export interface FileRoutesById {
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
+  '/api/public/send-message': typeof ApiPublicSendMessageRoute
   '/api/public/sync-chats': typeof ApiPublicSyncChatsRoute
   '/api/public/webhook-whatsapp': typeof ApiPublicWebhookWhatsappRoute
 }
@@ -273,6 +282,7 @@ export interface FileRouteTypes {
     | '/api/public/evolution-status'
     | '/api/public/funnel-scheduler'
     | '/api/public/message-dispatcher'
+    | '/api/public/send-message'
     | '/api/public/sync-chats'
     | '/api/public/webhook-whatsapp'
   fileRoutesByTo: FileRoutesByTo
@@ -300,6 +310,7 @@ export interface FileRouteTypes {
     | '/api/public/evolution-status'
     | '/api/public/funnel-scheduler'
     | '/api/public/message-dispatcher'
+    | '/api/public/send-message'
     | '/api/public/sync-chats'
     | '/api/public/webhook-whatsapp'
   id:
@@ -327,6 +338,7 @@ export interface FileRouteTypes {
     | '/api/public/evolution-status'
     | '/api/public/funnel-scheduler'
     | '/api/public/message-dispatcher'
+    | '/api/public/send-message'
     | '/api/public/sync-chats'
     | '/api/public/webhook-whatsapp'
   fileRoutesById: FileRoutesById
@@ -355,6 +367,7 @@ export interface RootRouteChildren {
   ApiPublicEvolutionStatusRoute: typeof ApiPublicEvolutionStatusRoute
   ApiPublicFunnelSchedulerRoute: typeof ApiPublicFunnelSchedulerRoute
   ApiPublicMessageDispatcherRoute: typeof ApiPublicMessageDispatcherRoute
+  ApiPublicSendMessageRoute: typeof ApiPublicSendMessageRoute
   ApiPublicSyncChatsRoute: typeof ApiPublicSyncChatsRoute
   ApiPublicWebhookWhatsappRoute: typeof ApiPublicWebhookWhatsappRoute
 }
@@ -515,6 +528,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSyncChatsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/send-message': {
+      id: '/api/public/send-message'
+      path: '/api/public/send-message'
+      fullPath: '/api/public/send-message'
+      preLoaderRoute: typeof ApiPublicSendMessageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/message-dispatcher': {
       id: '/api/public/message-dispatcher'
       path: '/api/public/message-dispatcher'
@@ -563,6 +583,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicEvolutionStatusRoute: ApiPublicEvolutionStatusRoute,
   ApiPublicFunnelSchedulerRoute: ApiPublicFunnelSchedulerRoute,
   ApiPublicMessageDispatcherRoute: ApiPublicMessageDispatcherRoute,
+  ApiPublicSendMessageRoute: ApiPublicSendMessageRoute,
   ApiPublicSyncChatsRoute: ApiPublicSyncChatsRoute,
   ApiPublicWebhookWhatsappRoute: ApiPublicWebhookWhatsappRoute,
 }
