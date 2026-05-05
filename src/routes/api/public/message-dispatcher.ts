@@ -99,12 +99,17 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
 
           const { data: lead } = await supabaseAdmin
             .from("leads")
-            .select("whatsapp_number, name, push_name, status")
+            .select("whatsapp_number, name, push_name, status, ia_paused")
             .eq("id", msg.lead_id).maybeSingle();
 
           if (!lead || lead.status !== "active") {
             await supabaseAdmin.from("scheduled_messages")
               .update({ status: "cancelled" }).eq("id", msg.id);
+            continue;
+          }
+
+          if ((lead as any).ia_paused) {
+            skipped++;
             continue;
           }
 
