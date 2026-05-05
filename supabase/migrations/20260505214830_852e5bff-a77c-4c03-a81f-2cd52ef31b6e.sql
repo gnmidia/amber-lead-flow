@@ -1,0 +1,1 @@
+TRUNCATE TABLE public.messages, public.scheduled_messages, public.lead_funnel_states, public.leads RESTART IDENTITY CASCADE;
