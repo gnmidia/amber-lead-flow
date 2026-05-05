@@ -430,29 +430,48 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
   const [uploading, setUploading] = useState(false);
   useEffect(() => setForm(step), [step]);
 
-  const needsMedia = form.type !== "Texto";
+  const isTag = form.type === "Tag";
+  const needsMedia = !isTag && form.type !== "Texto";
   const requiresContent = form.type === "Texto";
+
+  const tagsQ = useQuery({
+    queryKey: ["tags-active"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tags").select("id,name,color").eq("is_active", true).order("name");
+      if (error) throw error;
+      return data as { id: string; name: string; color: string }[];
+    },
+  });
 
   const save = useMutation({
     mutationFn: async () => {
-      if (requiresContent && !form.content.trim()) {
-        throw new Error("Conteúdo é obrigatório para passos de texto");
+      if (isTag) {
+        if (!form.tag_id) throw new Error("Selecione uma tag");
+        if (!form.tag_operation) throw new Error("Selecione a operação (atribuir/remover)");
+      } else {
+        if (requiresContent && !form.content.trim()) {
+          throw new Error("Conteúdo é obrigatório para passos de texto");
+        }
+        if (needsMedia && !form.media_url) {
+          throw new Error(`Faça upload de um arquivo para o passo de ${form.type}`);
+        }
       }
-      if (needsMedia && !form.media_url) {
-        throw new Error(`Faça upload de um arquivo para o passo de ${form.type}`);
-      }
+      const tagName = isTag ? (tagsQ.data?.find((t) => t.id === form.tag_id)?.name ?? "") : "";
       const { error } = await supabase.from("funnel_steps").update({
         order_index: form.order_index,
         type: form.type,
-        content: form.content,
-        caption: form.caption,
+        content: isTag ? `${form.tag_operation === "assign" ? "Atribuir" : "Remover"} tag ${tagName}` : form.content,
+        caption: isTag ? null : form.caption,
         delay_type: form.delay_type,
         delay_fixed: form.delay_type === "fixo" ? form.delay_fixed ?? 60 : null,
         delay_min: form.delay_type === "oscilante" ? form.delay_min ?? 60 : null,
         delay_max: form.delay_type === "oscilante" ? form.delay_max ?? 120 : null,
-        media_url: form.media_url,
-        file_name: form.file_name,
-        mimetype: form.mimetype,
+        media_url: isTag ? null : form.media_url,
+        file_name: isTag ? null : form.file_name,
+        mimetype: isTag ? null : form.mimetype,
+        tag_id: isTag ? form.tag_id : null,
+        tag_operation: isTag ? form.tag_operation : null,
       }).eq("id", form.id);
       if (error) throw error;
     },
