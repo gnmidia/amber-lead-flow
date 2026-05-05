@@ -212,6 +212,52 @@ export type Database = {
           },
         ]
       }
+      lead_tags: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string
+          id: string
+          lead_id: string
+          tag_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string
+          id?: string
+          lead_id: string
+          tag_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string
+          id?: string
+          lead_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_tags_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_tags_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_with_last_message"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           created_at: string
@@ -415,6 +461,33 @@ export type Database = {
           },
         ]
       }
+      tags: {
+        Row: {
+          color: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          color?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       leads_with_last_message: {
@@ -435,6 +508,7 @@ export type Database = {
           remote_jid: string | null
           status: string | null
           tags: string[] | null
+          tags_data: Json | null
           updated_at: string | null
           whatsapp_number: string | null
         }
