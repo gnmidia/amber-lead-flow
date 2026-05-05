@@ -275,7 +275,7 @@ function ChatOficialPage() {
     <>
       <PageHeader title="Chat Oficial" subtitle={`Todas as histórias (${filtered.length})`} />
 
-      <div className="grid h-[calc(100vh-97px)] grid-cols-[360px_1fr] overflow-hidden">
+      <div className="grid h-[calc(100vh-101px)] min-h-0 grid-cols-[360px_1fr] overflow-hidden">
         {/* Inbox */}
         <aside className="flex flex-col border-r border-border bg-card/40">
           <div className="space-y-3 border-b border-border p-4">
@@ -312,7 +312,7 @@ function ChatOficialPage() {
             </div>
           </div>
 
-          <ul className="flex-1 overflow-y-auto">
+          <ul className="min-h-0 flex-1 overflow-y-auto">
             {filtered.length === 0 && (
               <li className="p-6 text-center text-xs text-muted-foreground">Nenhuma conversa.</li>
             )}
@@ -410,7 +410,7 @@ function ChatOficialPage() {
                 allTags={allTags}
               />
 
-              <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto bg-background/40 p-6">
+              <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-background/40 p-6">
                 {messages.map((m) => (
                   <div
                     key={m.id}
