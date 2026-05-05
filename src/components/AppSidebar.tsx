@@ -83,7 +83,7 @@ export function AppSidebar() {
           <span className="text-base font-bold text-primary-foreground">C</span>
         </div>
         <div className="flex flex-col leading-tight">
-          <span className="text-sm font-semibold tracking-wide text-foreground">CLand Dash</span>
+          <span className="text-sm font-semibold tracking-wide text-foreground">Innova CRM</span>
           <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
             v1.0
           </span>
