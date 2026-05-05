@@ -131,7 +131,14 @@ function ChatOficialPage() {
   useEffect(() => {
     const ch = supabase
       .channel("chat-oficial-leads")
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+        const msg = payload.new as any;
+        if (msg.lead_id && msg.lead_id !== activeIdRef.current && msg.direction === "inbound") {
+          setUnreadLeads((prev) => new Set(prev).add(msg.lead_id));
+        }
+        fetchLeads();
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages" }, () => {
         fetchLeads();
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => {
@@ -147,7 +154,9 @@ function ChatOficialPage() {
         fetchAllTags();
         fetchLeads();
       })
-      .subscribe();
+      .subscribe((status) => {
+        setIsRealtimeConnected(status === "SUBSCRIBED");
+      });
     return () => {
       supabase.removeChannel(ch);
     };
