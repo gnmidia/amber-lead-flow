@@ -272,12 +272,12 @@ function ChatOficialPage() {
   const scheduledCount = scheduledIds.size;
 
   return (
-    <>
+    <div className="flex h-dvh min-h-0 flex-col overflow-hidden">
       <PageHeader title="Chat Oficial" subtitle={`Todas as histórias (${filtered.length})`} />
 
-      <div className="grid h-[calc(100vh-97px)] grid-cols-[360px_1fr] overflow-hidden">
+      <div className="grid min-h-0 flex-1 grid-cols-[360px_1fr] overflow-hidden">
         {/* Inbox */}
-        <aside className="flex flex-col border-r border-border bg-card/40">
+        <aside className="flex min-h-0 flex-col border-r border-border bg-card/40">
           <div className="space-y-3 border-b border-border p-4">
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
@@ -312,7 +312,7 @@ function ChatOficialPage() {
             </div>
           </div>
 
-          <ul className="flex-1 overflow-y-auto">
+          <ul className="min-h-0 flex-1 overflow-y-auto">
             {filtered.length === 0 && (
               <li className="p-6 text-center text-xs text-muted-foreground">Nenhuma conversa.</li>
             )}
@@ -372,7 +372,7 @@ function ChatOficialPage() {
             </div>
           ) : (
             <>
-              <header className="flex items-center justify-between border-b border-border bg-background px-6 py-3">
+              <header className="flex shrink-0 items-center justify-between border-b border-border bg-background px-6 py-3">
                 <div>
                   <h2 className="text-sm font-semibold">
                     {active.push_name || active.name || active.whatsapp_number}
@@ -410,7 +410,7 @@ function ChatOficialPage() {
                 allTags={allTags}
               />
 
-              <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto bg-background/40 p-6">
+              <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-background/40 p-6">
                 {messages.map((m) => (
                   <div
                     key={m.id}
@@ -441,7 +441,7 @@ function ChatOficialPage() {
                 )}
               </div>
 
-              <footer className="border-t border-border bg-card p-3">
+              <footer className="shrink-0 border-t border-border bg-card p-3">
                 <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
                   <button className="text-muted-foreground hover:text-primary">
                     <Paperclip className="h-4 w-4" />
@@ -474,7 +474,7 @@ function ChatOficialPage() {
           )}
         </section>
       </div>
-    </>
+    </div>
   );
 }
 
