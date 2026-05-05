@@ -120,6 +120,7 @@ function ChatOficialPage() {
   useEffect(() => {
     fetchLeads();
     fetchScheduled();
+    fetchAllTags();
   }, []);
 
   // Realtime: messages → refresh leads list & scheduled count
