@@ -19,6 +19,7 @@ import {
   Users,
   UserSquare2,
   Wallet,
+  Tag,
 } from "lucide-react";
 
 type NavItem = { label: string; to: string; icon: React.ComponentType<{ className?: string }> };
