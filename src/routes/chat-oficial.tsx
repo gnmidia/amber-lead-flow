@@ -308,6 +308,7 @@ function ChatOficialPage() {
               <Chip active={filter === "archived"} onClick={() => setFilter(filter === "archived" ? "all" : "archived")}>
                 <Archive className="h-3 w-3" /> Arquivo
               </Chip>
+              <TagFilterDropdown allTags={allTags} selected={tagFilter} onChange={setTagFilter} />
             </div>
           </div>
 
