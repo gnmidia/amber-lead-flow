@@ -365,7 +365,7 @@ function ChatOficialPage() {
         </aside>
 
         {/* Conversa */}
-        <section className="flex flex-col">
+        <section className="flex min-h-0 flex-col overflow-hidden">
           {!active ? (
             <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
               Selecione uma conversa
