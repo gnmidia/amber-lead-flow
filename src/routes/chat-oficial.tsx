@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PageHeader } from "../components/PageHeader";
-import { Search, Archive, Send, Paperclip, Mic, Pause, Play, RefreshCw, FileText } from "lucide-react";
+import { Search, Archive, Send, Paperclip, Mic, Pause, Play, RefreshCw, FileText, Plus, Check, Tag as TagIcon, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -9,12 +9,15 @@ export const Route = createFileRoute("/chat-oficial")({
   component: ChatOficialPage,
 });
 
+type TagItem = { id: string; name: string; color: string };
+
 type Lead = {
   id: string;
   name: string | null;
   push_name: string | null;
   whatsapp_number: string;
   tags: string[];
+  tags_data: TagItem[] | null;
   status: string;
   ia_paused: boolean;
   updated_at: string;
