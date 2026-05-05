@@ -193,8 +193,15 @@ function ChatOficialPage() {
           l.whatsapp_number.includes(search)
       );
     }
+    if (tagFilter.size > 0) {
+      list = list.filter((l) => {
+        const ids = new Set((l.tags_data || []).map((t) => t.id));
+        for (const id of tagFilter) if (!ids.has(id)) return false;
+        return true;
+      });
+    }
     return list;
-  }, [leads, filter, scheduledIds, search]);
+  }, [leads, filter, scheduledIds, search, tagFilter]);
 
   const handleSync = async () => {
     setSyncing(true);
