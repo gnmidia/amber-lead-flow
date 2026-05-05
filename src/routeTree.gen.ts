@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TransacoesRouteImport } from './routes/transacoes'
 import { Route as TarefasRouteImport } from './routes/tarefas'
+import { Route as TagsRouteImport } from './routes/tags'
 import { Route as PublicoRouteImport } from './routes/publico'
 import { Route as ProjecaoRouteImport } from './routes/projecao'
 import { Route as ProdutosRouteImport } from './routes/produtos'
@@ -44,6 +45,11 @@ const TransacoesRoute = TransacoesRouteImport.update({
 const TarefasRoute = TarefasRouteImport.update({
   id: '/tarefas',
   path: '/tarefas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TagsRoute = TagsRouteImport.update({
+  id: '/tags',
+  path: '/tags',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PublicoRoute = PublicoRouteImport.update({
@@ -190,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/produtos': typeof ProdutosRoute
   '/projecao': typeof ProjecaoRoute
   '/publico': typeof PublicoRoute
+  '/tags': typeof TagsRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
@@ -218,6 +225,7 @@ export interface FileRoutesByTo {
   '/produtos': typeof ProdutosRoute
   '/projecao': typeof ProjecaoRoute
   '/publico': typeof PublicoRoute
+  '/tags': typeof TagsRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
@@ -247,6 +255,7 @@ export interface FileRoutesById {
   '/produtos': typeof ProdutosRoute
   '/projecao': typeof ProjecaoRoute
   '/publico': typeof PublicoRoute
+  '/tags': typeof TagsRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
@@ -277,6 +286,7 @@ export interface FileRouteTypes {
     | '/produtos'
     | '/projecao'
     | '/publico'
+    | '/tags'
     | '/tarefas'
     | '/transacoes'
     | '/api/public/evolution-status'
@@ -305,6 +315,7 @@ export interface FileRouteTypes {
     | '/produtos'
     | '/projecao'
     | '/publico'
+    | '/tags'
     | '/tarefas'
     | '/transacoes'
     | '/api/public/evolution-status'
@@ -333,6 +344,7 @@ export interface FileRouteTypes {
     | '/produtos'
     | '/projecao'
     | '/publico'
+    | '/tags'
     | '/tarefas'
     | '/transacoes'
     | '/api/public/evolution-status'
@@ -362,6 +374,7 @@ export interface RootRouteChildren {
   ProdutosRoute: typeof ProdutosRoute
   ProjecaoRoute: typeof ProjecaoRoute
   PublicoRoute: typeof PublicoRoute
+  TagsRoute: typeof TagsRoute
   TarefasRoute: typeof TarefasRoute
   TransacoesRoute: typeof TransacoesRoute
   ApiPublicEvolutionStatusRoute: typeof ApiPublicEvolutionStatusRoute
@@ -386,6 +399,13 @@ declare module '@tanstack/react-router' {
       path: '/tarefas'
       fullPath: '/tarefas'
       preLoaderRoute: typeof TarefasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tags': {
+      id: '/tags'
+      path: '/tags'
+      fullPath: '/tags'
+      preLoaderRoute: typeof TagsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/publico': {
@@ -578,6 +598,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProdutosRoute: ProdutosRoute,
   ProjecaoRoute: ProjecaoRoute,
   PublicoRoute: PublicoRoute,
+  TagsRoute: TagsRoute,
   TarefasRoute: TarefasRoute,
   TransacoesRoute: TransacoesRoute,
   ApiPublicEvolutionStatusRoute: ApiPublicEvolutionStatusRoute,
