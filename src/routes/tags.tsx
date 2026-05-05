@@ -58,7 +58,8 @@ function TagsPage() {
       <PageHeader
         title="TAGS"
         subtitle="Gerenciamento de etiquetas de leads"
-        action={
+        action={undefined as any}
+        actions={
           <button
             onClick={() => setCreating(true)}
             className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
