@@ -41,7 +41,11 @@ export const Route = createFileRoute("/api/public/sync-chats")({
 
           const msgsRes = await fetch(`${baseUrl}/chat/findMessages/${instance}`, {
             method: "POST", headers,
-            body: JSON.stringify({ where: { key: { remoteJid } }, limit: 20 }),
+            body: JSON.stringify({
+              where: { key: { remoteJid } },
+              limit: 100,
+              sort: { messageTimestamp: -1 },
+            }),
           });
           const msgsJson: any = await msgsRes.json().catch(() => ({}));
           const msgs: any[] = msgsJson?.messages?.records || msgsJson?.records || [];
