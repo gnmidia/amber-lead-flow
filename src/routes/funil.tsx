@@ -424,10 +424,20 @@ function Metric({ label, value, accent }: { label: string; value: string; accent
 function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
   const qc = useQueryClient();
   const [form, setForm] = useState<Step>(step);
+  const [uploading, setUploading] = useState(false);
   useEffect(() => setForm(step), [step]);
+
+  const needsMedia = form.type !== "Texto";
+  const requiresContent = form.type === "Texto";
 
   const save = useMutation({
     mutationFn: async () => {
+      if (requiresContent && !form.content.trim()) {
+        throw new Error("Conteúdo é obrigatório para passos de texto");
+      }
+      if (needsMedia && !form.media_url) {
+        throw new Error(`Faça upload de um arquivo para o passo de ${form.type}`);
+      }
       const { error } = await supabase.from("funnel_steps").update({
         order_index: form.order_index,
         type: form.type,
@@ -437,6 +447,9 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
         delay_fixed: form.delay_type === "fixo" ? form.delay_fixed ?? 60 : null,
         delay_min: form.delay_type === "oscilante" ? form.delay_min ?? 60 : null,
         delay_max: form.delay_type === "oscilante" ? form.delay_max ?? 120 : null,
+        media_url: form.media_url,
+        file_name: form.file_name,
+        mimetype: form.mimetype,
       }).eq("id", form.id);
       if (error) throw error;
     },
