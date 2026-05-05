@@ -77,7 +77,7 @@ export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+    <aside className="fixed inset-y-0 left-0 z-30 flex h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
       <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-5">
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary shadow-[0_0_24px_-4px_oklch(0.705_0.18_45/0.6)]">
           <span className="text-base font-bold text-primary-foreground">C</span>
