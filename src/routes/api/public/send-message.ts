@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export const Route = createFileRoute("/api/public/send-message")({
   server: {
@@ -18,13 +19,11 @@ export const Route = createFileRoute("/api/public/send-message")({
         }
         let target = number;
         if (lead_id) {
-          const { data: lead } = await import("@/integrations/supabase/client.server").then(({ supabaseAdmin }) =>
-            supabaseAdmin
-              .from("leads")
-              .select("whatsapp_number, remote_jid")
-              .eq("id", lead_id)
-              .maybeSingle()
-          );
+          const { data: lead } = await supabaseAdmin
+            .from("leads")
+            .select("whatsapp_number, remote_jid")
+            .eq("id", lead_id)
+            .maybeSingle();
           target = (lead as any)?.remote_jid || (lead as any)?.whatsapp_number || number;
         }
         const headers = { "Content-Type": "application/json", apikey: apiKey };
