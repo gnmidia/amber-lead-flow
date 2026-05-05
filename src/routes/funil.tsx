@@ -46,6 +46,9 @@ type Step = {
   delay_fixed: number | null;
   delay_min: number | null;
   delay_max: number | null;
+  media_url: string | null;
+  file_name: string | null;
+  mimetype: string | null;
 };
 
 type Funnel = {
