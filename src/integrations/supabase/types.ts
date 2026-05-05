@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      agents: {
+        Row: {
+          created_at: string
+          exit_condition: string | null
+          exit_tags: string[]
+          id: string
+          is_active: boolean
+          name: string
+          objective: string | null
+          product: string | null
+          prompt: string | null
+          tone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          exit_condition?: string | null
+          exit_tags?: string[]
+          id?: string
+          is_active?: boolean
+          name: string
+          objective?: string | null
+          product?: string | null
+          prompt?: string | null
+          tone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          exit_condition?: string | null
+          exit_tags?: string[]
+          id?: string
+          is_active?: boolean
+          name?: string
+          objective?: string | null
+          product?: string | null
+          prompt?: string | null
+          tone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       funnel_steps: {
         Row: {
           caption: string | null
