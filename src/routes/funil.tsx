@@ -550,7 +550,47 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
             )}
           </Section>
 
-          {needsMedia && (
+          {isTag && (
+            <Section title="Configuração da Tag">
+              <Field label="Operação">
+                <select
+                  value={form.tag_operation ?? ""}
+                  onChange={(e) => setForm({ ...form, tag_operation: e.target.value as "assign" | "remove" })}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Selecione…</option>
+                  <option value="assign">Atribuir tag ao lead</option>
+                  <option value="remove">Remover tag do lead</option>
+                </select>
+              </Field>
+              <Field label="Tag">
+                <select
+                  value={form.tag_id ?? ""}
+                  onChange={(e) => setForm({ ...form, tag_id: e.target.value || null })}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Selecione uma tag…</option>
+                  {(tagsQ.data ?? []).map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </Field>
+              {form.tag_id && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span
+                    className="inline-block h-3 w-3 rounded-full"
+                    style={{ backgroundColor: tagsQ.data?.find((t) => t.id === form.tag_id)?.color ?? "#6B7280" }}
+                  />
+                  <span className="font-mono">{tagsQ.data?.find((t) => t.id === form.tag_id)?.name}</span>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Este passo apenas {form.tag_operation === "remove" ? "remove" : "atribui"} a tag selecionada — nenhuma mensagem é enviada.
+              </p>
+            </Section>
+          )}
+
+          {!isTag && needsMedia && (
             <Section title={`Mídia (${form.type})`}>
               {form.media_url ? (
                 <div className="space-y-2 rounded-md border border-border bg-background p-3">
@@ -597,25 +637,27 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
             </Section>
           )}
 
-          <Section title="Conteúdo / Legenda">
-            <div className="flex flex-wrap gap-1.5">
-              {["{nome}", "{primeiro_nome}", "{produto}", "{valor}", "{link}"].map((v) => (
-                <button key={v}
-                  onClick={() => setForm({ ...form, content: form.content + " " + v })}
-                  className="rounded-md border border-border bg-background px-2 py-1 font-mono text-xs text-primary hover:border-primary/40">
-                  {v}
-                </button>
-              ))}
-            </div>
-            <textarea rows={6} value={form.content}
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
-            <Field label="Legenda (opcional)">
-              <textarea rows={2} value={form.caption ?? ""}
-                onChange={(e) => setForm({ ...form, caption: e.target.value })}
+          {!isTag && (
+            <Section title="Conteúdo / Legenda">
+              <div className="flex flex-wrap gap-1.5">
+                {["{nome}", "{primeiro_nome}", "{produto}", "{valor}", "{link}"].map((v) => (
+                  <button key={v}
+                    onClick={() => setForm({ ...form, content: form.content + " " + v })}
+                    className="rounded-md border border-border bg-background px-2 py-1 font-mono text-xs text-primary hover:border-primary/40">
+                    {v}
+                  </button>
+                ))}
+              </div>
+              <textarea rows={6} value={form.content}
+                onChange={(e) => setForm({ ...form, content: e.target.value })}
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
-            </Field>
-          </Section>
+              <Field label="Legenda (opcional)">
+                <textarea rows={2} value={form.caption ?? ""}
+                  onChange={(e) => setForm({ ...form, caption: e.target.value })}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
+              </Field>
+            </Section>
+          )}
         </div>
 
         <footer className="flex justify-end gap-2 border-t border-border px-6 py-4">
