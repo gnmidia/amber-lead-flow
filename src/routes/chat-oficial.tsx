@@ -340,11 +340,20 @@ function ChatOficialPage() {
             )}
             {filtered.map((l) => {
               const isNew = l.tags?.includes("LEAD_NOVO");
+              const isUnread = unreadLeads.has(l.id);
               const display = l.push_name || l.name || l.whatsapp_number;
               return (
                 <li key={l.id}>
                   <button
-                    onClick={() => setActiveId(l.id)}
+                    onClick={() => {
+                      setActiveId(l.id);
+                      setUnreadLeads((prev) => {
+                        if (!prev.has(l.id)) return prev;
+                        const next = new Set(prev);
+                        next.delete(l.id);
+                        return next;
+                      });
+                    }}
                     className={`flex w-full items-start gap-3 border-b border-border/50 p-4 text-left transition-colors hover:bg-muted/30 ${
                       activeId === l.id ? "bg-primary/5" : ""
                     }`}
@@ -353,7 +362,7 @@ function ChatOficialPage() {
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-xs font-semibold">
                         {initialsOf(display, l.whatsapp_number)}
                       </div>
-                      {isNew && (
+                      {(isUnread || isNew) && (
                         <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card bg-orange-500 animate-pulse" />
                       )}
                     </div>
