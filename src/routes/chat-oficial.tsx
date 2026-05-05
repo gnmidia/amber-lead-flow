@@ -84,7 +84,7 @@ function ChatOficialPage() {
       console.error(error);
       return;
     }
-    setLeads((data || []) as Lead[]);
+    setLeads(((data || []) as unknown) as Lead[]);
   };
 
   const fetchScheduled = async () => {
