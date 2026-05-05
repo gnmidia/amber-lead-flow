@@ -29,6 +29,10 @@ import { Route as ChatBaileysRouteImport } from './routes/chat-baileys'
 import { Route as AgentesIaRouteImport } from './routes/agentes-ia'
 import { Route as AgendamentosRouteImport } from './routes/agendamentos'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicWebhookWhatsappRouteImport } from './routes/api/public/webhook-whatsapp'
+import { Route as ApiPublicMessageDispatcherRouteImport } from './routes/api/public/message-dispatcher'
+import { Route as ApiPublicFunnelSchedulerRouteImport } from './routes/api/public/funnel-scheduler'
+import { Route as ApiPublicEvolutionStatusRouteImport } from './routes/api/public/evolution-status'
 
 const TransacoesRoute = TransacoesRouteImport.update({
   id: '/transacoes',
@@ -130,6 +134,30 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicWebhookWhatsappRoute =
+  ApiPublicWebhookWhatsappRouteImport.update({
+    id: '/api/public/webhook-whatsapp',
+    path: '/api/public/webhook-whatsapp',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicMessageDispatcherRoute =
+  ApiPublicMessageDispatcherRouteImport.update({
+    id: '/api/public/message-dispatcher',
+    path: '/api/public/message-dispatcher',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicFunnelSchedulerRoute =
+  ApiPublicFunnelSchedulerRouteImport.update({
+    id: '/api/public/funnel-scheduler',
+    path: '/api/public/funnel-scheduler',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicEvolutionStatusRoute =
+  ApiPublicEvolutionStatusRouteImport.update({
+    id: '/api/public/evolution-status',
+    path: '/api/public/evolution-status',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -152,6 +180,10 @@ export interface FileRoutesByFullPath {
   '/publico': typeof PublicoRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
+  '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
+  '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
+  '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
+  '/api/public/webhook-whatsapp': typeof ApiPublicWebhookWhatsappRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -174,6 +206,10 @@ export interface FileRoutesByTo {
   '/publico': typeof PublicoRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
+  '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
+  '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
+  '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
+  '/api/public/webhook-whatsapp': typeof ApiPublicWebhookWhatsappRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -197,6 +233,10 @@ export interface FileRoutesById {
   '/publico': typeof PublicoRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
+  '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
+  '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
+  '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
+  '/api/public/webhook-whatsapp': typeof ApiPublicWebhookWhatsappRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -221,6 +261,10 @@ export interface FileRouteTypes {
     | '/publico'
     | '/tarefas'
     | '/transacoes'
+    | '/api/public/evolution-status'
+    | '/api/public/funnel-scheduler'
+    | '/api/public/message-dispatcher'
+    | '/api/public/webhook-whatsapp'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -243,6 +287,10 @@ export interface FileRouteTypes {
     | '/publico'
     | '/tarefas'
     | '/transacoes'
+    | '/api/public/evolution-status'
+    | '/api/public/funnel-scheduler'
+    | '/api/public/message-dispatcher'
+    | '/api/public/webhook-whatsapp'
   id:
     | '__root__'
     | '/'
@@ -265,6 +313,10 @@ export interface FileRouteTypes {
     | '/publico'
     | '/tarefas'
     | '/transacoes'
+    | '/api/public/evolution-status'
+    | '/api/public/funnel-scheduler'
+    | '/api/public/message-dispatcher'
+    | '/api/public/webhook-whatsapp'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -288,6 +340,10 @@ export interface RootRouteChildren {
   PublicoRoute: typeof PublicoRoute
   TarefasRoute: typeof TarefasRoute
   TransacoesRoute: typeof TransacoesRoute
+  ApiPublicEvolutionStatusRoute: typeof ApiPublicEvolutionStatusRoute
+  ApiPublicFunnelSchedulerRoute: typeof ApiPublicFunnelSchedulerRoute
+  ApiPublicMessageDispatcherRoute: typeof ApiPublicMessageDispatcherRoute
+  ApiPublicWebhookWhatsappRoute: typeof ApiPublicWebhookWhatsappRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -432,6 +488,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/webhook-whatsapp': {
+      id: '/api/public/webhook-whatsapp'
+      path: '/api/public/webhook-whatsapp'
+      fullPath: '/api/public/webhook-whatsapp'
+      preLoaderRoute: typeof ApiPublicWebhookWhatsappRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/message-dispatcher': {
+      id: '/api/public/message-dispatcher'
+      path: '/api/public/message-dispatcher'
+      fullPath: '/api/public/message-dispatcher'
+      preLoaderRoute: typeof ApiPublicMessageDispatcherRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/funnel-scheduler': {
+      id: '/api/public/funnel-scheduler'
+      path: '/api/public/funnel-scheduler'
+      fullPath: '/api/public/funnel-scheduler'
+      preLoaderRoute: typeof ApiPublicFunnelSchedulerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/evolution-status': {
+      id: '/api/public/evolution-status'
+      path: '/api/public/evolution-status'
+      fullPath: '/api/public/evolution-status'
+      preLoaderRoute: typeof ApiPublicEvolutionStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -456,6 +540,10 @@ const rootRouteChildren: RootRouteChildren = {
   PublicoRoute: PublicoRoute,
   TarefasRoute: TarefasRoute,
   TransacoesRoute: TransacoesRoute,
+  ApiPublicEvolutionStatusRoute: ApiPublicEvolutionStatusRoute,
+  ApiPublicFunnelSchedulerRoute: ApiPublicFunnelSchedulerRoute,
+  ApiPublicMessageDispatcherRoute: ApiPublicMessageDispatcherRoute,
+  ApiPublicWebhookWhatsappRoute: ApiPublicWebhookWhatsappRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
