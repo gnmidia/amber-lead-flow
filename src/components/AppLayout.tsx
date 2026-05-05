@@ -3,9 +3,9 @@ import { AppSidebar } from "./AppSidebar";
 
 export function AppLayout() {
   return (
-    <div className="flex min-h-screen w-full bg-background text-foreground">
+    <div className="min-h-screen w-full bg-background text-foreground">
       <AppSidebar />
-      <main className="flex-1 overflow-x-hidden">
+      <main className="ml-64 min-h-screen overflow-x-hidden">
         <Outlet />
       </main>
     </div>
