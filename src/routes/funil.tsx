@@ -21,7 +21,19 @@ export const Route = createFileRoute("/funil")({
   component: FunilPage,
 });
 
-type StepType = "Texto" | "Áudio" | "Imagem" | "Vídeo";
+type StepType = "Texto" | "Áudio" | "Imagem" | "Vídeo" | "Documento";
+
+const STEP_TYPE_TO_KIND: Record<StepType, "text" | "audio" | "image" | "video" | "document"> = {
+  "Texto": "text", "Áudio": "audio", "Imagem": "image", "Vídeo": "video", "Documento": "document",
+};
+
+const ACCEPT_BY_TYPE: Record<StepType, string> = {
+  "Texto": "",
+  "Áudio": "audio/ogg,audio/mp3,audio/mpeg,audio/m4a",
+  "Imagem": "image/jpeg,image/png,image/webp",
+  "Vídeo": "video/mp4",
+  "Documento": "application/pdf",
+};
 
 type Step = {
   id: string;
