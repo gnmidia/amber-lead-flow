@@ -239,6 +239,7 @@ function ChatOficialPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          lead_id: active.id,
           number: active.whatsapp_number,
           type: "text",
           content: text,
