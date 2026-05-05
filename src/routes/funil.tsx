@@ -2,8 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Plus, ChevronDown, ChevronUp, Type, Mic, Image as ImageIcon, Video,
-  X, Trash2, GripVertical, Pencil,
+  Plus, ChevronDown, ChevronUp, Type, Mic, Image as ImageIcon, Video, FileText,
+  X, Trash2, GripVertical, Pencil, Upload,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,10 +64,10 @@ type Funnel = {
 };
 
 const typeIcon: Record<StepType, React.ComponentType<{ className?: string }>> = {
-  Texto: Type, Áudio: Mic, Imagem: ImageIcon, Vídeo: Video,
+  Texto: Type, Áudio: Mic, Imagem: ImageIcon, Vídeo: Video, Documento: FileText,
 };
 
-const STEP_TYPES: StepType[] = ["Texto", "Áudio", "Imagem", "Vídeo"];
+const STEP_TYPES: StepType[] = ["Texto", "Áudio", "Imagem", "Vídeo", "Documento"];
 const CHANNELS = ["WABA", "Baileys"];
 
 function delayLabel(s: Step) {
