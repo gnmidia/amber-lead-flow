@@ -528,6 +528,53 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
             )}
           </Section>
 
+          {needsMedia && (
+            <Section title={`Mídia (${form.type})`}>
+              {form.media_url ? (
+                <div className="space-y-2 rounded-md border border-border bg-background p-3">
+                  <p className="truncate text-xs"><span className="font-semibold">Arquivo:</span> {form.file_name ?? "—"}</p>
+                  <p className="text-xs text-muted-foreground">{form.mimetype ?? ""}</p>
+                  <a href={form.media_url} target="_blank" rel="noreferrer" className="block truncate text-xs text-primary hover:underline">{form.media_url}</a>
+                  <button
+                    onClick={() => setForm({ ...form, media_url: null, file_name: null, mimetype: null })}
+                    className="rounded-md border border-border px-2 py-1 text-xs hover:border-destructive/40 hover:text-destructive">
+                    Remover
+                  </button>
+                </div>
+              ) : (
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-border bg-background py-6 text-sm hover:border-primary/40">
+                  <Upload className="h-4 w-4" />
+                  {uploading ? "Enviando…" : "Selecionar arquivo"}
+                  <input
+                    type="file"
+                    accept={ACCEPT_BY_TYPE[form.type]}
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploading(true);
+                      try {
+                        const ext = file.name.split(".").pop() || "bin";
+                        const path = `${form.funnel_id}/${form.id}-${Date.now()}.${ext}`;
+                        const { error: upErr } = await supabase.storage
+                          .from("funnel-media").upload(path, file, { contentType: file.type, upsert: true });
+                        if (upErr) throw upErr;
+                        const { data: pub } = supabase.storage.from("funnel-media").getPublicUrl(path);
+                        setForm({ ...form, media_url: pub.publicUrl, file_name: file.name, mimetype: file.type });
+                        toast.success("Arquivo enviado");
+                      } catch (err) {
+                        toast.error((err as Error).message);
+                      } finally {
+                        setUploading(false);
+                      }
+                    }}
+                  />
+                </label>
+              )}
+            </Section>
+          )}
+
           <Section title="Conteúdo / Legenda">
             <div className="flex flex-wrap gap-1.5">
               {["{nome}", "{primeiro_nome}", "{produto}", "{valor}", "{link}"].map((v) => (
