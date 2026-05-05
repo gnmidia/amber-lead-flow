@@ -14,7 +14,110 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      funnel_steps: {
+        Row: {
+          caption: string | null
+          content: string
+          created_at: string
+          delay_fixed: number | null
+          delay_max: number | null
+          delay_min: number | null
+          delay_mode: string
+          funnel_id: string
+          id: string
+          ordem: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          caption?: string | null
+          content?: string
+          created_at?: string
+          delay_fixed?: number | null
+          delay_max?: number | null
+          delay_min?: number | null
+          delay_mode?: string
+          funnel_id: string
+          id?: string
+          ordem: number
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          caption?: string | null
+          content?: string
+          created_at?: string
+          delay_fixed?: number | null
+          delay_max?: number | null
+          delay_min?: number | null
+          delay_mode?: string
+          funnel_id?: string
+          id?: string
+          ordem?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funnel_steps_funnel_id_fkey"
+            columns: ["funnel_id"]
+            isOneToOne: false
+            referencedRelation: "funnels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funnels: {
+        Row: {
+          channels: string[]
+          consecutive: boolean
+          created_at: string
+          envios: number
+          id: string
+          internal_id: string
+          name: string
+          position: number
+          respostas: number
+          start_max: number
+          start_min: number
+          updated_at: string
+          window_end: string
+          window_start: string
+        }
+        Insert: {
+          channels?: string[]
+          consecutive?: boolean
+          created_at?: string
+          envios?: number
+          id?: string
+          internal_id: string
+          name: string
+          position?: number
+          respostas?: number
+          start_max?: number
+          start_min?: number
+          updated_at?: string
+          window_end?: string
+          window_start?: string
+        }
+        Update: {
+          channels?: string[]
+          consecutive?: boolean
+          created_at?: string
+          envios?: number
+          id?: string
+          internal_id?: string
+          name?: string
+          position?: number
+          respostas?: number
+          start_max?: number
+          start_min?: number
+          updated_at?: string
+          window_end?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
