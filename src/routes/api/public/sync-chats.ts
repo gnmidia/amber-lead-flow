@@ -23,11 +23,22 @@ export const Route = createFileRoute("/api/public/sync-chats")({
         for (const chat of chats) {
           const remoteJid: string | undefined = chat.remoteJid || chat.id;
           if (!remoteJid || remoteJid.endsWith("@g.us")) continue;
-          const number = remoteJid.replace("@s.whatsapp.net", "").replace("@c.us", "").replace("@lid", "");
+
+          // Telefone real: para JIDs @lid vem em senderPn / participantPn.
+          const realPhone: string | null =
+            chat.senderPn || chat.participantPn || chat.phoneNumber || null;
+          const fallback = remoteJid.replace(/@s\.whatsapp\.net$|@c\.us$|@lid$/, "");
+          const number = (realPhone || fallback).replace(/\D/g, "") || fallback;
           const displayName = chat.pushName || chat.name || number;
 
-          const { data: existing } = await supabaseAdmin
-            .from("leads").select("id").eq("whatsapp_number", number).maybeSingle();
+          // Upsert pelo remote_jid (chave estável), com fallback pelo número.
+          let { data: existing } = await supabaseAdmin
+            .from("leads").select("id, whatsapp_number").eq("remote_jid", remoteJid).maybeSingle();
+          if (!existing) {
+            const { data: byNumber } = await supabaseAdmin
+              .from("leads").select("id, whatsapp_number").eq("whatsapp_number", number).maybeSingle();
+            existing = byNumber;
+          }
           let leadId = existing?.id;
           if (!leadId) {
             const { data: newLead } = await supabaseAdmin.from("leads").insert({
@@ -36,6 +47,10 @@ export const Route = createFileRoute("/api/public/sync-chats")({
               is_new_lead: false, instance_name: instance, tags: [],
             }).select("id").single();
             leadId = newLead?.id;
+          } else if (realPhone && existing?.whatsapp_number !== number) {
+            await supabaseAdmin.from("leads")
+              .update({ whatsapp_number: number, remote_jid: remoteJid })
+              .eq("id", leadId);
           }
           if (!leadId) continue;
 
