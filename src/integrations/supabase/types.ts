@@ -56,6 +56,89 @@ export type Database = {
         }
         Relationships: []
       }
+      flow_blocks: {
+        Row: {
+          block_type: string
+          branch_no_block_id: string | null
+          branch_yes_block_id: string | null
+          condition_type: string | null
+          condition_value: string | null
+          created_at: string
+          flow_id: string
+          id: string
+          order_index: number
+          reference_id: string | null
+          wait_minutes: number
+        }
+        Insert: {
+          block_type: string
+          branch_no_block_id?: string | null
+          branch_yes_block_id?: string | null
+          condition_type?: string | null
+          condition_value?: string | null
+          created_at?: string
+          flow_id: string
+          id?: string
+          order_index: number
+          reference_id?: string | null
+          wait_minutes?: number
+        }
+        Update: {
+          block_type?: string
+          branch_no_block_id?: string | null
+          branch_yes_block_id?: string | null
+          condition_type?: string | null
+          condition_value?: string | null
+          created_at?: string
+          flow_id?: string
+          id?: string
+          order_index?: number
+          reference_id?: string | null
+          wait_minutes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_blocks_flow_id_fkey"
+            columns: ["flow_id"]
+            isOneToOne: false
+            referencedRelation: "flows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flows: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          trigger_type: string
+          trigger_value: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          trigger_type?: string
+          trigger_value?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          trigger_type?: string
+          trigger_value?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       funnel_steps: {
         Row: {
           caption: string | null
@@ -316,6 +399,7 @@ export type Database = {
       leads: {
         Row: {
           created_at: string
+          current_agent_id: string | null
           first_contact_at: string | null
           ia_paused: boolean
           id: string
@@ -332,6 +416,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          current_agent_id?: string | null
           first_contact_at?: string | null
           ia_paused?: boolean
           id?: string
@@ -348,6 +433,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          current_agent_id?: string | null
           first_contact_at?: string | null
           ia_paused?: boolean
           id?: string
