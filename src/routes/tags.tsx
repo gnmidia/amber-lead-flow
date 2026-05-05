@@ -58,7 +58,6 @@ function TagsPage() {
       <PageHeader
         title="TAGS"
         subtitle="Gerenciamento de etiquetas de leads"
-        action={undefined as any}
         actions={
           <button
             onClick={() => setCreating(true)}
