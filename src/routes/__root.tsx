@@ -62,7 +62,16 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 import { AppLayout } from "../components/AppLayout";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "sonner";
+import { useState } from "react";
 
 function RootComponent() {
-  return <AppLayout />;
+  const [client] = useState(() => new QueryClient());
+  return (
+    <QueryClientProvider client={client}>
+      <AppLayout />
+      <Toaster theme="dark" position="top-right" richColors />
+    </QueryClientProvider>
+  );
 }
