@@ -3,7 +3,7 @@ import { PageHeader } from "../components/PageHeader";
 import { useEffect, useMemo, useState } from "react";
 import {
   Plus, ChevronDown, ChevronUp, Type, Mic, Image as ImageIcon, Video, FileText,
-  X, Trash2, GripVertical, Pencil, Upload,
+  X, Trash2, GripVertical, Pencil, Upload, Tag as TagIcon,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,10 +21,10 @@ export const Route = createFileRoute("/funil")({
   component: FunilPage,
 });
 
-type StepType = "Texto" | "Áudio" | "Imagem" | "Vídeo" | "Documento";
+type StepType = "Texto" | "Áudio" | "Imagem" | "Vídeo" | "Documento" | "Tag";
 
-const STEP_TYPE_TO_KIND: Record<StepType, "text" | "audio" | "image" | "video" | "document"> = {
-  "Texto": "text", "Áudio": "audio", "Imagem": "image", "Vídeo": "video", "Documento": "document",
+const STEP_TYPE_TO_KIND: Record<StepType, "text" | "audio" | "image" | "video" | "document" | "tag"> = {
+  "Texto": "text", "Áudio": "audio", "Imagem": "image", "Vídeo": "video", "Documento": "document", "Tag": "tag",
 };
 
 const ACCEPT_BY_TYPE: Record<StepType, string> = {
@@ -33,6 +33,7 @@ const ACCEPT_BY_TYPE: Record<StepType, string> = {
   "Imagem": "image/jpeg,image/png,image/webp",
   "Vídeo": "video/mp4",
   "Documento": "application/pdf",
+  "Tag": "",
 };
 
 type Step = {
@@ -49,6 +50,8 @@ type Step = {
   media_url: string | null;
   file_name: string | null;
   mimetype: string | null;
+  tag_id: string | null;
+  tag_operation: "assign" | "remove" | null;
 };
 
 type Funnel = {
@@ -67,10 +70,10 @@ type Funnel = {
 };
 
 const typeIcon: Record<StepType, React.ComponentType<{ className?: string }>> = {
-  Texto: Type, Áudio: Mic, Imagem: ImageIcon, Vídeo: Video, Documento: FileText,
+  Texto: Type, Áudio: Mic, Imagem: ImageIcon, Vídeo: Video, Documento: FileText, Tag: TagIcon,
 };
 
-const STEP_TYPES: StepType[] = ["Texto", "Áudio", "Imagem", "Vídeo", "Documento"];
+const STEP_TYPES: StepType[] = ["Texto", "Áudio", "Imagem", "Vídeo", "Documento", "Tag"];
 const CHANNELS = ["WABA", "Baileys"];
 
 function delayLabel(s: Step) {
@@ -427,29 +430,48 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
   const [uploading, setUploading] = useState(false);
   useEffect(() => setForm(step), [step]);
 
-  const needsMedia = form.type !== "Texto";
+  const isTag = form.type === "Tag";
+  const needsMedia = !isTag && form.type !== "Texto";
   const requiresContent = form.type === "Texto";
+
+  const tagsQ = useQuery({
+    queryKey: ["tags-active"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tags").select("id,name,color").eq("is_active", true).order("name");
+      if (error) throw error;
+      return data as { id: string; name: string; color: string }[];
+    },
+  });
 
   const save = useMutation({
     mutationFn: async () => {
-      if (requiresContent && !form.content.trim()) {
-        throw new Error("Conteúdo é obrigatório para passos de texto");
+      if (isTag) {
+        if (!form.tag_id) throw new Error("Selecione uma tag");
+        if (!form.tag_operation) throw new Error("Selecione a operação (atribuir/remover)");
+      } else {
+        if (requiresContent && !form.content.trim()) {
+          throw new Error("Conteúdo é obrigatório para passos de texto");
+        }
+        if (needsMedia && !form.media_url) {
+          throw new Error(`Faça upload de um arquivo para o passo de ${form.type}`);
+        }
       }
-      if (needsMedia && !form.media_url) {
-        throw new Error(`Faça upload de um arquivo para o passo de ${form.type}`);
-      }
+      const tagName = isTag ? (tagsQ.data?.find((t) => t.id === form.tag_id)?.name ?? "") : "";
       const { error } = await supabase.from("funnel_steps").update({
         order_index: form.order_index,
         type: form.type,
-        content: form.content,
-        caption: form.caption,
+        content: isTag ? `${form.tag_operation === "assign" ? "Atribuir" : "Remover"} tag ${tagName}` : form.content,
+        caption: isTag ? null : form.caption,
         delay_type: form.delay_type,
         delay_fixed: form.delay_type === "fixo" ? form.delay_fixed ?? 60 : null,
         delay_min: form.delay_type === "oscilante" ? form.delay_min ?? 60 : null,
         delay_max: form.delay_type === "oscilante" ? form.delay_max ?? 120 : null,
-        media_url: form.media_url,
-        file_name: form.file_name,
-        mimetype: form.mimetype,
+        media_url: isTag ? null : form.media_url,
+        file_name: isTag ? null : form.file_name,
+        mimetype: isTag ? null : form.mimetype,
+        tag_id: isTag ? form.tag_id : null,
+        tag_operation: isTag ? form.tag_operation : null,
       }).eq("id", form.id);
       if (error) throw error;
     },
@@ -528,7 +550,47 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
             )}
           </Section>
 
-          {needsMedia && (
+          {isTag && (
+            <Section title="Configuração da Tag">
+              <Field label="Operação">
+                <select
+                  value={form.tag_operation ?? ""}
+                  onChange={(e) => setForm({ ...form, tag_operation: e.target.value as "assign" | "remove" })}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Selecione…</option>
+                  <option value="assign">Atribuir tag ao lead</option>
+                  <option value="remove">Remover tag do lead</option>
+                </select>
+              </Field>
+              <Field label="Tag">
+                <select
+                  value={form.tag_id ?? ""}
+                  onChange={(e) => setForm({ ...form, tag_id: e.target.value || null })}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Selecione uma tag…</option>
+                  {(tagsQ.data ?? []).map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </Field>
+              {form.tag_id && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span
+                    className="inline-block h-3 w-3 rounded-full"
+                    style={{ backgroundColor: tagsQ.data?.find((t) => t.id === form.tag_id)?.color ?? "#6B7280" }}
+                  />
+                  <span className="font-mono">{tagsQ.data?.find((t) => t.id === form.tag_id)?.name}</span>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Este passo apenas {form.tag_operation === "remove" ? "remove" : "atribui"} a tag selecionada — nenhuma mensagem é enviada.
+              </p>
+            </Section>
+          )}
+
+          {!isTag && needsMedia && (
             <Section title={`Mídia (${form.type})`}>
               {form.media_url ? (
                 <div className="space-y-2 rounded-md border border-border bg-background p-3">
@@ -575,25 +637,27 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
             </Section>
           )}
 
-          <Section title="Conteúdo / Legenda">
-            <div className="flex flex-wrap gap-1.5">
-              {["{nome}", "{primeiro_nome}", "{produto}", "{valor}", "{link}"].map((v) => (
-                <button key={v}
-                  onClick={() => setForm({ ...form, content: form.content + " " + v })}
-                  className="rounded-md border border-border bg-background px-2 py-1 font-mono text-xs text-primary hover:border-primary/40">
-                  {v}
-                </button>
-              ))}
-            </div>
-            <textarea rows={6} value={form.content}
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
-            <Field label="Legenda (opcional)">
-              <textarea rows={2} value={form.caption ?? ""}
-                onChange={(e) => setForm({ ...form, caption: e.target.value })}
+          {!isTag && (
+            <Section title="Conteúdo / Legenda">
+              <div className="flex flex-wrap gap-1.5">
+                {["{nome}", "{primeiro_nome}", "{produto}", "{valor}", "{link}"].map((v) => (
+                  <button key={v}
+                    onClick={() => setForm({ ...form, content: form.content + " " + v })}
+                    className="rounded-md border border-border bg-background px-2 py-1 font-mono text-xs text-primary hover:border-primary/40">
+                    {v}
+                  </button>
+                ))}
+              </div>
+              <textarea rows={6} value={form.content}
+                onChange={(e) => setForm({ ...form, content: e.target.value })}
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
-            </Field>
-          </Section>
+              <Field label="Legenda (opcional)">
+                <textarea rows={2} value={form.caption ?? ""}
+                  onChange={(e) => setForm({ ...form, caption: e.target.value })}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
+              </Field>
+            </Section>
+          )}
         </div>
 
         <footer className="flex justify-end gap-2 border-t border-border px-6 py-4">
