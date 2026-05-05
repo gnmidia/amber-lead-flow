@@ -73,7 +73,14 @@ function ChatOficialPage() {
   const [draft, setDraft] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [sending, setSending] = useState(false);
+  const [allTags, setAllTags] = useState<TagItem[]>([]);
+  const [tagFilter, setTagFilter] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const fetchAllTags = async () => {
+    const { data } = await supabase.from("tags").select("id,name,color").eq("is_active", true).order("name");
+    setAllTags((data || []) as TagItem[]);
+  };
 
   const active = leads.find((l) => l.id === activeId) || null;
 
