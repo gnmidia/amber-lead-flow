@@ -18,7 +18,15 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
               return new Response("ok");
             }
 
-            const number = remoteJid.replace("@s.whatsapp.net", "");
+            // Extrai o número real do telefone. Para JIDs @lid, o telefone real
+            // vem em senderPn / participantPn (Evolution API). Caso contrário,
+            // remove o sufixo padrão @s.whatsapp.net / @c.us.
+            const realPhone: string | null =
+              key.senderPn || key.participantPn || data.senderPn || data.participantPn || null;
+            const isLid = remoteJid.endsWith("@lid");
+            const fallback = remoteJid.replace(/@s\.whatsapp\.net$|@c\.us$|@lid$/, "");
+            const number = (realPhone || (isLid ? fallback : fallback)).replace(/\D/g, "") || fallback;
+
             const pushName = data.pushName ?? null;
             const messageType: string = data.messageType ?? "unknown";
             const messageTimestamp = new Date((data.messageTimestamp ?? Date.now() / 1000) * 1000).toISOString();
@@ -37,11 +45,21 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
               fileName = msg.documentMessage.fileName;
             }
 
+            // Procura primeiro pelo remote_jid (chave estável), depois pelo número.
             let { data: lead } = await supabaseAdmin
               .from("leads")
-              .select("id")
-              .eq("whatsapp_number", number)
+              .select("id, whatsapp_number")
+              .eq("remote_jid", remoteJid)
               .maybeSingle();
+
+            if (!lead) {
+              const { data: byNumber } = await supabaseAdmin
+                .from("leads")
+                .select("id, whatsapp_number")
+                .eq("whatsapp_number", number)
+                .maybeSingle();
+              lead = byNumber;
+            }
 
             if (!lead) {
               const { data: newLead, error } = await supabaseAdmin
@@ -49,20 +67,26 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
                 .insert({
                   whatsapp_number: number,
                   remote_jid: remoteJid,
-                  name: pushName,
+                  name: pushName || number,
                   push_name: pushName,
                   is_new_lead: true,
                   first_contact_at: messageTimestamp,
                   instance_name: instance,
                   tags: ["LEAD_NOVO"],
                 })
-                .select("id")
+                .select("id, whatsapp_number")
                 .single();
               if (error) {
                 console.error("[webhook] insert lead error", error);
                 return new Response("error", { status: 500 });
               }
               lead = newLead;
+            } else if (realPhone && lead.whatsapp_number !== number) {
+              // Backfill: agora temos o telefone real, atualiza o lead que estava com LID.
+              await supabaseAdmin
+                .from("leads")
+                .update({ whatsapp_number: number, remote_jid: remoteJid })
+                .eq("id", lead.id);
             }
 
             await supabaseAdmin.from("messages").insert({

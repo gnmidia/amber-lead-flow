@@ -6,7 +6,7 @@ import { CalendarRange, Clock } from "lucide-react";
 export const Route = createFileRoute("/overview")({
   head: () => ({
     meta: [
-      { title: "Overview — CLand Dash" },
+      { title: "Overview — Innova CRM" },
       { name: "description", content: "Métricas em tempo real de vendas, leads e Meta Ads." },
     ],
   }),
