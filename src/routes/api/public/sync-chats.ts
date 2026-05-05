@@ -21,10 +21,10 @@ export const Route = createFileRoute("/api/public/sync-chats")({
 
         let synced = 0;
         for (const chat of chats) {
-          const remoteJid: string | undefined = chat.id || chat.remoteJid;
+          const remoteJid: string | undefined = chat.remoteJid || chat.id;
           if (!remoteJid || remoteJid.endsWith("@g.us")) continue;
-          const number = remoteJid.replace("@s.whatsapp.net", "").replace("@c.us", "");
-          const displayName = chat.name || chat.pushName || number;
+          const number = remoteJid.replace("@s.whatsapp.net", "").replace("@c.us", "").replace("@lid", "");
+          const displayName = chat.pushName || chat.name || number;
 
           const { data: existing } = await supabaseAdmin
             .from("leads").select("id").eq("whatsapp_number", number).maybeSingle();
