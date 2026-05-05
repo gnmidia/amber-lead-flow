@@ -71,6 +71,8 @@ export type Database = {
           media_url: string | null
           mimetype: string | null
           order_index: number
+          tag_id: string | null
+          tag_operation: string | null
           type: string
           updated_at: string
         }
@@ -88,6 +90,8 @@ export type Database = {
           media_url?: string | null
           mimetype?: string | null
           order_index: number
+          tag_id?: string | null
+          tag_operation?: string | null
           type?: string
           updated_at?: string
         }
@@ -105,6 +109,8 @@ export type Database = {
           media_url?: string | null
           mimetype?: string | null
           order_index?: number
+          tag_id?: string | null
+          tag_operation?: string | null
           type?: string
           updated_at?: string
         }
@@ -114,6 +120,13 @@ export type Database = {
             columns: ["funnel_id"]
             isOneToOne: false
             referencedRelation: "funnels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funnel_steps_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
             referencedColumns: ["id"]
           },
         ]
