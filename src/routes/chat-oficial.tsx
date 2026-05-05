@@ -404,6 +404,12 @@ function ChatOficialPage() {
                 </div>
               </header>
 
+              <LeadTagsArea
+                leadId={active.id}
+                leadTags={active.tags_data || []}
+                allTags={allTags}
+              />
+
               <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto bg-background/40 p-6">
                 {messages.map((m) => (
                   <div
