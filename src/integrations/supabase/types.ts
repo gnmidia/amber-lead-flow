@@ -22,10 +22,13 @@ export type Database = {
           delay_fixed: number | null
           delay_max: number | null
           delay_min: number | null
-          delay_mode: string
+          delay_type: string
+          file_name: string | null
           funnel_id: string
           id: string
-          ordem: number
+          media_url: string | null
+          mimetype: string | null
+          order_index: number
           type: string
           updated_at: string
         }
@@ -36,10 +39,13 @@ export type Database = {
           delay_fixed?: number | null
           delay_max?: number | null
           delay_min?: number | null
-          delay_mode?: string
+          delay_type?: string
+          file_name?: string | null
           funnel_id: string
           id?: string
-          ordem: number
+          media_url?: string | null
+          mimetype?: string | null
+          order_index: number
           type?: string
           updated_at?: string
         }
@@ -50,10 +56,13 @@ export type Database = {
           delay_fixed?: number | null
           delay_max?: number | null
           delay_min?: number | null
-          delay_mode?: string
+          delay_type?: string
+          file_name?: string | null
           funnel_id?: string
           id?: string
-          ordem?: number
+          media_url?: string | null
+          mimetype?: string | null
+          order_index?: number
           type?: string
           updated_at?: string
         }
@@ -118,12 +127,276 @@ export type Database = {
         }
         Relationships: []
       }
+      instances: {
+        Row: {
+          api_key: string
+          base_url: string
+          created_at: string
+          id: string
+          instance_id: string | null
+          instance_name: string
+          qr_code: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          api_key: string
+          base_url: string
+          created_at?: string
+          id?: string
+          instance_id?: string | null
+          instance_name: string
+          qr_code?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string
+          base_url?: string
+          created_at?: string
+          id?: string
+          instance_id?: string | null
+          instance_name?: string
+          qr_code?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lead_funnel_states: {
+        Row: {
+          completed_at: string | null
+          funnel_id: string | null
+          id: string
+          lead_id: string | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          funnel_id?: string | null
+          id?: string
+          lead_id?: string | null
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          funnel_id?: string | null
+          id?: string
+          lead_id?: string | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_funnel_states_funnel_id_fkey"
+            columns: ["funnel_id"]
+            isOneToOne: false
+            referencedRelation: "funnels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_funnel_states_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          created_at: string
+          first_contact_at: string | null
+          id: string
+          instance_name: string | null
+          is_new_lead: boolean
+          last_interaction_at: string | null
+          name: string | null
+          push_name: string | null
+          remote_jid: string | null
+          status: string
+          tags: string[]
+          updated_at: string
+          whatsapp_number: string
+        }
+        Insert: {
+          created_at?: string
+          first_contact_at?: string | null
+          id?: string
+          instance_name?: string | null
+          is_new_lead?: boolean
+          last_interaction_at?: string | null
+          name?: string | null
+          push_name?: string | null
+          remote_jid?: string | null
+          status?: string
+          tags?: string[]
+          updated_at?: string
+          whatsapp_number: string
+        }
+        Update: {
+          created_at?: string
+          first_contact_at?: string | null
+          id?: string
+          instance_name?: string | null
+          is_new_lead?: boolean
+          last_interaction_at?: string | null
+          name?: string | null
+          push_name?: string | null
+          remote_jid?: string | null
+          status?: string
+          tags?: string[]
+          updated_at?: string
+          whatsapp_number?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string | null
+          created_at: string
+          direction: string
+          evolution_message_id: string | null
+          file_name: string | null
+          id: string
+          is_ai: boolean
+          lead_id: string | null
+          media_url: string | null
+          sent_at: string
+          sent_by: string
+          type: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          direction: string
+          evolution_message_id?: string | null
+          file_name?: string | null
+          id?: string
+          is_ai?: boolean
+          lead_id?: string | null
+          media_url?: string | null
+          sent_at?: string
+          sent_by?: string
+          type: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          direction?: string
+          evolution_message_id?: string | null
+          file_name?: string | null
+          id?: string
+          is_ai?: boolean
+          lead_id?: string | null
+          media_url?: string | null
+          sent_at?: string
+          sent_by?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scheduled_messages: {
+        Row: {
+          attempts: number
+          caption: string | null
+          content: string | null
+          created_at: string
+          error_message: string | null
+          evolution_message_id: string | null
+          file_name: string | null
+          funnel_id: string | null
+          id: string
+          instance_name: string
+          lead_id: string | null
+          media_url: string | null
+          message_type: string
+          mimetype: string | null
+          send_at: string
+          status: string
+          step_id: string | null
+          whatsapp_number: string
+        }
+        Insert: {
+          attempts?: number
+          caption?: string | null
+          content?: string | null
+          created_at?: string
+          error_message?: string | null
+          evolution_message_id?: string | null
+          file_name?: string | null
+          funnel_id?: string | null
+          id?: string
+          instance_name: string
+          lead_id?: string | null
+          media_url?: string | null
+          message_type: string
+          mimetype?: string | null
+          send_at: string
+          status?: string
+          step_id?: string | null
+          whatsapp_number: string
+        }
+        Update: {
+          attempts?: number
+          caption?: string | null
+          content?: string | null
+          created_at?: string
+          error_message?: string | null
+          evolution_message_id?: string | null
+          file_name?: string | null
+          funnel_id?: string | null
+          id?: string
+          instance_name?: string
+          lead_id?: string | null
+          media_url?: string | null
+          message_type?: string
+          mimetype?: string | null
+          send_at?: string
+          status?: string
+          step_id?: string | null
+          whatsapp_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_messages_funnel_id_fkey"
+            columns: ["funnel_id"]
+            isOneToOne: false
+            referencedRelation: "funnels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_messages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_messages_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "funnel_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_completed_funnels: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
