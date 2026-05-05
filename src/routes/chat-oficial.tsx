@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PageHeader } from "../components/PageHeader";
-import { Search, Archive, Send, Paperclip, Mic, Pause, Play, RefreshCw, FileText } from "lucide-react";
+import { Search, Archive, Send, Paperclip, Mic, Pause, Play, RefreshCw, FileText, Plus, Check, Tag as TagIcon, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -9,12 +9,15 @@ export const Route = createFileRoute("/chat-oficial")({
   component: ChatOficialPage,
 });
 
+type TagItem = { id: string; name: string; color: string };
+
 type Lead = {
   id: string;
   name: string | null;
   push_name: string | null;
   whatsapp_number: string;
   tags: string[];
+  tags_data: TagItem[] | null;
   status: string;
   ia_paused: boolean;
   updated_at: string;
@@ -70,7 +73,14 @@ function ChatOficialPage() {
   const [draft, setDraft] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [sending, setSending] = useState(false);
+  const [allTags, setAllTags] = useState<TagItem[]>([]);
+  const [tagFilter, setTagFilter] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const fetchAllTags = async () => {
+    const { data } = await supabase.from("tags").select("id,name,color").eq("is_active", true).order("name");
+    setAllTags((data || []) as TagItem[]);
+  };
 
   const active = leads.find((l) => l.id === activeId) || null;
 
@@ -110,6 +120,7 @@ function ChatOficialPage() {
   useEffect(() => {
     fetchLeads();
     fetchScheduled();
+    fetchAllTags();
   }, []);
 
   // Realtime: messages → refresh leads list & scheduled count
@@ -124,6 +135,13 @@ function ChatOficialPage() {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "scheduled_messages" }, () => {
         fetchScheduled();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "lead_tags" }, () => {
+        fetchLeads();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "tags" }, () => {
+        fetchAllTags();
+        fetchLeads();
       })
       .subscribe();
     return () => {
@@ -175,8 +193,15 @@ function ChatOficialPage() {
           l.whatsapp_number.includes(search)
       );
     }
+    if (tagFilter.size > 0) {
+      list = list.filter((l) => {
+        const ids = new Set((l.tags_data || []).map((t) => t.id));
+        for (const id of tagFilter) if (!ids.has(id)) return false;
+        return true;
+      });
+    }
     return list;
-  }, [leads, filter, scheduledIds, search]);
+  }, [leads, filter, scheduledIds, search, tagFilter]);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -283,6 +308,7 @@ function ChatOficialPage() {
               <Chip active={filter === "archived"} onClick={() => setFilter(filter === "archived" ? "all" : "archived")}>
                 <Archive className="h-3 w-3" /> Arquivo
               </Chip>
+              <TagFilterDropdown allTags={allTags} selected={tagFilter} onChange={setTagFilter} />
             </div>
           </div>
 
@@ -316,14 +342,15 @@ function ChatOficialPage() {
                           {formatTime(l.last_message_at || l.updated_at)}
                         </span>
                       </div>
-                      {l.tags?.length > 0 && (
+                      {(l.tags_data?.length || 0) > 0 && (
                         <div className="mt-0.5 flex flex-wrap gap-1">
-                          {l.tags.slice(0, 3).map((t) => (
+                          {l.tags_data!.slice(0, 3).map((t) => (
                             <span
-                              key={t}
-                              className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-primary"
+                              key={t.id}
+                              style={{ backgroundColor: t.color + "33", color: t.color, borderColor: t.color }}
+                              className="rounded-full border px-1.5 py-0.5 text-[9px] font-semibold uppercase"
                             >
-                              {t}
+                              {t.name}
                             </span>
                           ))}
                         </div>
@@ -376,6 +403,12 @@ function ChatOficialPage() {
                   </button>
                 </div>
               </header>
+
+              <LeadTagsArea
+                leadId={active.id}
+                leadTags={active.tags_data || []}
+                allTags={allTags}
+              />
 
               <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto bg-background/40 p-6">
                 {messages.map((m) => (
@@ -491,5 +524,159 @@ function Chip({
     >
       {children}
     </button>
+  );
+}
+
+function TagFilterDropdown({
+  allTags,
+  selected,
+  onChange,
+}: {
+  allTags: TagItem[];
+  selected: Set<string>;
+  onChange: (s: Set<string>) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const toggle = (id: string) => {
+    const next = new Set(selected);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    onChange(next);
+  };
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium ${
+          selected.size > 0
+            ? "border-primary/40 bg-primary/15 text-primary"
+            : "border-border bg-card text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        <TagIcon className="h-3 w-3" />
+        {selected.size > 0 ? `${selected.size} tag(s)` : "Filtrar tag"}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 z-50 mt-1 max-h-64 w-56 overflow-y-auto rounded-md border border-border bg-popover p-1 shadow-lg">
+            {allTags.length === 0 && (
+              <p className="p-2 text-xs text-muted-foreground">Sem tags.</p>
+            )}
+            {allTags.map((t) => {
+              const sel = selected.has(t.id);
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => toggle(t.id)}
+                  className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-muted"
+                >
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: t.color }} />
+                  <span className="flex-1 font-medium">{t.name}</span>
+                  {sel && <Check className="h-3.5 w-3.5 text-primary" />}
+                </button>
+              );
+            })}
+            {selected.size > 0 && (
+              <button
+                onClick={() => onChange(new Set())}
+                className="mt-1 w-full rounded px-2 py-1.5 text-left text-xs text-muted-foreground hover:bg-muted"
+              >
+                Limpar filtro
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function LeadTagsArea({
+  leadId,
+  leadTags,
+  allTags,
+}: {
+  leadId: string;
+  leadTags: TagItem[];
+  allTags: TagItem[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const assignedIds = new Set(leadTags.map((t) => t.id));
+
+  const assign = async (tagId: string) => {
+    await supabase.from("lead_tags").upsert(
+      { lead_id: leadId, tag_id: tagId, assigned_by: "manual" },
+      { onConflict: "lead_id,tag_id", ignoreDuplicates: true }
+    );
+  };
+  const remove = async (tagId: string) => {
+    await supabase.from("lead_tags").delete().eq("lead_id", leadId).eq("tag_id", tagId);
+  };
+  const toggle = async (tagId: string) => {
+    if (assignedIds.has(tagId)) await remove(tagId);
+    else await assign(tagId);
+  };
+
+  const filtered = allTags.filter((t) =>
+    t.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 border-b border-border bg-background/60 px-6 py-2">
+      {leadTags.map((t) => (
+        <button
+          key={t.id}
+          onClick={() => remove(t.id)}
+          title="Clique para remover"
+          style={{ backgroundColor: t.color + "33", color: t.color, borderColor: t.color }}
+          className="group inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase"
+        >
+          {t.name}
+          <X className="h-2.5 w-2.5 opacity-0 group-hover:opacity-100" />
+        </button>
+      ))}
+      <div className="relative">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="inline-flex items-center gap-1 rounded-full border border-dashed border-border px-2 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground hover:border-primary/40 hover:text-primary"
+        >
+          <Plus className="h-3 w-3" /> Tag
+        </button>
+        {open && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+            <div className="absolute left-0 top-full z-50 mt-1 w-60 rounded-md border border-border bg-popover p-2 shadow-lg">
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar tag..."
+                className="mb-2 w-full rounded border border-border bg-background px-2 py-1 text-xs"
+              />
+              <div className="max-h-48 overflow-y-auto">
+                {filtered.length === 0 && (
+                  <p className="p-2 text-xs text-muted-foreground">Nenhuma tag.</p>
+                )}
+                {filtered.map((t) => {
+                  const sel = assignedIds.has(t.id);
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => toggle(t.id)}
+                      className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-muted"
+                    >
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: t.color }} />
+                      <span className="flex-1 font-medium">{t.name}</span>
+                      {sel && <Check className="h-3.5 w-3.5 text-primary" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
