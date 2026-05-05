@@ -22,8 +22,8 @@ export const Route = createFileRoute("/api/public/sync-chats")({
         let synced = 0;
         for (const chat of chats) {
           const remoteJid: string | undefined = chat.remoteJid || chat.id;
-          if (!remoteJid || remoteJid.endsWith("@g.us") || remoteJid.endsWith("@lid")) continue;
-          const number = remoteJid.replace("@s.whatsapp.net", "").replace("@c.us", "");
+          if (!remoteJid || remoteJid.endsWith("@g.us")) continue;
+          const number = remoteJid.replace("@s.whatsapp.net", "").replace("@c.us", "").replace("@lid", "");
           const displayName = chat.pushName || chat.name || number;
 
           const { data: existing } = await supabaseAdmin
