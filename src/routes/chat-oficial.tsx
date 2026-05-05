@@ -75,7 +75,11 @@ function ChatOficialPage() {
   const [sending, setSending] = useState(false);
   const [allTags, setAllTags] = useState<TagItem[]>([]);
   const [tagFilter, setTagFilter] = useState<Set<string>>(new Set());
+  const [unreadLeads, setUnreadLeads] = useState<Set<string>>(new Set());
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const activeIdRef = useRef<string | null>(null);
+  useEffect(() => { activeIdRef.current = activeId; }, [activeId]);
 
   const fetchAllTags = async () => {
     const { data } = await supabase.from("tags").select("id,name,color").eq("is_active", true).order("name");
