@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
-import { Plus, GitBranch, Bot, ArrowDown, GitMerge } from "lucide-react";
+import { Plus, GitBranch, Bot, ArrowDown, GitMerge, Tag as TagIcon } from "lucide-react";
 
 export const Route = createFileRoute("/fluxos")({
   component: FluxosPage,
@@ -9,12 +9,15 @@ export const Route = createFileRoute("/fluxos")({
 type Block =
   | { type: "funnel"; name: string; steps: number; delay: string }
   | { type: "agent"; name: string; objective: string }
-  | { type: "branch"; condition: string; yes: string; no: string };
+  | { type: "branch"; condition: string; yes: string; no: string }
+  | { type: "tag_action"; operation: "assign" | "remove"; tagName: string };
 
 const flow: Block[] = [
   { type: "funnel", name: "FUNIL BOAS-VINDAS", steps: 4, delay: "Início 0-5min" },
   { type: "agent", name: "Closer Premium", objective: "Qualificar e oferecer Mentoria" },
+  { type: "tag_action", operation: "assign", tagName: "LEAD" },
   { type: "branch", condition: "Lead enviou comprovante?", yes: "FUNIL CONFIRMAÇÃO", no: "FUNIL RECUPERAÇÃO" },
+  { type: "tag_action", operation: "assign", tagName: "PAGO_V1" },
   { type: "funnel", name: "FUNIL UPSELL 1", steps: 4, delay: "Início 1000-1100min" },
   { type: "agent", name: "Upsell VIP", objective: "Oferecer upgrade após compra" },
 ];
