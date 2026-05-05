@@ -21,10 +21,10 @@ export const Route = createFileRoute("/funil")({
   component: FunilPage,
 });
 
-type StepType = "Texto" | "Áudio" | "Imagem" | "Vídeo" | "Documento";
+type StepType = "Texto" | "Áudio" | "Imagem" | "Vídeo" | "Documento" | "Tag";
 
-const STEP_TYPE_TO_KIND: Record<StepType, "text" | "audio" | "image" | "video" | "document"> = {
-  "Texto": "text", "Áudio": "audio", "Imagem": "image", "Vídeo": "video", "Documento": "document",
+const STEP_TYPE_TO_KIND: Record<StepType, "text" | "audio" | "image" | "video" | "document" | "tag"> = {
+  "Texto": "text", "Áudio": "audio", "Imagem": "image", "Vídeo": "video", "Documento": "document", "Tag": "tag",
 };
 
 const ACCEPT_BY_TYPE: Record<StepType, string> = {
@@ -33,6 +33,7 @@ const ACCEPT_BY_TYPE: Record<StepType, string> = {
   "Imagem": "image/jpeg,image/png,image/webp",
   "Vídeo": "video/mp4",
   "Documento": "application/pdf",
+  "Tag": "",
 };
 
 type Step = {
@@ -49,6 +50,8 @@ type Step = {
   media_url: string | null;
   file_name: string | null;
   mimetype: string | null;
+  tag_id: string | null;
+  tag_operation: "assign" | "remove" | null;
 };
 
 type Funnel = {
@@ -67,10 +70,10 @@ type Funnel = {
 };
 
 const typeIcon: Record<StepType, React.ComponentType<{ className?: string }>> = {
-  Texto: Type, Áudio: Mic, Imagem: ImageIcon, Vídeo: Video, Documento: FileText,
+  Texto: Type, Áudio: Mic, Imagem: ImageIcon, Vídeo: Video, Documento: FileText, Tag: TagIcon,
 };
 
-const STEP_TYPES: StepType[] = ["Texto", "Áudio", "Imagem", "Vídeo", "Documento"];
+const STEP_TYPES: StepType[] = ["Texto", "Áudio", "Imagem", "Vídeo", "Documento", "Tag"];
 const CHANNELS = ["WABA", "Baileys"];
 
 function delayLabel(s: Step) {
