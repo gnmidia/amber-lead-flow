@@ -1,0 +1,1 @@
+ALTER VIEW public.leads_with_last_message SET (security_invoker = true);
