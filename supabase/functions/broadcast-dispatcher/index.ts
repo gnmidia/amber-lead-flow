@@ -8,6 +8,48 @@ const cors = {
   "Content-Type": "application/json",
 };
 
+function rand(min: number, max: number) {
+  if (max < min) max = min;
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+async function releaseNextTarget(
+  supabase: ReturnType<typeof getAdmin>,
+  broadcast_id: string,
+  current_lead_id: string,
+  minS: number,
+  maxS: number,
+) {
+  const { data: lastMsg } = await supabase
+    .from("scheduled_messages")
+    .select("send_at")
+    .eq("lead_id", current_lead_id)
+    .order("send_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const baseMs = lastMsg?.send_at
+    ? new Date((lastMsg as any).send_at).getTime()
+    : Date.now();
+  const nextAt = new Date(baseMs + rand(minS, maxS) * 1000).toISOString();
+
+  const { data: nextTarget } = await supabase
+    .from("broadcast_targets")
+    .select("id")
+    .eq("broadcast_id", broadcast_id)
+    .eq("status", "pending")
+    .order("scheduled_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (nextTarget) {
+    await supabase
+      .from("broadcast_targets")
+      .update({ scheduled_at: nextAt })
+      .eq("id", (nextTarget as any).id);
+  }
+}
+
 async function checkCompleted(supabase: ReturnType<typeof getAdmin>, ids?: Set<string>) {
   let broadcastIds: string[] = [];
   if (ids && ids.size) {
