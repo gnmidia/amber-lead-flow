@@ -67,14 +67,18 @@ export async function scheduleFunnelForLead({
   const startDelayMin = rand((funnel as any).start_min ?? 0, (funnel as any).start_max ?? 0);
   let cursorMs = triggerMs + startDelayMin * 60_000;
 
-  const rows = (steps as any[]).map((step) => {
-    const isFixed = step.delay_type === "fixed" || step.delay_type === "fixo";
-    const delaySec = isFixed
-      ? (step.delay_fixed ?? 30)
-      : rand(step.delay_min ?? 20, step.delay_max ?? 120);
-    cursorMs += delaySec * 1000;
+  const rows: any[] = [];
+  for (const step of steps as any[]) {
+    if (step.type === "Delay") {
+      const isFixed = step.delay_type === "fixed" || step.delay_type === "fixo";
+      const delaySec = isFixed
+        ? (step.delay_fixed ?? 30)
+        : rand(step.delay_min ?? 20, step.delay_max ?? 120);
+      cursorMs += delaySec * 1000;
+      continue;
+    }
 
-    return {
+    rows.push({
       lead_id,
       funnel_id,
       step_id: step.id,
@@ -88,11 +92,12 @@ export async function scheduleFunnelForLead({
       caption: step.caption,
       send_at: new Date(cursorMs).toISOString(),
       status: "pending",
-    };
-  });
-
-  const { error: insertError } = await supabaseAdmin.from("scheduled_messages").insert(rows);
-  assertNoError(insertError, "scheduled messages insert failed");
+    });
+  }
+  if (rows.length > 0) {
+    const { error: insertError } = await supabaseAdmin.from("scheduled_messages").insert(rows);
+    assertNoError(insertError, "scheduled messages insert failed");
+  }
 
   const { error: stateError } = await supabaseAdmin.from("lead_funnel_states").upsert(
     {

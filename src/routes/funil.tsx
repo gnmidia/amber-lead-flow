@@ -3,7 +3,7 @@ import { PageHeader } from "../components/PageHeader";
 import { useEffect, useMemo, useState } from "react";
 import {
   Plus, ChevronDown, ChevronUp, Type, Mic, Image as ImageIcon, Video, FileText,
-  X, Trash2, GripVertical, Pencil, Upload, Tag as TagIcon,
+  X, Trash2, GripVertical, Pencil, Upload, Tag as TagIcon, Clock,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,10 +21,10 @@ export const Route = createFileRoute("/funil")({
   component: FunilPage,
 });
 
-type StepType = "Texto" | "Áudio" | "Imagem" | "Vídeo" | "Documento" | "Tag";
+type StepType = "Texto" | "Áudio" | "Imagem" | "Vídeo" | "Documento" | "Tag" | "Delay";
 
-const STEP_TYPE_TO_KIND: Record<StepType, "text" | "audio" | "image" | "video" | "document" | "tag"> = {
-  "Texto": "text", "Áudio": "audio", "Imagem": "image", "Vídeo": "video", "Documento": "document", "Tag": "tag",
+const STEP_TYPE_TO_KIND: Record<StepType, "text" | "audio" | "image" | "video" | "document" | "tag" | "delay"> = {
+  "Texto": "text", "Áudio": "audio", "Imagem": "image", "Vídeo": "video", "Documento": "document", "Tag": "tag", "Delay": "delay",
 };
 
 const ACCEPT_BY_TYPE: Record<StepType, string> = {
@@ -34,6 +34,7 @@ const ACCEPT_BY_TYPE: Record<StepType, string> = {
   "Vídeo": "video/mp4",
   "Documento": "application/pdf",
   "Tag": "",
+  "Delay": "",
 };
 
 type Step = {
@@ -70,15 +71,18 @@ type Funnel = {
 };
 
 const typeIcon: Record<StepType, React.ComponentType<{ className?: string }>> = {
-  Texto: Type, Áudio: Mic, Imagem: ImageIcon, Vídeo: Video, Documento: FileText, Tag: TagIcon,
+  Texto: Type, Áudio: Mic, Imagem: ImageIcon, Vídeo: Video, Documento: FileText, Tag: TagIcon, Delay: Clock,
 };
 
-const STEP_TYPES: StepType[] = ["Texto", "Áudio", "Imagem", "Vídeo", "Documento", "Tag"];
+const STEP_TYPES: StepType[] = ["Texto", "Áudio", "Imagem", "Vídeo", "Documento", "Tag", "Delay"];
 const CHANNELS = ["WABA", "Baileys"];
 
 function delayLabel(s: Step) {
-  if (s.delay_type === "fixo") return `Fixo ${s.delay_fixed ?? 0}s`;
-  return `Oscilante ${s.delay_min ?? 0}s-${s.delay_max ?? 0}s`;
+  if (s.type === "Delay") {
+    if (s.delay_type === "fixo") return `Aguardar ${s.delay_fixed ?? 0}s`;
+    return `Aguardar ${s.delay_min ?? 0}-${s.delay_max ?? 0}s`;
+  }
+  return "";
 }
 
 function FunilPage() {
@@ -386,8 +390,9 @@ function SortableStep({
       <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-xs">
         <Icon className="h-3 w-3 text-muted-foreground" /> {step.type}
       </span>
-      <p className="flex-1 truncate text-sm text-foreground">{step.content}</p>
-      <span className="text-xs text-muted-foreground">{delayLabel(step)}</span>
+      <p className="flex-1 truncate text-sm text-foreground">
+        {step.type === "Delay" ? delayLabel(step) : step.content}
+      </p>
       <button
         onClick={() => onEdit(step)}
         className="rounded-md border border-border px-2.5 py-1 text-xs font-medium hover:border-primary/40 hover:text-primary"
@@ -431,7 +436,8 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
   useEffect(() => setForm(step), [step]);
 
   const isTag = form.type === "Tag";
-  const needsMedia = !isTag && form.type !== "Texto";
+  const isDelay = form.type === "Delay";
+  const needsMedia = !isTag && !isDelay && form.type !== "Texto";
   const requiresContent = form.type === "Texto";
 
   const tagsQ = useQuery({
@@ -446,7 +452,16 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
 
   const save = useMutation({
     mutationFn: async () => {
-      if (isTag) {
+      if (isDelay) {
+        if (form.delay_type === "fixo" && (!form.delay_fixed || form.delay_fixed < 1)) {
+          throw new Error("Informe os segundos do delay");
+        }
+        if (form.delay_type === "oscilante") {
+          const min = form.delay_min ?? 0;
+          const max = form.delay_max ?? 0;
+          if (min < 1 || max < 1 || max < min) throw new Error("Min/Max do delay inválidos");
+        }
+      } else if (isTag) {
         if (!form.tag_id) throw new Error("Selecione uma tag");
         if (!form.tag_operation) throw new Error("Selecione a operação (atribuir/remover)");
       } else {
@@ -458,18 +473,25 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
         }
       }
       const tagName = isTag ? (tagsQ.data?.find((t) => t.id === form.tag_id)?.name ?? "") : "";
+      const contentToSave = isDelay
+        ? (form.delay_type === "fixo"
+            ? `Aguardar ${form.delay_fixed ?? 0}s`
+            : `Aguardar ${form.delay_min ?? 0}-${form.delay_max ?? 0}s`)
+        : isTag
+        ? `${form.tag_operation === "assign" ? "Atribuir" : "Remover"} tag ${tagName}`
+        : form.content;
       const { error } = await supabase.from("funnel_steps").update({
         order_index: form.order_index,
         type: form.type,
-        content: isTag ? `${form.tag_operation === "assign" ? "Atribuir" : "Remover"} tag ${tagName}` : form.content,
-        caption: isTag ? null : form.caption,
+        content: contentToSave,
+        caption: isTag || isDelay ? null : form.caption,
         delay_type: form.delay_type,
         delay_fixed: form.delay_type === "fixo" ? form.delay_fixed ?? 60 : null,
         delay_min: form.delay_type === "oscilante" ? form.delay_min ?? 60 : null,
         delay_max: form.delay_type === "oscilante" ? form.delay_max ?? 120 : null,
-        media_url: isTag ? null : form.media_url,
-        file_name: isTag ? null : form.file_name,
-        mimetype: isTag ? null : form.mimetype,
+        media_url: isTag || isDelay ? null : form.media_url,
+        file_name: isTag || isDelay ? null : form.file_name,
+        mimetype: isTag || isDelay ? null : form.mimetype,
         tag_id: isTag ? form.tag_id : null,
         tag_operation: isTag ? form.tag_operation : null,
       }).eq("id", form.id);
@@ -513,42 +535,44 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
             </div>
           </Section>
 
-          <Section title="Delay antes deste passo">
-            <div className="flex gap-4">
-              {(["fixo", "oscilante"] as const).map((m) => (
-                <label key={m} className="flex items-center gap-2 text-sm">
-                  <input type="radio" name="delay" checked={form.delay_type === m}
-                    onChange={() => setForm({ ...form, delay_type: m })} className="accent-primary" />
-                  {m === "fixo" ? "Fixo" : "Oscilante"}
-                </label>
-              ))}
-            </div>
-            {form.delay_type === "fixo" ? (
-              <Field label="Segundos">
-                <input type="number" value={form.delay_fixed ?? 60}
-                  onChange={(e) => setForm({ ...form, delay_fixed: Number(e.target.value) })}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
-              </Field>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Min (s)">
-                    <input type="number" value={form.delay_min ?? 60}
-                      onChange={(e) => setForm({ ...form, delay_min: Number(e.target.value) })}
-                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
-                  </Field>
-                  <Field label="Max (s)">
-                    <input type="number" value={form.delay_max ?? 120}
-                      onChange={(e) => setForm({ ...form, delay_max: Number(e.target.value) })}
-                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
-                  </Field>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Envio em valor aleatório entre min e max. Recomendado: mín 20s, máx 500s.
-                </p>
-              </>
-            )}
-          </Section>
+          {isDelay && (
+            <Section title="Tempo de espera">
+              <div className="flex gap-4">
+                {(["fixo", "oscilante"] as const).map((m) => (
+                  <label key={m} className="flex items-center gap-2 text-sm">
+                    <input type="radio" name="delay" checked={form.delay_type === m}
+                      onChange={() => setForm({ ...form, delay_type: m })} className="accent-primary" />
+                    {m === "fixo" ? "Fixo" : "Random"}
+                  </label>
+                ))}
+              </div>
+              {form.delay_type === "fixo" ? (
+                <Field label="Segundos">
+                  <input type="number" min={1} value={form.delay_fixed ?? 60}
+                    onChange={(e) => setForm({ ...form, delay_fixed: Number(e.target.value) })}
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
+                </Field>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Min (s)">
+                      <input type="number" min={1} value={form.delay_min ?? 60}
+                        onChange={(e) => setForm({ ...form, delay_min: Number(e.target.value) })}
+                        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
+                    </Field>
+                    <Field label="Max (s)">
+                      <input type="number" min={1} value={form.delay_max ?? 120}
+                        onChange={(e) => setForm({ ...form, delay_max: Number(e.target.value) })}
+                        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
+                    </Field>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Espera por um valor aleatório (em segundos) entre min e max antes de enviar o próximo passo.
+                  </p>
+                </>
+              )}
+            </Section>
+          )}
 
           {isTag && (
             <Section title="Configuração da Tag">
