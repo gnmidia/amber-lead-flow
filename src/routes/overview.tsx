@@ -1,8 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { MetricCard } from "../components/MetricCard";
 import { CalendarRange, Clock } from "lucide-react";
 import { LeadsReceivedSection } from "../components/LeadsReceivedSection";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format, startOfDay, endOfDay, subDays } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import type { DateRange } from "react-day-picker";
 
 export const Route = createFileRoute("/overview")({
   head: () => ({
@@ -22,6 +28,8 @@ const STATUS = [
   { label: "Teste", value: 3, color: "bg-warning/15 text-warning border-warning/30" },
 ];
 
+type Preset = "today" | "custom";
+
 function OverviewPage() {
   const bruto = 4820.5;
   const imposto = bruto * 0.05;
@@ -30,6 +38,26 @@ function OverviewPage() {
   const fmt = (n: number) =>
     n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+  const [preset, setPreset] = useState<Preset>("custom");
+  const [range, setRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 29),
+    to: new Date(),
+  });
+  const [popoverOpen, setPopoverOpen] = useState(false);
+
+  const applyToday = () => {
+    setPreset("today");
+    setRange({ from: startOfDay(new Date()), to: endOfDay(new Date()) });
+  };
+
+  const periodStart = range?.from ? startOfDay(range.from) : subDays(new Date(), 29);
+  const periodEnd = range?.to ? endOfDay(range.to) : endOfDay(new Date());
+
+  const labelCustom =
+    range?.from && range?.to
+      ? `${format(range.from, "dd/MM/yy", { locale: ptBR })} – ${format(range.to, "dd/MM/yy", { locale: ptBR })}`
+      : "Personalizar";
+
   return (
     <>
       <PageHeader
@@ -37,18 +65,49 @@ function OverviewPage() {
         subtitle="Métricas em tempo real"
         actions={
           <>
-            <button className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90">
+            <button
+              onClick={applyToday}
+              className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold transition-colors ${
+                preset === "today"
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "border border-border bg-card text-foreground hover:border-primary/40"
+              }`}
+            >
               <Clock className="h-3.5 w-3.5" /> Hoje
             </button>
-            <button className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:border-primary/40">
-              <CalendarRange className="h-3.5 w-3.5" /> Personalizar
-            </button>
+            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-semibold transition-colors ${
+                    preset === "custom"
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "border border-border bg-card text-foreground hover:border-primary/40"
+                  }`}
+                >
+                  <CalendarRange className="h-3.5 w-3.5" /> {labelCustom}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="range"
+                  selected={range}
+                  onSelect={(r) => {
+                    setRange(r);
+                    setPreset("custom");
+                    if (r?.from && r?.to) setPopoverOpen(false);
+                  }}
+                  numberOfMonths={2}
+                  locale={ptBR}
+                  className="pointer-events-auto p-3"
+                />
+              </PopoverContent>
+            </Popover>
           </>
         }
       />
 
       <div className="space-y-8 p-8">
-        <LeadsReceivedSection />
+        <LeadsReceivedSection startDate={periodStart} endDate={periodEnd} />
 
         <section>
           <h2 className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
