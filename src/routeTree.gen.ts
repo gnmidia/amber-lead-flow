@@ -21,7 +21,6 @@ import { Route as LeadsRouteImport } from './routes/leads'
 import { Route as JarvisRouteImport } from './routes/jarvis'
 import { Route as InteligenciaIaRouteImport } from './routes/inteligencia-ia'
 import { Route as FunilRouteImport } from './routes/funil'
-import { Route as FluxosRouteImport } from './routes/fluxos'
 import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as FilaRouteImport } from './routes/fila'
 import { Route as ComprovantesIaRouteImport } from './routes/comprovantes-ia'
@@ -30,6 +29,7 @@ import { Route as ChatBaileysRouteImport } from './routes/chat-baileys'
 import { Route as AgentesIaRouteImport } from './routes/agentes-ia'
 import { Route as AgendamentosRouteImport } from './routes/agendamentos'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as FluxosIndexRouteImport } from './routes/fluxos.index'
 import { Route as FluxosIdRouteImport } from './routes/fluxos.$id'
 import { Route as ApiPublicWebhookWhatsappRouteImport } from './routes/api/public/webhook-whatsapp'
 import { Route as ApiPublicSyncChatsRouteImport } from './routes/api/public/sync-chats'
@@ -99,11 +99,6 @@ const FunilRoute = FunilRouteImport.update({
   path: '/funil',
   getParentRoute: () => rootRouteImport,
 } as any)
-const FluxosRoute = FluxosRouteImport.update({
-  id: '/fluxos',
-  path: '/fluxos',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const FinanceiroRoute = FinanceiroRouteImport.update({
   id: '/financeiro',
   path: '/financeiro',
@@ -142,6 +137,11 @@ const AgendamentosRoute = AgendamentosRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FluxosIndexRoute = FluxosIndexRouteImport.update({
+  id: '/fluxos/',
+  path: '/fluxos/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FluxosIdRoute = FluxosIdRouteImport.update({
@@ -198,7 +198,6 @@ export interface FileRoutesByFullPath {
   '/comprovantes-ia': typeof ComprovantesIaRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
-  '/fluxos': typeof FluxosRouteWithChildren
   '/funil': typeof FunilRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
   '/jarvis': typeof JarvisRoute
@@ -212,6 +211,7 @@ export interface FileRoutesByFullPath {
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
   '/fluxos/$id': typeof FluxosIdRoute
+  '/fluxos/': typeof FluxosIndexRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
@@ -229,7 +229,6 @@ export interface FileRoutesByTo {
   '/comprovantes-ia': typeof ComprovantesIaRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
-  '/fluxos': typeof FluxosRouteWithChildren
   '/funil': typeof FunilRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
   '/jarvis': typeof JarvisRoute
@@ -243,6 +242,7 @@ export interface FileRoutesByTo {
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
   '/fluxos/$id': typeof FluxosIdRoute
+  '/fluxos': typeof FluxosIndexRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
@@ -261,7 +261,6 @@ export interface FileRoutesById {
   '/comprovantes-ia': typeof ComprovantesIaRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
-  '/fluxos': typeof FluxosRouteWithChildren
   '/funil': typeof FunilRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
   '/jarvis': typeof JarvisRoute
@@ -275,6 +274,7 @@ export interface FileRoutesById {
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
   '/fluxos/$id': typeof FluxosIdRoute
+  '/fluxos/': typeof FluxosIndexRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
@@ -294,7 +294,6 @@ export interface FileRouteTypes {
     | '/comprovantes-ia'
     | '/fila'
     | '/financeiro'
-    | '/fluxos'
     | '/funil'
     | '/inteligencia-ia'
     | '/jarvis'
@@ -308,6 +307,7 @@ export interface FileRouteTypes {
     | '/tarefas'
     | '/transacoes'
     | '/fluxos/$id'
+    | '/fluxos/'
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
@@ -325,7 +325,6 @@ export interface FileRouteTypes {
     | '/comprovantes-ia'
     | '/fila'
     | '/financeiro'
-    | '/fluxos'
     | '/funil'
     | '/inteligencia-ia'
     | '/jarvis'
@@ -339,6 +338,7 @@ export interface FileRouteTypes {
     | '/tarefas'
     | '/transacoes'
     | '/fluxos/$id'
+    | '/fluxos'
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
@@ -356,7 +356,6 @@ export interface FileRouteTypes {
     | '/comprovantes-ia'
     | '/fila'
     | '/financeiro'
-    | '/fluxos'
     | '/funil'
     | '/inteligencia-ia'
     | '/jarvis'
@@ -370,6 +369,7 @@ export interface FileRouteTypes {
     | '/tarefas'
     | '/transacoes'
     | '/fluxos/$id'
+    | '/fluxos/'
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
@@ -388,7 +388,6 @@ export interface RootRouteChildren {
   ComprovantesIaRoute: typeof ComprovantesIaRoute
   FilaRoute: typeof FilaRoute
   FinanceiroRoute: typeof FinanceiroRoute
-  FluxosRoute: typeof FluxosRouteWithChildren
   FunilRoute: typeof FunilRoute
   InteligenciaIaRoute: typeof InteligenciaIaRoute
   JarvisRoute: typeof JarvisRoute
@@ -401,6 +400,7 @@ export interface RootRouteChildren {
   TagsRoute: typeof TagsRoute
   TarefasRoute: typeof TarefasRoute
   TransacoesRoute: typeof TransacoesRoute
+  FluxosIndexRoute: typeof FluxosIndexRoute
   ApiPublicEvolutionStatusRoute: typeof ApiPublicEvolutionStatusRoute
   ApiPublicFlowExecutorRoute: typeof ApiPublicFlowExecutorRoute
   ApiPublicFunnelSchedulerRoute: typeof ApiPublicFunnelSchedulerRoute
@@ -496,13 +496,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FunilRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/fluxos': {
-      id: '/fluxos'
-      path: '/fluxos'
-      fullPath: '/fluxos'
-      preLoaderRoute: typeof FluxosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/financeiro': {
       id: '/financeiro'
       path: '/financeiro'
@@ -557,6 +550,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/fluxos/': {
+      id: '/fluxos/'
+      path: '/fluxos'
+      fullPath: '/fluxos/'
+      preLoaderRoute: typeof FluxosIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fluxos/$id': {
@@ -618,17 +618,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface FluxosRouteChildren {
-  FluxosIdRoute: typeof FluxosIdRoute
-}
-
-const FluxosRouteChildren: FluxosRouteChildren = {
-  FluxosIdRoute: FluxosIdRoute,
-}
-
-const FluxosRouteWithChildren =
-  FluxosRoute._addFileChildren(FluxosRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgendamentosRoute: AgendamentosRoute,
@@ -638,7 +627,6 @@ const rootRouteChildren: RootRouteChildren = {
   ComprovantesIaRoute: ComprovantesIaRoute,
   FilaRoute: FilaRoute,
   FinanceiroRoute: FinanceiroRoute,
-  FluxosRoute: FluxosRouteWithChildren,
   FunilRoute: FunilRoute,
   InteligenciaIaRoute: InteligenciaIaRoute,
   JarvisRoute: JarvisRoute,
@@ -651,6 +639,7 @@ const rootRouteChildren: RootRouteChildren = {
   TagsRoute: TagsRoute,
   TarefasRoute: TarefasRoute,
   TransacoesRoute: TransacoesRoute,
+  FluxosIndexRoute: FluxosIndexRoute,
   ApiPublicEvolutionStatusRoute: ApiPublicEvolutionStatusRoute,
   ApiPublicFlowExecutorRoute: ApiPublicFlowExecutorRoute,
   ApiPublicFunnelSchedulerRoute: ApiPublicFunnelSchedulerRoute,
@@ -662,3 +651,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
