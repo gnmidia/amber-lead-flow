@@ -661,8 +661,8 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
             </Section>
           )}
 
-          {!isTag && (
-            <Section title="Conteúdo / Legenda">
+          {form.type === "Texto" && (
+            <Section title="Conteúdo">
               <div className="flex flex-wrap gap-1.5">
                 {["{nome}", "{primeiro_nome}", "{produto}", "{valor}", "{link}"].map((v) => (
                   <button key={v}
@@ -675,11 +675,6 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
               <textarea rows={6} value={form.content}
                 onChange={(e) => setForm({ ...form, content: e.target.value })}
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
-              <Field label="Legenda (opcional)">
-                <textarea rows={2} value={form.caption ?? ""}
-                  onChange={(e) => setForm({ ...form, caption: e.target.value })}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
-              </Field>
             </Section>
           )}
         </div>
