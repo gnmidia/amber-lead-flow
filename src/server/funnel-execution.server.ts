@@ -35,15 +35,15 @@ export async function scheduleFunnelForLead({
   assertNoError(funnelError, "funnel lookup failed");
   if (!funnel) throw new Error("funnel not found");
 
-  const { data: activeState, error: activeStateError } = await supabaseAdmin
+  const { data: activeStates, error: activeStateError } = await supabaseAdmin
     .from("lead_funnel_states")
     .select("id")
     .eq("lead_id", lead_id)
     .eq("funnel_id", funnel_id)
     .eq("status", "active")
-    .maybeSingle();
+    .limit(1);
   assertNoError(activeStateError, "lead funnel active state lookup failed");
-  if (activeState) return { scheduled: 0, skipped: "already_active" };
+  if ((activeStates?.length || 0) > 0) return { scheduled: 0, skipped: "already_active" };
 
   const { data: pendingMessages, error: pendingError } = await supabaseAdmin
     .from("scheduled_messages")
