@@ -77,16 +77,32 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
           return Response.json({ error: "Evolution env not configured" }, { status: 500 });
         }
 
-        const { data: messages } = await supabaseAdmin
-          .from("scheduled_messages")
-          .select("*, funnels(window_start, window_end)")
-          .lte("send_at", new Date().toISOString())
-          .eq("status", "pending")
-          .order("send_at", { ascending: true })
-          .limit(200);
+        // Requeue any "dispatching" rows stuck for >5min (worker died mid-send)
+        await supabaseAdmin.rpc("requeue_stuck_dispatching", { p_older_than_seconds: 300 });
 
+        // Atomically claim a batch of pending messages so concurrent cron ticks
+        // never pick up the same row (FOR UPDATE SKIP LOCKED inside the RPC).
+        const { data: claimed, error: claimError } = await supabaseAdmin
+          .rpc("claim_scheduled_messages", { p_limit: 200 });
+        if (claimError) {
+          console.error("[dispatcher] claim error", claimError);
+          return Response.json({ error: claimError.message }, { status: 500 });
+        }
+        const messages = claimed as any[] | null;
         if (!messages || messages.length === 0) {
           return Response.json({ dispatched: 0 });
+        }
+
+        // Hydrate funnel window info separately (RPC returns base table only).
+        const funnelIds = Array.from(new Set(messages.map((m: any) => m.funnel_id).filter(Boolean)));
+        const funnelMap = new Map<string, any>();
+        if (funnelIds.length > 0) {
+          const { data: fs } = await supabaseAdmin
+            .from("funnels").select("id, window_start, window_end").in("id", funnelIds);
+          (fs || []).forEach((f: any) => funnelMap.set(f.id, f));
+        }
+        for (const m of messages) {
+          (m as any).funnels = m.funnel_id ? funnelMap.get(m.funnel_id) : null;
         }
 
         // Group by lead so we can serialize per-lead sends and respect spacing.
