@@ -1,0 +1,2 @@
+UPDATE public.scheduled_messages SET status='sent', error_message=NULL, dispatch_started_at=NULL WHERE id='f59893f8-ee6f-4ec1-9994-b704d22694d7';
+UPDATE public.scheduled_messages SET status='pending', error_message=NULL, dispatch_started_at=NULL, attempts=0 WHERE id IN ('6a4594da-7e21-4428-ade1-9adf4b975c2c','9f44af78-d443-42d2-98f5-74b889c51f57');
