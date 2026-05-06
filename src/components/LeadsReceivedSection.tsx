@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { subDays, format, parseISO, startOfDay, isToday, isYesterday } from "date-fns";
+import { subDays, format, parseISO, isToday, isYesterday } from "date-fns";
 import {
   BarChart,
   Bar,
