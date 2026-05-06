@@ -25,14 +25,17 @@ const fmtDay = (d: string) => format(parseISO(d), "dd/MM");
 const todayStr = () => format(new Date(), "yyyy-MM-dd");
 const yesterdayStr = () => format(subDays(new Date(), 1), "yyyy-MM-dd");
 
-export function LeadsReceivedSection() {
+type Props = { startDate: Date; endDate: Date };
+
+export function LeadsReceivedSection({ startDate, endDate }: Props) {
   const [tab, setTab] = useState<"all" | "byTag">("all");
   const [perDay, setPerDay] = useState<LeadsPerDayRow[]>([]);
   const [perDayByTag, setPerDayByTag] = useState<LeadsPerDayByTagRow[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTagId, setSelectedTagId] = useState<string | "ALL">("ALL");
 
-  const startStr = format(subDays(new Date(), 30), "yyyy-MM-dd");
+  const startStr = format(startDate, "yyyy-MM-dd");
+  const endStr = format(endDate, "yyyy-MM-dd");
 
   const loadAll = useCallback(async () => {
     const [{ data: d1 }, { data: d2 }, { data: d3 }] = await Promise.all([
@@ -40,11 +43,13 @@ export function LeadsReceivedSection() {
         .from("leads_per_day" as never)
         .select("*")
         .gte("day", startStr)
+        .lte("day", endStr)
         .order("day", { ascending: false }),
       supabase
         .from("leads_per_day_by_tag" as never)
         .select("*")
         .gte("day", startStr)
+        .lte("day", endStr)
         .order("day", { ascending: false }),
       supabase
         .from("tags")
@@ -55,7 +60,8 @@ export function LeadsReceivedSection() {
     setPerDay((d1 as LeadsPerDayRow[]) || []);
     setPerDayByTag((d2 as LeadsPerDayByTagRow[]) || []);
     setTags((d3 as Tag[]) || []);
-  }, [startStr]);
+  }, [startStr, endStr]);
+
 
   useEffect(() => {
     loadAll();
