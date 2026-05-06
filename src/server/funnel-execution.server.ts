@@ -94,8 +94,10 @@ export async function scheduleFunnelForLead({
       status: "pending",
     });
   }
-  const { error: insertError } = await supabaseAdmin.from("scheduled_messages").insert(rows);
-  assertNoError(insertError, "scheduled messages insert failed");
+  if (rows.length > 0) {
+    const { error: insertError } = await supabaseAdmin.from("scheduled_messages").insert(rows);
+    assertNoError(insertError, "scheduled messages insert failed");
+  }
 
   const { error: stateError } = await supabaseAdmin.from("lead_funnel_states").upsert(
     {
