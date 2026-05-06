@@ -535,42 +535,44 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
             </div>
           </Section>
 
-          <Section title="Delay antes deste passo">
-            <div className="flex gap-4">
-              {(["fixo", "oscilante"] as const).map((m) => (
-                <label key={m} className="flex items-center gap-2 text-sm">
-                  <input type="radio" name="delay" checked={form.delay_type === m}
-                    onChange={() => setForm({ ...form, delay_type: m })} className="accent-primary" />
-                  {m === "fixo" ? "Fixo" : "Oscilante"}
-                </label>
-              ))}
-            </div>
-            {form.delay_type === "fixo" ? (
-              <Field label="Segundos">
-                <input type="number" value={form.delay_fixed ?? 60}
-                  onChange={(e) => setForm({ ...form, delay_fixed: Number(e.target.value) })}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
-              </Field>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Min (s)">
-                    <input type="number" value={form.delay_min ?? 60}
-                      onChange={(e) => setForm({ ...form, delay_min: Number(e.target.value) })}
-                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
-                  </Field>
-                  <Field label="Max (s)">
-                    <input type="number" value={form.delay_max ?? 120}
-                      onChange={(e) => setForm({ ...form, delay_max: Number(e.target.value) })}
-                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
-                  </Field>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Envio em valor aleatório entre min e max. Recomendado: mín 20s, máx 500s.
-                </p>
-              </>
-            )}
-          </Section>
+          {isDelay && (
+            <Section title="Tempo de espera">
+              <div className="flex gap-4">
+                {(["fixo", "oscilante"] as const).map((m) => (
+                  <label key={m} className="flex items-center gap-2 text-sm">
+                    <input type="radio" name="delay" checked={form.delay_type === m}
+                      onChange={() => setForm({ ...form, delay_type: m })} className="accent-primary" />
+                    {m === "fixo" ? "Fixo" : "Random"}
+                  </label>
+                ))}
+              </div>
+              {form.delay_type === "fixo" ? (
+                <Field label="Segundos">
+                  <input type="number" min={1} value={form.delay_fixed ?? 60}
+                    onChange={(e) => setForm({ ...form, delay_fixed: Number(e.target.value) })}
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
+                </Field>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Min (s)">
+                      <input type="number" min={1} value={form.delay_min ?? 60}
+                        onChange={(e) => setForm({ ...form, delay_min: Number(e.target.value) })}
+                        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
+                    </Field>
+                    <Field label="Max (s)">
+                      <input type="number" min={1} value={form.delay_max ?? 120}
+                        onChange={(e) => setForm({ ...form, delay_max: Number(e.target.value) })}
+                        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
+                    </Field>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Espera por um valor aleatório (em segundos) entre min e max antes de enviar o próximo passo.
+                  </p>
+                </>
+              )}
+            </Section>
+          )}
 
           {isTag && (
             <Section title="Configuração da Tag">
