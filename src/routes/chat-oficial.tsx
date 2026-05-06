@@ -411,6 +411,7 @@ function ChatOficialPage() {
                   <p className="text-xs text-muted-foreground">+{active.whatsapp_number}</p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <ActivateFunnelButton leadId={active.id} />
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase ${
                       active.ia_paused
@@ -533,6 +534,69 @@ function MessageBody({ m }: { m: Message }) {
     );
   }
   return <p className="whitespace-pre-wrap">{m.content || ""}</p>;
+}
+
+function ActivateFunnelButton({ leadId }: { leadId: string }) {
+  const [funnels, setFunnels] = useState<{ id: string; name: string }[]>([]);
+  const [selected, setSelected] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from("funnels")
+      .select("id, name")
+      .order("position")
+      .then(({ data }) => setFunnels(data ?? []));
+  }, []);
+
+  const activate = async () => {
+    if (!selected) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/public/funnel-scheduler", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lead_id: leadId,
+          funnel_id: selected,
+          trigger_time: new Date().toISOString(),
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error || "Erro ao ativar funil");
+      toast.success(`Funil ativado — ${json.scheduled ?? 0} mensagens agendadas`);
+      setSelected("");
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <select
+        value={selected}
+        onChange={(e) => setSelected(e.target.value)}
+        className="rounded-md border border-border bg-background px-2 py-1 text-xs"
+      >
+        <option value="">Ativar funil…</option>
+        {funnels.map((f) => (
+          <option key={f.id} value={f.id}>
+            {f.name}
+          </option>
+        ))}
+      </select>
+      <button
+        onClick={activate}
+        disabled={!selected || loading}
+        className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+      >
+        <Play className="h-3 w-3" />
+        {loading ? "..." : "Ativar"}
+      </button>
+    </div>
+  );
 }
 
 function Chip({
