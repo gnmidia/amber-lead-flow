@@ -145,9 +145,9 @@ const FluxosIndexRoute = FluxosIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const FluxosIdRoute = FluxosIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => FluxosRoute,
+  id: '/fluxos/$id',
+  path: '/fluxos/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicWebhookWhatsappRoute =
   ApiPublicWebhookWhatsappRouteImport.update({
@@ -400,6 +400,7 @@ export interface RootRouteChildren {
   TagsRoute: typeof TagsRoute
   TarefasRoute: typeof TarefasRoute
   TransacoesRoute: typeof TransacoesRoute
+  FluxosIdRoute: typeof FluxosIdRoute
   FluxosIndexRoute: typeof FluxosIndexRoute
   ApiPublicEvolutionStatusRoute: typeof ApiPublicEvolutionStatusRoute
   ApiPublicFlowExecutorRoute: typeof ApiPublicFlowExecutorRoute
@@ -561,10 +562,10 @@ declare module '@tanstack/react-router' {
     }
     '/fluxos/$id': {
       id: '/fluxos/$id'
-      path: '/$id'
+      path: '/fluxos/$id'
       fullPath: '/fluxos/$id'
       preLoaderRoute: typeof FluxosIdRouteImport
-      parentRoute: typeof FluxosRoute
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/webhook-whatsapp': {
       id: '/api/public/webhook-whatsapp'
@@ -639,6 +640,7 @@ const rootRouteChildren: RootRouteChildren = {
   TagsRoute: TagsRoute,
   TarefasRoute: TarefasRoute,
   TransacoesRoute: TransacoesRoute,
+  FluxosIdRoute: FluxosIdRoute,
   FluxosIndexRoute: FluxosIndexRoute,
   ApiPublicEvolutionStatusRoute: ApiPublicEvolutionStatusRoute,
   ApiPublicFlowExecutorRoute: ApiPublicFlowExecutorRoute,
