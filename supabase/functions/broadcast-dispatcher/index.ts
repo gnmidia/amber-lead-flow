@@ -8,6 +8,48 @@ const cors = {
   "Content-Type": "application/json",
 };
 
+function rand(min: number, max: number) {
+  if (max < min) max = min;
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+async function releaseNextTarget(
+  supabase: ReturnType<typeof getAdmin>,
+  broadcast_id: string,
+  current_lead_id: string,
+  minS: number,
+  maxS: number,
+) {
+  const { data: lastMsg } = await supabase
+    .from("scheduled_messages")
+    .select("send_at")
+    .eq("lead_id", current_lead_id)
+    .order("send_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const baseMs = lastMsg?.send_at
+    ? new Date((lastMsg as any).send_at).getTime()
+    : Date.now();
+  const nextAt = new Date(baseMs + rand(minS, maxS) * 1000).toISOString();
+
+  const { data: nextTarget } = await supabase
+    .from("broadcast_targets")
+    .select("id")
+    .eq("broadcast_id", broadcast_id)
+    .eq("status", "pending")
+    .order("scheduled_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (nextTarget) {
+    await supabase
+      .from("broadcast_targets")
+      .update({ scheduled_at: nextAt })
+      .eq("id", (nextTarget as any).id);
+  }
+}
+
 async function checkCompleted(supabase: ReturnType<typeof getAdmin>, ids?: Set<string>) {
   let broadcastIds: string[] = [];
   if (ids && ids.size) {
@@ -52,7 +94,7 @@ Deno.serve(async (req) => {
       broadcastIds.add(t.broadcast_id);
       try {
         const { data: bc } = await supabase
-          .from("broadcasts").select("flow_id, status, max_interval_seconds")
+          .from("broadcasts").select("flow_id, status, min_interval_seconds, max_interval_seconds")
           .eq("id", t.broadcast_id).maybeSingle();
 
         if (!bc) {
@@ -102,12 +144,30 @@ Deno.serve(async (req) => {
         await supabase.from("broadcast_targets").update({
           status: "sent", processed_at: new Date().toISOString(),
         }).eq("id", t.id);
+        await releaseNextTarget(
+          supabase,
+          t.broadcast_id,
+          t.lead_id,
+          (bc as any).min_interval_seconds || 30,
+          (bc as any).max_interval_seconds || 90,
+        );
         dispatched++;
       } catch (err) {
         await supabase.from("broadcast_targets").update({
           status: "failed", processed_at: new Date().toISOString(),
           error_message: String(err),
         }).eq("id", t.id);
+        // Even on failure, release the next lead so the queue keeps moving.
+        try {
+          const { data: bc2 } = await supabase
+            .from("broadcasts").select("min_interval_seconds, max_interval_seconds")
+            .eq("id", t.broadcast_id).maybeSingle();
+          await releaseNextTarget(
+            supabase, t.broadcast_id, t.lead_id,
+            (bc2 as any)?.min_interval_seconds || 30,
+            (bc2 as any)?.max_interval_seconds || 90,
+          );
+        } catch (_) { /* ignore */ }
         failed++;
       }
     }));
