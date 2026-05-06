@@ -510,6 +510,45 @@ export type Database = {
           },
         ]
       }
+      offers: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          pix_key: string | null
+          price: number
+          product_name: string | null
+          recipient: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          pix_key?: string | null
+          price: number
+          product_name?: string | null
+          recipient?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          pix_key?: string | null
+          price?: number
+          product_name?: string | null
+          recipient?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       scheduled_messages: {
         Row: {
           attempts: number
