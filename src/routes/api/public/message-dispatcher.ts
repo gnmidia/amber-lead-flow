@@ -44,14 +44,6 @@ async function sendToEvolution(baseUrl: string, apiKey: string, instance: string
     } else if (t === "document" || t === "documento") {
       endpoint = `/message/sendMedia/${instance}`;
       body = { number, mediatype: "document", mimetype: msg.mimetype || "application/pdf", media: msg.media_url, fileName: msg.file_name || "arquivo.pdf", caption: msg.caption || "", delay };
-    } else if (t === "audio" || t === "áudio") {
-      // Fire-and-forget presence; não esperar para não estourar CPU do Worker.
-      fetch(`${baseUrl}/chat/sendPresence/${instance}`, {
-        method: "POST", headers: evoHeaders(apiKey),
-        body: JSON.stringify({ number, options: { delay: 1500, presence: "recording", number } }),
-      }).catch(() => {});
-      endpoint = `/message/sendWhatsAppAudio/${instance}`;
-      body = { number, audio: msg.media_url, delay: 1500 };
     } else {
       return { success: false, error: `Unsupported type: ${t}` };
     }
@@ -155,6 +147,36 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
               await supabaseAdmin.from("lead_tags").delete().eq("lead_id", msg.lead_id).eq("tag_id", tagId);
             }
             await supabaseAdmin.from("scheduled_messages").update({ status: "sent", dispatch_started_at: null }).eq("id", msg.id);
+            return "sent";
+          }
+
+          // ───── Áudio: fire-and-forget para não segurar o Worker ─────
+          if (stepType === "audio" || stepType === "áudio") {
+            const number = lead.remote_jid || msg.whatsapp_number || lead.whatsapp_number;
+            // Marca como enviado ANTES de tocar a Evolution.
+            await supabaseAdmin.from("scheduled_messages").update({
+              status: "sent", dispatch_started_at: null,
+            }).eq("id", msg.id);
+            // Insere a mensagem outbound (evolution_message_id virá pelo webhook send.message).
+            await supabaseAdmin.from("messages").insert({
+              lead_id: msg.lead_id,
+              direction: "outbound",
+              type: msg.message_type,
+              content: msg.content,
+              media_url: msg.media_url,
+              is_ai: false,
+              sent_by: "system",
+              sent_at: new Date().toISOString(),
+            });
+            // Presence + envio sem await.
+            fetch(`${baseUrl}/chat/sendPresence/${msg.instance_name}`, {
+              method: "POST", headers: evoHeaders(apiKey),
+              body: JSON.stringify({ number, options: { delay: 1500, presence: "recording", number } }),
+            }).catch(() => {});
+            fetch(`${baseUrl}/message/sendWhatsAppAudio/${msg.instance_name}`, {
+              method: "POST", headers: evoHeaders(apiKey),
+              body: JSON.stringify({ number, audio: msg.media_url, delay: 1500 }),
+            }).catch(() => {});
             return "sent";
           }
 

@@ -1,77 +1,146 @@
-## Causa raiz dos envios duplicados (ex.: áudio enviado 5x)
+## Objetivo
 
-O `message-dispatcher` é chamado em loop pelo cron. O fluxo atual é:
+Eliminar o timeout do Worker no envio de áudio usando fire-and-forget, sem alterar texto/imagem/vídeo/documento.
 
-1. `SELECT * FROM scheduled_messages WHERE status='pending' AND send_at <= now()` (até 200 linhas).
-2. Agrupa por `lead_id` e processa **serialmente**, com `setTimeout` de até **90 segundos** entre mensagens (para respeitar Delay).
-3. Só marca `status='sent'` **depois** do envio bem-sucedido.
+## 1. `src/routes/api/public/message-dispatcher.ts`
 
-O problema: enquanto o dispatcher dorme esperando o gap entre mensagens (ou enquanto envia áudio que demora alguns segundos), o **próximo tick do cron** roda em paralelo. Como a linha continua com `status='pending'`, ela é selecionada de novo e enviada de novo. Quanto mais lento o item (áudio com presença "recording" + 2.5s + upload), mais ticks pegam a mesma linha → envio múltiplo.
+Tratar `audio`/`áudio` como caso especial **antes** de chamar `sendToEvolution`:
 
-Não há nenhum mecanismo de claim/lock. A serialização "por lead" só funciona dentro de uma única invocação — entre invocações, é corrida total.
+- Marcar imediatamente `scheduled_messages` como `status='sent'`, `dispatch_started_at=null`.
+- Inserir o registro em `messages` (outbound, type='audio', media_url, sem `evolution_message_id` por enquanto) — para que a UI já mostre o áudio.
+- Disparar `fetch` para `/chat/sendPresence` e `/message/sendWhatsAppAudio` **sem `await`** (fire-and-forget) com `.catch(() => {})`.
+- Retornar `"sent"` sem aguardar resposta da Evolution.
 
-Adicionalmente, o `executeFlowForLead` (chamado em `flow_resume`) pode reagendar passos de funil. Se o `lead_funnel_states` já estiver `active` mas com mensagens pendentes pertencentes ao mesmo funil, ele pula via `skipped: "already_active"` — ok. Mas se o estado já tiver sido marcado `completed` por `check_completed_funnels` antes do cron rodar de novo, em teoria poderia reagendar. Vou validar essa borda também.
+A função `sendToEvolution` continua tratando os outros tipos com `await` normal. O ramo `audio` interno dela vira inalcançável (só chamamos para os demais tipos), mas removerei o branch para evitar código morto.
 
-## Correção
+## 2. `src/routes/api/public/webhook-whatsapp.ts`
 
-### 1. Claim atômico no `message-dispatcher.ts`
+Adicionar handler para o evento `send.message` (emitido pela Evolution após enviar):
 
-Substituir o `select ... where status='pending'` por um **UPDATE retornando**:
-
-```sql
-UPDATE scheduled_messages
-SET status = 'dispatching', attempts = attempts + 1
-WHERE id IN (
-  SELECT id FROM scheduled_messages
-  WHERE status = 'pending' AND send_at <= now()
-  ORDER BY send_at
-  LIMIT 200
-  FOR UPDATE SKIP LOCKED
-)
-RETURNING *;
+```ts
+if (event === "send.message" && data?.key) {
+  const key = data.key;
+  const remoteJid: string = key.remoteJid ?? "";
+  // só interessa áudio outbound sem evolution_message_id ainda
+  const isAudio = !!data.message?.audioMessage;
+  if (key.fromMe && isAudio && key.id) {
+    // localiza lead pelo remote_jid (ou número normalizado)
+    const { data: lead } = await supabaseAdmin
+      .from("leads").select("id").eq("remote_jid", remoteJid).maybeSingle();
+    if (lead) {
+      // atualiza a mensagem outbound de audio mais recente desse lead
+      // que ainda não tem evolution_message_id
+      const { data: target } = await supabaseAdmin
+        .from("messages")
+        .select("id")
+        .eq("lead_id", lead.id)
+        .eq("direction", "outbound")
+        .eq("type", "audio")
+        .is("evolution_message_id", null)
+        .order("sent_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (target) {
+        await supabaseAdmin.from("messages")
+          .update({ evolution_message_id: key.id })
+          .eq("id", target.id);
+      }
+    }
+  }
+}
 ```
 
-Implementado via uma RPC Postgres `claim_scheduled_messages(p_limit int)` (já que o supabase-js não expõe `FOR UPDATE SKIP LOCKED` direto). A função retorna o set de linhas claimadas. Ticks paralelos do cron nunca vão pegar o mesmo id — `SKIP LOCKED` garante isso.
+Critério de correlação: lead + tipo `audio` + outbound + `evolution_message_id IS NULL` + mais recente. É suficiente porque processamos uma mensagem por lead por tick.
 
-Adicionar status novo `dispatching` (texto livre, não há check constraint, sem migração de schema necessária para isso, mas adicionarei uma migração para criar a função e um índice parcial).
+## 3. Migration — `requeue_stuck_dispatching`
 
-### 2. Remover o `setTimeout` longo entre mensagens
+Atualizar a função para que áudio:
+- Considere "travado" após **5 minutos** (300s) em vez de 15.
+- Seja requeueado (status `pending`) se `attempts < 2`, em vez de cair direto para `failed`.
+- Só vire `failed` quando `attempts >= 2` (mesma regra dos outros tipos).
 
-Esperar 90s dentro de um Worker é frágil (timeout do Worker, custo, e exatamente o que cria a janela de corrida). Em vez disso:
-
-- O dispatcher só processa mensagens cujo `send_at <= now()`.
-- Mensagens de um mesmo lead com gap (Delay) já estão escalonadas com `send_at` futuro pelo `scheduleFunnelForLead` — então elas naturalmente só vão ser claimadas quando o tempo chegar.
-- **Remover** o bloco `if (gapMs > 0) await setTimeout(gapMs)`. Ele é redundante (o cron roda a cada minuto) e é a fonte da janela de corrida.
-
-Resultado: cada mensagem é claimada uma vez, enviada uma vez, marcada `sent` (ou `failed` após 3 tentativas). Delays continuam sendo respeitados via `send_at`.
-
-### 3. Lógica de fallback / retry
-
-- Se `processOne` falhar, atualizar `status = 'pending'` (para retry no próximo tick) ou `'failed'` quando `attempts >= 3` — igual ao comportamento atual.
-- Se o Worker for morto no meio do envio, a linha fica em `dispatching` para sempre. Mitigação: criar uma "varredura" no início do dispatcher que devolve para `pending` linhas em `dispatching` há mais de 5 minutos.
-
-### 4. Garantir idempotência por step_id
-
-Como cinto-e-suspensório, adicionar índice único parcial:
+Outras mídias (image/video/document) mantêm o comportamento atual (failed direto após o timeout grande, pois podem ter sido entregues).
 
 ```sql
-CREATE UNIQUE INDEX IF NOT EXISTS uniq_pending_per_step
-  ON scheduled_messages(lead_id, step_id)
-  WHERE step_id IS NOT NULL AND status IN ('pending','dispatching');
+CREATE OR REPLACE FUNCTION public.requeue_stuck_dispatching(p_older_than_seconds integer DEFAULT 900)
+RETURNS integer ... AS $$
+DECLARE n int;
+BEGIN
+  WITH stale AS (
+    SELECT id, lower(message_type) AS message_type, attempts,
+           coalesce(dispatch_started_at, created_at) AS started
+    FROM public.scheduled_messages
+    WHERE status = 'dispatching'
+  ),
+  -- áudio: janela curta (300s); retry se attempts<2, senão failed
+  audio_retry AS (
+    UPDATE public.scheduled_messages sm
+    SET status='pending', dispatch_started_at=NULL
+    FROM stale
+    WHERE sm.id=stale.id
+      AND stale.message_type IN ('audio','áudio')
+      AND stale.started < now() - interval '300 seconds'
+      AND stale.attempts < 2
+    RETURNING 1
+  ),
+  audio_fail AS (
+    UPDATE public.scheduled_messages sm
+    SET status='failed', dispatch_started_at=NULL,
+        error_message=coalesce(nullif(sm.error_message,''),'Áudio travado após 2 tentativas.')
+    FROM stale
+    WHERE sm.id=stale.id
+      AND stale.message_type IN ('audio','áudio')
+      AND stale.started < now() - interval '300 seconds'
+      AND stale.attempts >= 2
+    RETURNING 1
+  ),
+  -- demais mídias: comportamento antigo (failed após p_older_than_seconds)
+  other_media_fail AS (
+    UPDATE public.scheduled_messages sm
+    SET status='failed', dispatch_started_at=NULL,
+        error_message=coalesce(nullif(sm.error_message,''),'Envio interrompido após iniciar.')
+    FROM stale
+    WHERE sm.id=stale.id
+      AND stale.message_type IN ('image','imagem','video','document','documento')
+      AND stale.started < now() - (p_older_than_seconds || ' seconds')::interval
+    RETURNING 1
+  ),
+  -- texto e tag/flow_resume: requeue
+  safe_retry AS (
+    UPDATE public.scheduled_messages sm
+    SET status='pending', dispatch_started_at=NULL
+    FROM stale
+    WHERE sm.id=stale.id
+      AND stale.message_type NOT IN ('audio','áudio','image','imagem','video','document','documento')
+      AND stale.started < now() - (p_older_than_seconds || ' seconds')::interval
+    RETURNING 1
+  )
+  SELECT count(*) INTO n FROM (
+    SELECT 1 FROM audio_retry UNION ALL
+    SELECT 1 FROM audio_fail UNION ALL
+    SELECT 1 FROM other_media_fail UNION ALL
+    SELECT 1 FROM safe_retry
+  ) x;
+  RETURN n;
+END;
+$$ LANGUAGE plpgsql SET search_path=public;
 ```
 
-Isso impede que `scheduleFunnelForLead` insira duas linhas para o mesmo (lead, step) caso seja chamado em corrida.
+## 4. Reenvio manual do áudio do teste
 
-## Arquivos afetados
+Após a aplicação, identificar o `scheduled_messages` `failed` do teste atual (`message_type='audio'`) e via migration:
 
-- **Nova migração SQL**: cria função `claim_scheduled_messages`, cria índice parcial único, e o índice em `(status, send_at)` se não existir.
-- **`src/routes/api/public/message-dispatcher.ts`**: usar a RPC para claim, remover o `setTimeout` de gap, adicionar varredura de `dispatching` órfãos no início.
-- Sem mudanças em `funnel-execution.server.ts` (a serialização por `send_at` já é suficiente após remover o gap inline).
-- Sem mudança visual / de UI.
+```sql
+UPDATE public.scheduled_messages
+SET status='pending', attempts=0, error_message=NULL,
+    send_at=now(), dispatch_started_at=NULL
+WHERE id = '<id_do_audio_failed>';
+```
 
-## Validação após o deploy
+(Identifico o ID exato após você aprovar.) O próximo tick do dispatcher pega e dispara fire-and-forget.
 
-1. Disparar o funil de teste (com áudio + texto + delay).
-2. Verificar que `scheduled_messages` cria N linhas, todas com `send_at` distintos respeitando o Delay.
-3. Aguardar o cron rodar; conferir que cada linha vai para `sent` exatamente uma vez (sem `attempts > 1` e sem múltiplas linhas em `messages` para o mesmo step).
-4. Conferir no WhatsApp que cada etapa chega 1x.
+## Fora do escopo
+
+- Texto, imagem, vídeo, documento: nenhuma alteração no caminho de envio.
+- Estrutura de tabelas: nenhuma alteração.
+- Lógica de janela de envio, claim de mensagens, agrupamento por lead: inalterada.
