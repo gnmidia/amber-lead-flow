@@ -759,10 +759,10 @@ function LeadTagsArea({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 border-b border-border bg-background/60 px-6 py-2">
-      {leadTags.map((t) => (
+      {localTags.map((t) => (
         <button
           key={t.id}
-          onClick={() => remove(t.id)}
+          onClick={() => remove(t)}
           title="Clique para remover"
           style={{ backgroundColor: t.color + "33", color: t.color, borderColor: t.color }}
           className="group inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase"
