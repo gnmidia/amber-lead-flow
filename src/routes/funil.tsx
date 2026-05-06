@@ -436,7 +436,8 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
   useEffect(() => setForm(step), [step]);
 
   const isTag = form.type === "Tag";
-  const needsMedia = !isTag && form.type !== "Texto";
+  const isDelay = form.type === "Delay";
+  const needsMedia = !isTag && !isDelay && form.type !== "Texto";
   const requiresContent = form.type === "Texto";
 
   const tagsQ = useQuery({
