@@ -83,39 +83,27 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
           .lte("send_at", new Date().toISOString())
           .eq("status", "pending")
           .order("send_at", { ascending: true })
-          .limit(50);
+          .limit(200);
 
         if (!messages || messages.length === 0) {
           return Response.json({ dispatched: 0 });
         }
 
+        // Group by lead so we can serialize per-lead sends and respect spacing.
+        const byLead = new Map<string, any[]>();
+        for (const m of messages as any[]) {
+          const arr = byLead.get(m.lead_id) || [];
+          arr.push(m);
+          byLead.set(m.lead_id, arr);
+        }
+
         let dispatched = 0;
         let skipped = 0;
+        const MAX_INLINE_WAIT_MS = 90_000; // cap waits inside a single invocation
 
-        for (const msg of messages as any[]) {
-          const f = msg.funnels;
-          const ws = f?.window_start || "00:00";
-          const we = f?.window_end || "23:59";
-          if (!isWithinWindow(ws, we)) { skipped++; continue; }
-
-          const { data: lead } = await supabaseAdmin
-            .from("leads")
-            .select("whatsapp_number, remote_jid, name, push_name, status, ia_paused")
-            .eq("id", msg.lead_id).maybeSingle();
-
-          if (!lead || lead.status !== "active") {
-            await supabaseAdmin.from("scheduled_messages")
-              .update({ status: "cancelled" }).eq("id", msg.id);
-            continue;
-          }
-
-          if ((lead as any).ia_paused) {
-            skipped++;
-            continue;
-          }
-
-          // Handle flow_resume (bloco Aguardar)
+        const processOne = async (msg: any, lead: any) => {
           const stepType = (msg.message_type || "").toLowerCase();
+
           if (stepType === "flow_resume") {
             try {
               const payload = JSON.parse(msg.content || "{}");
@@ -127,19 +115,13 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
             } catch (error) {
               console.error("[message-dispatcher] flow resume error", error);
             }
-            await supabaseAdmin.from("scheduled_messages")
-              .update({ status: "sent" }).eq("id", msg.id);
-            dispatched++;
-            continue;
+            await supabaseAdmin.from("scheduled_messages").update({ status: "sent" }).eq("id", msg.id);
+            return "sent";
           }
 
-          // Handle tag-action steps (no message dispatch)
           if (stepType === "tag") {
             const { data: stepRow } = await supabaseAdmin
-              .from("funnel_steps")
-              .select("tag_id, tag_operation")
-              .eq("id", msg.step_id)
-              .maybeSingle();
+              .from("funnel_steps").select("tag_id, tag_operation").eq("id", msg.step_id).maybeSingle();
             const tagId = (stepRow as any)?.tag_id;
             const op = (stepRow as any)?.tag_operation;
             if (tagId && op === "assign") {
@@ -148,22 +130,17 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
                 { onConflict: "lead_id,tag_id" } as any,
               );
             } else if (tagId && op === "remove") {
-              await supabaseAdmin.from("lead_tags")
-                .delete().eq("lead_id", msg.lead_id).eq("tag_id", tagId);
+              await supabaseAdmin.from("lead_tags").delete().eq("lead_id", msg.lead_id).eq("tag_id", tagId);
             }
-            await supabaseAdmin.from("scheduled_messages")
-              .update({ status: "sent" }).eq("id", msg.id);
-            dispatched++;
-            continue;
+            await supabaseAdmin.from("scheduled_messages").update({ status: "sent" }).eq("id", msg.id);
+            return "sent";
           }
 
           const result = await sendToEvolution(baseUrl, apiKey, msg.instance_name, msg, lead);
-
           if (result.success) {
             await supabaseAdmin.from("scheduled_messages").update({
               status: "sent", evolution_message_id: result.messageId,
             }).eq("id", msg.id);
-
             await supabaseAdmin.from("messages").insert({
               lead_id: msg.lead_id,
               evolution_message_id: result.messageId,
@@ -175,16 +152,57 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
               sent_by: "system",
               sent_at: new Date().toISOString(),
             });
-
-            dispatched++;
+            return "sent";
           } else {
             const attempts = (msg.attempts || 0) + 1;
             await supabaseAdmin.from("scheduled_messages").update({
               attempts, error_message: result.error,
               status: attempts >= 3 ? "failed" : "pending",
             }).eq("id", msg.id);
+            return "failed";
           }
-        }
+        };
+
+        // Process each lead's queue serially, respecting send_at gaps between
+        // consecutive scheduled messages so Delay steps are honored.
+        await Promise.all(
+          Array.from(byLead.entries()).map(async ([leadId, msgs]) => {
+            const { data: lead } = await supabaseAdmin
+              .from("leads")
+              .select("whatsapp_number, remote_jid, name, push_name, status, ia_paused")
+              .eq("id", leadId).maybeSingle();
+
+            if (!lead || lead.status !== "active") {
+              await supabaseAdmin.from("scheduled_messages")
+                .update({ status: "cancelled" }).in("id", msgs.map((m: any) => m.id));
+              return;
+            }
+            if ((lead as any).ia_paused) { skipped += msgs.length; return; }
+
+            for (let i = 0; i < msgs.length; i++) {
+              const msg = msgs[i];
+              const f = msg.funnels;
+              const ws = f?.window_start || "00:00";
+              const we = f?.window_end || "23:59";
+              if (!isWithinWindow(ws, we)) { skipped++; continue; }
+
+              if (i > 0) {
+                const prev = msgs[i - 1];
+                const gapMs = new Date(msg.send_at).getTime() - new Date(prev.send_at).getTime();
+                if (gapMs > 0) {
+                  if (gapMs > MAX_INLINE_WAIT_MS) {
+                    // leave the rest for the next cron tick
+                    break;
+                  }
+                  await new Promise((r) => setTimeout(r, gapMs));
+                }
+              }
+
+              const status = await processOne(msg, lead);
+              if (status === "sent") dispatched++;
+            }
+          }),
+        );
 
         await supabaseAdmin.rpc("check_completed_funnels");
         return Response.json({ dispatched, skipped });
