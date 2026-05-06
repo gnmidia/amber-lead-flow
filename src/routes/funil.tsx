@@ -390,8 +390,9 @@ function SortableStep({
       <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-xs">
         <Icon className="h-3 w-3 text-muted-foreground" /> {step.type}
       </span>
-      <p className="flex-1 truncate text-sm text-foreground">{step.content}</p>
-      <span className="text-xs text-muted-foreground">{delayLabel(step)}</span>
+      <p className="flex-1 truncate text-sm text-foreground">
+        {step.type === "Delay" ? delayLabel(step) : step.content}
+      </p>
       <button
         onClick={() => onEdit(step)}
         className="rounded-md border border-border px-2.5 py-1 text-xs font-medium hover:border-primary/40 hover:text-primary"
