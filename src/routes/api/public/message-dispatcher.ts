@@ -210,20 +210,25 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
               return;
             }
 
-            for (let i = 0; i < msgs.length; i++) {
-              const msg = msgs[i];
-              const f = msg.funnels;
-              const ws = f?.window_start || "00:00";
-              const we = f?.window_end || "23:59";
-              if (!isWithinWindow(ws, we)) {
-                await requeue(msg.id);
-                skipped++;
-                continue;
-              }
+            // Processa APENAS a primeira mensagem (a com menor send_at) por
+            // lead neste tick. As demais voltam para "pending" e serão pegas
+            // pelos próximos ticks. Isso mantém o Worker leve e evita perder
+            // updates por timeout de CPU quando há mídias pesadas na fila.
+            msgs.sort((a: any, b: any) => new Date(a.send_at).getTime() - new Date(b.send_at).getTime());
+            const [first, ...rest] = msgs;
+            if (rest.length) await Promise.all(rest.map((m: any) => requeue(m.id)));
 
-              const status = await processOne(msg, lead);
-              if (status === "sent") dispatched++;
+            const f = first.funnels;
+            const ws = f?.window_start || "00:00";
+            const we = f?.window_end || "23:59";
+            if (!isWithinWindow(ws, we)) {
+              await requeue(first.id);
+              skipped++;
+              return;
             }
+
+            const status = await processOne(first, lead);
+            if (status === "sent") dispatched++;
           }),
         );
 
