@@ -14,8 +14,6 @@ export const Route = createFileRoute("/api/public/broadcast-dispatcher")({
         }
         const targets = (claimed as any[]) || [];
         if (targets.length === 0) {
-          // Marca broadcasts completos
-          await supabaseAdmin.rpc("check_completed_broadcasts").then(() => {}, () => {});
           return Response.json({ dispatched: 0 });
         }
 
