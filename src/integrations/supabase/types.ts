@@ -292,6 +292,13 @@ export type Database = {
             foreignKeyName: "funnel_steps_tag_id_fkey"
             columns: ["tag_id"]
             isOneToOne: false
+            referencedRelation: "leads_per_day_by_tag"
+            referencedColumns: ["tag_id"]
+          },
+          {
+            foreignKeyName: "funnel_steps_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
             referencedRelation: "tags"
             referencedColumns: ["id"]
           },
@@ -469,6 +476,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "leads_with_last_message"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "leads_per_day_by_tag"
+            referencedColumns: ["tag_id"]
           },
           {
             foreignKeyName: "lead_tags_tag_id_fkey"
@@ -756,6 +770,24 @@ export type Database = {
       }
     }
     Views: {
+      leads_per_day: {
+        Row: {
+          day: string | null
+          new_leads: number | null
+          total: number | null
+        }
+        Relationships: []
+      }
+      leads_per_day_by_tag: {
+        Row: {
+          day: string | null
+          tag_color: string | null
+          tag_id: string | null
+          tag_name: string | null
+          total: number | null
+        }
+        Relationships: []
+      }
       leads_with_last_message: {
         Row: {
           created_at: string | null
