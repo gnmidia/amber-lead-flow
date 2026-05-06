@@ -35,25 +35,33 @@ export async function scheduleFunnelForLead({
   assertNoError(funnelError, "funnel lookup failed");
   if (!funnel) throw new Error("funnel not found");
 
-  const { data: activeStates, error: activeStateError } = await supabaseAdmin
-    .from("lead_funnel_states")
-    .select("id")
-    .eq("lead_id", lead_id)
-    .eq("funnel_id", funnel_id)
-    .eq("status", "active")
-    .limit(1);
-  assertNoError(activeStateError, "lead funnel active state lookup failed");
-  if ((activeStates?.length || 0) > 0) return { scheduled: 0, skipped: "already_active" };
-
+  // Se há mensagens realmente pendentes/dispatching, pula
   const { data: pendingMessages, error: pendingError } = await supabaseAdmin
     .from("scheduled_messages")
     .select("id")
     .eq("lead_id", lead_id)
     .eq("funnel_id", funnel_id)
-    .eq("status", "pending")
+    .in("status", ["pending", "dispatching"])
     .limit(1);
   assertNoError(pendingError, "pending scheduled messages lookup failed");
   if ((pendingMessages?.length || 0) > 0) return { scheduled: 0, skipped: "already_pending" };
+
+  // Se há estado ativo mas SEM pendentes, fecha o estado anterior e segue
+  const { data: activeStates, error: activeStateError } = await supabaseAdmin
+    .from("lead_funnel_states")
+    .select("id")
+    .eq("lead_id", lead_id)
+    .eq("funnel_id", funnel_id)
+    .eq("status", "active");
+  assertNoError(activeStateError, "lead funnel active state lookup failed");
+  if ((activeStates?.length || 0) > 0) {
+    const ids = activeStates!.map((s: any) => s.id);
+    const { error: closeErr } = await supabaseAdmin
+      .from("lead_funnel_states")
+      .update({ status: "completed", completed_at: new Date().toISOString() })
+      .in("id", ids);
+    assertNoError(closeErr, "closing stale active funnel state failed");
+  }
 
   const { data: steps, error: stepsError } = await supabaseAdmin
     .from("funnel_steps")
