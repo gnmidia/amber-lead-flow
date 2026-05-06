@@ -1,0 +1,1 @@
+SELECT public.check_completed_funnels();
