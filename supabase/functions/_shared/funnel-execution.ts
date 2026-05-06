@@ -1,0 +1,198 @@
+// Deno port of src/server/funnel-execution.server.ts
+// Used by broadcast-dispatcher edge function.
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+
+export function getAdmin() {
+  return createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    { auth: { persistSession: false } },
+  );
+}
+
+function rand(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function assertNoError(error: any, context: string) {
+  if (error) throw new Error(`${context}: ${error.message || "erro desconhecido"}`);
+}
+
+export async function scheduleFunnelForLead(
+  supabase: ReturnType<typeof getAdmin>,
+  { lead_id, funnel_id, trigger_time }: { lead_id: string; funnel_id: string; trigger_time?: string },
+) {
+  if (!lead_id || !funnel_id) throw new Error("missing lead_id/funnel_id");
+
+  const { data: lead, error: leadError } = await supabase
+    .from("leads").select("whatsapp_number, remote_jid, instance_name")
+    .eq("id", lead_id).maybeSingle();
+  assertNoError(leadError, "lead lookup failed");
+  if (!lead) throw new Error("lead not found");
+
+  const { data: funnel, error: funnelError } = await supabase
+    .from("funnels").select("*").eq("id", funnel_id).maybeSingle();
+  assertNoError(funnelError, "funnel lookup failed");
+  if (!funnel) throw new Error("funnel not found");
+
+  const { data: pendingMessages, error: pendingError } = await supabase
+    .from("scheduled_messages").select("id")
+    .eq("lead_id", lead_id).eq("funnel_id", funnel_id)
+    .in("status", ["pending", "dispatching"]).limit(1);
+  assertNoError(pendingError, "pending scheduled messages lookup failed");
+  if ((pendingMessages?.length || 0) > 0) return { scheduled: 0, skipped: "already_pending" };
+
+  const { data: activeStates, error: activeStateError } = await supabase
+    .from("lead_funnel_states").select("id")
+    .eq("lead_id", lead_id).eq("funnel_id", funnel_id).eq("status", "active");
+  assertNoError(activeStateError, "lead funnel active state lookup failed");
+  if ((activeStates?.length || 0) > 0) {
+    const ids = activeStates!.map((s: any) => s.id);
+    const { error: closeErr } = await supabase
+      .from("lead_funnel_states")
+      .update({ status: "completed", completed_at: new Date().toISOString() })
+      .in("id", ids);
+    assertNoError(closeErr, "closing stale active funnel state failed");
+  }
+
+  const { data: steps, error: stepsError } = await supabase
+    .from("funnel_steps").select("*").eq("funnel_id", funnel_id)
+    .order("order_index", { ascending: true });
+  assertNoError(stepsError, "funnel steps lookup failed");
+  if (!steps || steps.length === 0) throw new Error("no steps");
+
+  const triggerMs = new Date(trigger_time ?? Date.now()).getTime();
+  const startDelayMin = rand((funnel as any).start_min ?? 0, (funnel as any).start_max ?? 0);
+  let cursorMs = triggerMs + startDelayMin * 60_000;
+
+  const rows: any[] = [];
+  for (const step of steps as any[]) {
+    if (step.type === "Delay") {
+      const isFixed = step.delay_type === "fixed" || step.delay_type === "fixo";
+      const delaySec = isFixed
+        ? (step.delay_fixed ?? 30)
+        : rand(step.delay_min ?? 20, step.delay_max ?? 120);
+      cursorMs += delaySec * 1000;
+      continue;
+    }
+    rows.push({
+      lead_id,
+      funnel_id,
+      step_id: step.id,
+      instance_name: (lead as any).instance_name || Deno.env.get("EVOLUTION_INSTANCE_NAME") || "cland-main",
+      whatsapp_number: (lead as any).remote_jid || (lead as any).whatsapp_number,
+      message_type: step.type,
+      content: step.content,
+      media_url: step.media_url,
+      file_name: step.file_name,
+      mimetype: step.mimetype,
+      caption: step.caption,
+      send_at: new Date(cursorMs).toISOString(),
+      status: "pending",
+    });
+  }
+  if (rows.length > 0) {
+    const { error: insertError } = await supabase.from("scheduled_messages").insert(rows);
+    assertNoError(insertError, "scheduled messages insert failed");
+  }
+
+  const { error: stateError } = await supabase.from("lead_funnel_states").upsert(
+    { lead_id, funnel_id, status: "active", started_at: new Date().toISOString() },
+    { onConflict: "lead_id,funnel_id" },
+  );
+  assertNoError(stateError, "lead funnel state upsert failed");
+
+  return { scheduled: rows.length };
+}
+
+export async function executeFlowForLead(
+  supabase: ReturnType<typeof getAdmin>,
+  { lead_id, flow_id, start_block_index = 0 }: { lead_id: string; flow_id: string; start_block_index?: number },
+): Promise<Record<string, unknown>> {
+  if (!lead_id || !flow_id) throw new Error("missing lead_id/flow_id");
+
+  const { data: blocks, error: blocksError } = await supabase
+    .from("flow_blocks").select("*").eq("flow_id", flow_id)
+    .order("order_index", { ascending: true });
+  assertNoError(blocksError, "flow blocks lookup failed");
+  if (!blocks || blocks.length === 0) return { ok: true, msg: "no blocks" };
+
+  const { data: lead, error: leadError } = await supabase
+    .from("leads").select("whatsapp_number, remote_jid, instance_name")
+    .eq("id", lead_id).maybeSingle();
+  assertNoError(leadError, "lead lookup failed");
+  if (!lead) throw new Error("lead not found");
+
+  const now = new Date();
+
+  for (let i = start_block_index; i < blocks.length; i++) {
+    const block: any = blocks[i];
+
+    if (block.block_type === "funnel" && block.reference_id) {
+      await scheduleFunnelForLead(supabase, {
+        lead_id, funnel_id: block.reference_id, trigger_time: now.toISOString(),
+      });
+    } else if (block.block_type === "agent" && block.reference_id) {
+      const { error } = await supabase.from("leads")
+        .update({ current_agent_id: block.reference_id }).eq("id", lead_id);
+      assertNoError(error, "agent assignment failed");
+      break;
+    } else if (block.block_type === "tag_assign" && block.reference_id) {
+      const { error } = await supabase.from("lead_tags").upsert(
+        { lead_id, tag_id: block.reference_id, assigned_by: "flow" },
+        { onConflict: "lead_id,tag_id" } as any,
+      );
+      assertNoError(error, "tag assignment failed");
+    } else if (block.block_type === "tag_remove" && block.reference_id) {
+      const { error } = await supabase.from("lead_tags").delete()
+        .eq("lead_id", lead_id).eq("tag_id", block.reference_id);
+      assertNoError(error, "tag removal failed");
+    } else if (block.block_type === "wait" && block.wait_minutes > 0) {
+      const resumeAt = new Date(now.getTime() + block.wait_minutes * 60_000);
+      const { error } = await supabase.from("scheduled_messages").insert({
+        lead_id,
+        instance_name: (lead as any).instance_name || Deno.env.get("EVOLUTION_INSTANCE_NAME") || "",
+        whatsapp_number: (lead as any).remote_jid || (lead as any).whatsapp_number,
+        message_type: "flow_resume",
+        content: JSON.stringify({ flow_id, resume_block_index: i + 1 }),
+        send_at: resumeAt.toISOString(),
+        status: "pending",
+      });
+      assertNoError(error, "flow resume scheduling failed");
+      break;
+    } else if (block.block_type === "condition") {
+      let met = false;
+      if (block.condition_type === "sent_comprovante") {
+        const { data, error } = await supabase.from("comprovantes" as any)
+          .select("id").eq("lead_id", lead_id).eq("status", "confirmado").limit(1);
+        assertNoError(error, "receipt condition lookup failed");
+        met = (data?.length || 0) > 0;
+      } else if (block.condition_type === "has_tag" && block.condition_value) {
+        const { data, error } = await supabase.from("lead_tags")
+          .select("id").eq("lead_id", lead_id).eq("tag_id", block.condition_value).limit(1);
+        assertNoError(error, "tag condition lookup failed");
+        met = (data?.length || 0) > 0;
+      } else if (block.condition_type === "replied") {
+        const { data, error } = await supabase.from("messages")
+          .select("id").eq("lead_id", lead_id).eq("direction", "inbound").limit(1);
+        assertNoError(error, "reply condition lookup failed");
+        met = (data?.length || 0) > 0;
+      } else if (block.condition_type === "keyword" && block.condition_value) {
+        const { data, error } = await supabase.from("messages")
+          .select("content").eq("lead_id", lead_id).eq("direction", "inbound")
+          .ilike("content", `%${block.condition_value}%`).limit(1);
+        assertNoError(error, "keyword condition lookup failed");
+        met = (data?.length || 0) > 0;
+      }
+      if (!met && block.branch_no_block_id) {
+        const idx = blocks.findIndex((c: any) => c.id === block.branch_no_block_id);
+        if (idx >= 0) {
+          await executeFlowForLead(supabase, { lead_id, flow_id, start_block_index: idx });
+          return { ok: true, branched: "no" };
+        }
+        return { ok: true, ended: true };
+      }
+    }
+  }
+  return { ok: true };
+}
