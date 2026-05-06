@@ -44,7 +44,7 @@ const sections: NavSection[] = [
   {
     title: "Automações",
     items: [
-      { label: "Produtos", to: "/produtos", icon: Package },
+      { label: "Ofertas", to: "/ofertas", icon: Package },
       { label: "Fluxos", to: "/fluxos", icon: Workflow },
       { label: "Agentes IA", to: "/agentes-ia", icon: Bot },
     ],
