@@ -555,6 +555,7 @@ export type Database = {
           caption: string | null
           content: string | null
           created_at: string
+          dispatch_started_at: string | null
           error_message: string | null
           evolution_message_id: string | null
           file_name: string | null
@@ -575,6 +576,7 @@ export type Database = {
           caption?: string | null
           content?: string | null
           created_at?: string
+          dispatch_started_at?: string | null
           error_message?: string | null
           evolution_message_id?: string | null
           file_name?: string | null
@@ -595,6 +597,7 @@ export type Database = {
           caption?: string | null
           content?: string | null
           created_at?: string
+          dispatch_started_at?: string | null
           error_message?: string | null
           evolution_message_id?: string | null
           file_name?: string | null
@@ -704,6 +707,7 @@ export type Database = {
           caption: string | null
           content: string | null
           created_at: string
+          dispatch_started_at: string | null
           error_message: string | null
           evolution_message_id: string | null
           file_name: string | null

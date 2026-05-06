@@ -77,8 +77,10 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
           return Response.json({ error: "Evolution env not configured" }, { status: 500 });
         }
 
-        // Requeue any "dispatching" rows stuck for >5min (worker died mid-send)
-        await supabaseAdmin.rpc("requeue_stuck_dispatching", { p_older_than_seconds: 300 });
+        // Recover stuck rows only after a generous timeout. Media/audio are
+        // marked failed by the RPC instead of retried because the provider may
+        // have received the request even if our worker did not finish cleanly.
+        await supabaseAdmin.rpc("requeue_stuck_dispatching", { p_older_than_seconds: 900 });
 
         // Atomically claim a batch of pending messages so concurrent cron ticks
         // never pick up the same row (FOR UPDATE SKIP LOCKED inside the RPC).
@@ -135,7 +137,7 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
             } catch (error) {
               console.error("[message-dispatcher] flow resume error", error);
             }
-            await supabaseAdmin.from("scheduled_messages").update({ status: "sent" }).eq("id", msg.id);
+            await supabaseAdmin.from("scheduled_messages").update({ status: "sent", dispatch_started_at: null }).eq("id", msg.id);
             return "sent";
           }
 
@@ -152,14 +154,14 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
             } else if (tagId && op === "remove") {
               await supabaseAdmin.from("lead_tags").delete().eq("lead_id", msg.lead_id).eq("tag_id", tagId);
             }
-            await supabaseAdmin.from("scheduled_messages").update({ status: "sent" }).eq("id", msg.id);
+            await supabaseAdmin.from("scheduled_messages").update({ status: "sent", dispatch_started_at: null }).eq("id", msg.id);
             return "sent";
           }
 
           const result = await sendToEvolution(baseUrl, apiKey, msg.instance_name, msg, lead);
           if (result.success) {
             await supabaseAdmin.from("scheduled_messages").update({
-              status: "sent", evolution_message_id: result.messageId,
+              status: "sent", evolution_message_id: result.messageId, dispatch_started_at: null,
             }).eq("id", msg.id);
             await supabaseAdmin.from("messages").insert({
               lead_id: msg.lead_id,
@@ -175,9 +177,12 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
             return "sent";
           } else {
             const attempts = msg.attempts || 1; // already incremented by claim RPC
+            const type = (msg.message_type || "").toLowerCase();
+            const isMedia = ["audio", "áudio", "image", "imagem", "video", "document", "documento"].includes(type);
             await supabaseAdmin.from("scheduled_messages").update({
               error_message: result.error,
-              status: attempts >= 3 ? "failed" : "pending",
+              status: isMedia || attempts >= 3 ? "failed" : "pending",
+              dispatch_started_at: null,
             }).eq("id", msg.id);
             return "failed";
           }
