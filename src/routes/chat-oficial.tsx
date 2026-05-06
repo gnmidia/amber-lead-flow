@@ -49,6 +49,25 @@ function formatTime(iso?: string | null) {
   return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }
 
+function formatConversationTime(dateString?: string | null): string {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  const now = new Date();
+  const isToday =
+    date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear();
+  const isCurrentYear = date.getFullYear() === now.getFullYear();
+
+  if (isToday) {
+    return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  }
+  if (isCurrentYear) {
+    return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  }
+  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
+}
+
 function initialsOf(name: string | null, number: string) {
   const base = (name || number).trim();
   const parts = base.split(/\s+/).filter(Boolean);
@@ -370,7 +389,7 @@ function ChatOficialPage() {
                       <div className="flex items-center justify-between gap-2">
                         <p className="truncate text-sm font-semibold">{display}</p>
                         <span className="text-[10px] text-muted-foreground">
-                          {formatTime(l.last_message_at || l.updated_at)}
+                          {formatConversationTime(l.last_message_at || l.updated_at)}
                         </span>
                       </div>
                       {(l.tags_data?.length || 0) > 0 && (
