@@ -36,7 +36,7 @@ const TRIGGER_LABELS: Record<string, string> = {
 
 function FlowCanvas() {
   const { id } = Route.useParams();
-  const navigate = useNavigate();
+  
   const [flow, setFlow] = useState<Flow | null>(null);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [funnels, setFunnels] = useState<Funnel[]>([]);
