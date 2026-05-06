@@ -44,14 +44,6 @@ async function sendToEvolution(baseUrl: string, apiKey: string, instance: string
     } else if (t === "document" || t === "documento") {
       endpoint = `/message/sendMedia/${instance}`;
       body = { number, mediatype: "document", mimetype: msg.mimetype || "application/pdf", media: msg.media_url, fileName: msg.file_name || "arquivo.pdf", caption: msg.caption || "", delay };
-    } else if (t === "audio" || t === "áudio") {
-      // Fire-and-forget presence; não esperar para não estourar CPU do Worker.
-      fetch(`${baseUrl}/chat/sendPresence/${instance}`, {
-        method: "POST", headers: evoHeaders(apiKey),
-        body: JSON.stringify({ number, options: { delay: 1500, presence: "recording", number } }),
-      }).catch(() => {});
-      endpoint = `/message/sendWhatsAppAudio/${instance}`;
-      body = { number, audio: msg.media_url, delay: 1500 };
     } else {
       return { success: false, error: `Unsupported type: ${t}` };
     }
