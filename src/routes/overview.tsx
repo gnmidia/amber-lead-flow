@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
 import { MetricCard } from "../components/MetricCard";
 import { CalendarRange, Clock } from "lucide-react";
+import { LeadsReceivedSection } from "../components/LeadsReceivedSection";
 
 export const Route = createFileRoute("/overview")({
   head: () => ({
