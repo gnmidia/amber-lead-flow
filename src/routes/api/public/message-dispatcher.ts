@@ -77,16 +77,32 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
           return Response.json({ error: "Evolution env not configured" }, { status: 500 });
         }
 
-        const { data: messages } = await supabaseAdmin
-          .from("scheduled_messages")
-          .select("*, funnels(window_start, window_end)")
-          .lte("send_at", new Date().toISOString())
-          .eq("status", "pending")
-          .order("send_at", { ascending: true })
-          .limit(200);
+        // Requeue any "dispatching" rows stuck for >5min (worker died mid-send)
+        await supabaseAdmin.rpc("requeue_stuck_dispatching", { p_older_than_seconds: 300 });
 
+        // Atomically claim a batch of pending messages so concurrent cron ticks
+        // never pick up the same row (FOR UPDATE SKIP LOCKED inside the RPC).
+        const { data: claimed, error: claimError } = await supabaseAdmin
+          .rpc("claim_scheduled_messages", { p_limit: 200 });
+        if (claimError) {
+          console.error("[dispatcher] claim error", claimError);
+          return Response.json({ error: claimError.message }, { status: 500 });
+        }
+        const messages = claimed as any[] | null;
         if (!messages || messages.length === 0) {
           return Response.json({ dispatched: 0 });
+        }
+
+        // Hydrate funnel window info separately (RPC returns base table only).
+        const funnelIds = Array.from(new Set(messages.map((m: any) => m.funnel_id).filter(Boolean)));
+        const funnelMap = new Map<string, any>();
+        if (funnelIds.length > 0) {
+          const { data: fs } = await supabaseAdmin
+            .from("funnels").select("id, window_start, window_end").in("id", funnelIds);
+          (fs || []).forEach((f: any) => funnelMap.set(f.id, f));
+        }
+        for (const m of messages) {
+          (m as any).funnels = m.funnel_id ? funnelMap.get(m.funnel_id) : null;
         }
 
         // Group by lead so we can serialize per-lead sends and respect spacing.
@@ -99,7 +115,11 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
 
         let dispatched = 0;
         let skipped = 0;
-        const MAX_INLINE_WAIT_MS = 90_000; // cap waits inside a single invocation
+
+        const requeue = async (id: string) => {
+          // claim already incremented attempts; just put it back as pending
+          await supabaseAdmin.from("scheduled_messages").update({ status: "pending" }).eq("id", id);
+        };
 
         const processOne = async (msg: any, lead: any) => {
           const stepType = (msg.message_type || "").toLowerCase();
@@ -154,17 +174,19 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
             });
             return "sent";
           } else {
-            const attempts = (msg.attempts || 0) + 1;
+            const attempts = msg.attempts || 1; // already incremented by claim RPC
             await supabaseAdmin.from("scheduled_messages").update({
-              attempts, error_message: result.error,
+              error_message: result.error,
               status: attempts >= 3 ? "failed" : "pending",
             }).eq("id", msg.id);
             return "failed";
           }
         };
 
-        // Process each lead's queue serially, respecting send_at gaps between
-        // consecutive scheduled messages so Delay steps are honored.
+        // Process each lead's queue serially. Delays between steps are already
+        // encoded in send_at; only rows whose send_at <= now() were claimed,
+        // so we just send them in order. No inline waits — that creates a race
+        // window across concurrent cron ticks.
         await Promise.all(
           Array.from(byLead.entries()).map(async ([leadId, msgs]) => {
             const { data: lead } = await supabaseAdmin
@@ -177,25 +199,21 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
                 .update({ status: "cancelled" }).in("id", msgs.map((m: any) => m.id));
               return;
             }
-            if ((lead as any).ia_paused) { skipped += msgs.length; return; }
+            if ((lead as any).ia_paused) {
+              await Promise.all(msgs.map((m: any) => requeue(m.id)));
+              skipped += msgs.length;
+              return;
+            }
 
             for (let i = 0; i < msgs.length; i++) {
               const msg = msgs[i];
               const f = msg.funnels;
               const ws = f?.window_start || "00:00";
               const we = f?.window_end || "23:59";
-              if (!isWithinWindow(ws, we)) { skipped++; continue; }
-
-              if (i > 0) {
-                const prev = msgs[i - 1];
-                const gapMs = new Date(msg.send_at).getTime() - new Date(prev.send_at).getTime();
-                if (gapMs > 0) {
-                  if (gapMs > MAX_INLINE_WAIT_MS) {
-                    // leave the rest for the next cron tick
-                    break;
-                  }
-                  await new Promise((r) => setTimeout(r, gapMs));
-                }
+              if (!isWithinWindow(ws, we)) {
+                await requeue(msg.id);
+                skipped++;
+                continue;
               }
 
               const status = await processOne(msg, lead);
