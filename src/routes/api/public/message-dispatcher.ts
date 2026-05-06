@@ -113,9 +113,26 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
             continue;
           }
 
-          // Handle tag-action steps (no message dispatch)
+          // Handle flow_resume (bloco Aguardar)
           const stepType = (msg.message_type || "").toLowerCase();
-          if (stepType === "tag") {
+          if (stepType === "flow_resume") {
+            try {
+              const payload = JSON.parse(msg.content || "{}");
+              const origin = process.env.PUBLIC_APP_URL || "";
+              if (origin) {
+                fetch(`${origin}/api/public/flow-executor`, {
+                  method: "POST", headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ lead_id: msg.lead_id, flow_id: payload.flow_id, start_block_index: payload.resume_block_index || 0 }),
+                }).catch(() => {});
+              }
+            } catch {}
+            await supabaseAdmin.from("scheduled_messages")
+              .update({ status: "sent" }).eq("id", msg.id);
+            dispatched++;
+            continue;
+          }
+
+          // Handle tag-action steps (no message dispatch)
             const { data: stepRow } = await supabaseAdmin
               .from("funnel_steps")
               .select("tag_id, tag_operation")
