@@ -30,11 +30,13 @@ import { Route as ChatBaileysRouteImport } from './routes/chat-baileys'
 import { Route as AgentesIaRouteImport } from './routes/agentes-ia'
 import { Route as AgendamentosRouteImport } from './routes/agendamentos'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as FluxosIdRouteImport } from './routes/fluxos.$id'
 import { Route as ApiPublicWebhookWhatsappRouteImport } from './routes/api/public/webhook-whatsapp'
 import { Route as ApiPublicSyncChatsRouteImport } from './routes/api/public/sync-chats'
 import { Route as ApiPublicSendMessageRouteImport } from './routes/api/public/send-message'
 import { Route as ApiPublicMessageDispatcherRouteImport } from './routes/api/public/message-dispatcher'
 import { Route as ApiPublicFunnelSchedulerRouteImport } from './routes/api/public/funnel-scheduler'
+import { Route as ApiPublicFlowExecutorRouteImport } from './routes/api/public/flow-executor'
 import { Route as ApiPublicEvolutionStatusRouteImport } from './routes/api/public/evolution-status'
 
 const TransacoesRoute = TransacoesRouteImport.update({
@@ -142,6 +144,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FluxosIdRoute = FluxosIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => FluxosRoute,
+} as any)
 const ApiPublicWebhookWhatsappRoute =
   ApiPublicWebhookWhatsappRouteImport.update({
     id: '/api/public/webhook-whatsapp',
@@ -170,6 +177,11 @@ const ApiPublicFunnelSchedulerRoute =
     path: '/api/public/funnel-scheduler',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicFlowExecutorRoute = ApiPublicFlowExecutorRouteImport.update({
+  id: '/api/public/flow-executor',
+  path: '/api/public/flow-executor',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicEvolutionStatusRoute =
   ApiPublicEvolutionStatusRouteImport.update({
     id: '/api/public/evolution-status',
@@ -186,7 +198,7 @@ export interface FileRoutesByFullPath {
   '/comprovantes-ia': typeof ComprovantesIaRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
-  '/fluxos': typeof FluxosRoute
+  '/fluxos': typeof FluxosRouteWithChildren
   '/funil': typeof FunilRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
   '/jarvis': typeof JarvisRoute
@@ -199,7 +211,9 @@ export interface FileRoutesByFullPath {
   '/tags': typeof TagsRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
+  '/fluxos/$id': typeof FluxosIdRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
+  '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
@@ -215,7 +229,7 @@ export interface FileRoutesByTo {
   '/comprovantes-ia': typeof ComprovantesIaRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
-  '/fluxos': typeof FluxosRoute
+  '/fluxos': typeof FluxosRouteWithChildren
   '/funil': typeof FunilRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
   '/jarvis': typeof JarvisRoute
@@ -228,7 +242,9 @@ export interface FileRoutesByTo {
   '/tags': typeof TagsRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
+  '/fluxos/$id': typeof FluxosIdRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
+  '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
@@ -245,7 +261,7 @@ export interface FileRoutesById {
   '/comprovantes-ia': typeof ComprovantesIaRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
-  '/fluxos': typeof FluxosRoute
+  '/fluxos': typeof FluxosRouteWithChildren
   '/funil': typeof FunilRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
   '/jarvis': typeof JarvisRoute
@@ -258,7 +274,9 @@ export interface FileRoutesById {
   '/tags': typeof TagsRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
+  '/fluxos/$id': typeof FluxosIdRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
+  '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
@@ -289,7 +307,9 @@ export interface FileRouteTypes {
     | '/tags'
     | '/tarefas'
     | '/transacoes'
+    | '/fluxos/$id'
     | '/api/public/evolution-status'
+    | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
     | '/api/public/message-dispatcher'
     | '/api/public/send-message'
@@ -318,7 +338,9 @@ export interface FileRouteTypes {
     | '/tags'
     | '/tarefas'
     | '/transacoes'
+    | '/fluxos/$id'
     | '/api/public/evolution-status'
+    | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
     | '/api/public/message-dispatcher'
     | '/api/public/send-message'
@@ -347,7 +369,9 @@ export interface FileRouteTypes {
     | '/tags'
     | '/tarefas'
     | '/transacoes'
+    | '/fluxos/$id'
     | '/api/public/evolution-status'
+    | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
     | '/api/public/message-dispatcher'
     | '/api/public/send-message'
@@ -364,7 +388,7 @@ export interface RootRouteChildren {
   ComprovantesIaRoute: typeof ComprovantesIaRoute
   FilaRoute: typeof FilaRoute
   FinanceiroRoute: typeof FinanceiroRoute
-  FluxosRoute: typeof FluxosRoute
+  FluxosRoute: typeof FluxosRouteWithChildren
   FunilRoute: typeof FunilRoute
   InteligenciaIaRoute: typeof InteligenciaIaRoute
   JarvisRoute: typeof JarvisRoute
@@ -378,6 +402,7 @@ export interface RootRouteChildren {
   TarefasRoute: typeof TarefasRoute
   TransacoesRoute: typeof TransacoesRoute
   ApiPublicEvolutionStatusRoute: typeof ApiPublicEvolutionStatusRoute
+  ApiPublicFlowExecutorRoute: typeof ApiPublicFlowExecutorRoute
   ApiPublicFunnelSchedulerRoute: typeof ApiPublicFunnelSchedulerRoute
   ApiPublicMessageDispatcherRoute: typeof ApiPublicMessageDispatcherRoute
   ApiPublicSendMessageRoute: typeof ApiPublicSendMessageRoute
@@ -534,6 +559,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/fluxos/$id': {
+      id: '/fluxos/$id'
+      path: '/$id'
+      fullPath: '/fluxos/$id'
+      preLoaderRoute: typeof FluxosIdRouteImport
+      parentRoute: typeof FluxosRoute
+    }
     '/api/public/webhook-whatsapp': {
       id: '/api/public/webhook-whatsapp'
       path: '/api/public/webhook-whatsapp'
@@ -569,6 +601,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicFunnelSchedulerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/flow-executor': {
+      id: '/api/public/flow-executor'
+      path: '/api/public/flow-executor'
+      fullPath: '/api/public/flow-executor'
+      preLoaderRoute: typeof ApiPublicFlowExecutorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/evolution-status': {
       id: '/api/public/evolution-status'
       path: '/api/public/evolution-status'
@@ -579,6 +618,17 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface FluxosRouteChildren {
+  FluxosIdRoute: typeof FluxosIdRoute
+}
+
+const FluxosRouteChildren: FluxosRouteChildren = {
+  FluxosIdRoute: FluxosIdRoute,
+}
+
+const FluxosRouteWithChildren =
+  FluxosRoute._addFileChildren(FluxosRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgendamentosRoute: AgendamentosRoute,
@@ -588,7 +638,7 @@ const rootRouteChildren: RootRouteChildren = {
   ComprovantesIaRoute: ComprovantesIaRoute,
   FilaRoute: FilaRoute,
   FinanceiroRoute: FinanceiroRoute,
-  FluxosRoute: FluxosRoute,
+  FluxosRoute: FluxosRouteWithChildren,
   FunilRoute: FunilRoute,
   InteligenciaIaRoute: InteligenciaIaRoute,
   JarvisRoute: JarvisRoute,
@@ -602,6 +652,7 @@ const rootRouteChildren: RootRouteChildren = {
   TarefasRoute: TarefasRoute,
   TransacoesRoute: TransacoesRoute,
   ApiPublicEvolutionStatusRoute: ApiPublicEvolutionStatusRoute,
+  ApiPublicFlowExecutorRoute: ApiPublicFlowExecutorRoute,
   ApiPublicFunnelSchedulerRoute: ApiPublicFunnelSchedulerRoute,
   ApiPublicMessageDispatcherRoute: ApiPublicMessageDispatcherRoute,
   ApiPublicSendMessageRoute: ApiPublicSendMessageRoute,

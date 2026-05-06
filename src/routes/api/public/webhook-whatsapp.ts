@@ -46,6 +46,7 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
             }
 
             // Procura primeiro pelo remote_jid (chave estável), depois pelo número.
+            let isNewLead = false;
             let { data: lead } = await supabaseAdmin
               .from("leads")
               .select("id, whatsapp_number")
@@ -81,6 +82,7 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
                 return new Response("error", { status: 500 });
               }
               lead = newLead;
+              isNewLead = true;
             } else if (realPhone && lead.whatsapp_number !== number) {
               // Backfill: agora temos o telefone real, atualiza o lead que estava com LID.
               await supabaseAdmin
@@ -106,6 +108,37 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
               .from("leads")
               .update({ last_interaction_at: messageTimestamp })
               .eq("id", lead!.id);
+
+            // ───── Disparar fluxos automáticos ─────
+            try {
+              const origin = new URL(request.url).origin;
+              const triggers: { type: string; valueMatches?: (v: string | null) => boolean }[] = [];
+              if (isNewLead) triggers.push({ type: "new_lead" });
+              if (content) {
+                const c = content.toLowerCase();
+                triggers.push({
+                  type: "keyword",
+                  valueMatches: (v) => !!v && c.includes(v.toLowerCase()),
+                });
+              }
+              for (const trig of triggers) {
+                const { data: flows } = await supabaseAdmin
+                  .from("flows")
+                  .select("id, trigger_value")
+                  .eq("trigger_type", trig.type)
+                  .eq("is_active", true);
+                for (const fl of (flows || []) as any[]) {
+                  if (trig.valueMatches && !trig.valueMatches(fl.trigger_value)) continue;
+                  fetch(`${origin}/api/public/flow-executor`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ lead_id: lead!.id, flow_id: fl.id }),
+                  }).catch(() => {});
+                }
+              }
+            } catch (e) {
+              console.error("[webhook] flow trigger error", e);
+            }
           }
 
           if (event === "connection.update") {
