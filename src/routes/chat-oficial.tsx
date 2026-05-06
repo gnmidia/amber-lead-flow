@@ -717,20 +717,40 @@ function LeadTagsArea({
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const assignedIds = new Set(leadTags.map((t) => t.id));
+  const [localTags, setLocalTags] = useState<TagItem[]>(leadTags);
 
-  const assign = async (tagId: string) => {
-    await supabase.from("lead_tags").upsert(
-      { lead_id: leadId, tag_id: tagId, assigned_by: "manual" },
+  useEffect(() => {
+    setLocalTags(leadTags);
+  }, [leadId, leadTags]);
+
+  const assignedIds = new Set(localTags.map((t) => t.id));
+
+  const assign = async (tag: TagItem) => {
+    setLocalTags((prev) => (prev.some((t) => t.id === tag.id) ? prev : [...prev, tag]));
+    const { error } = await supabase.from("lead_tags").upsert(
+      { lead_id: leadId, tag_id: tag.id, assigned_by: "manual" },
       { onConflict: "lead_id,tag_id", ignoreDuplicates: true }
     );
+    if (error) {
+      setLocalTags((prev) => prev.filter((t) => t.id !== tag.id));
+      toast.error("Erro ao adicionar tag");
+    }
   };
-  const remove = async (tagId: string) => {
-    await supabase.from("lead_tags").delete().eq("lead_id", leadId).eq("tag_id", tagId);
+  const remove = async (tag: TagItem) => {
+    setLocalTags((prev) => prev.filter((t) => t.id !== tag.id));
+    const { error } = await supabase
+      .from("lead_tags")
+      .delete()
+      .eq("lead_id", leadId)
+      .eq("tag_id", tag.id);
+    if (error) {
+      setLocalTags((prev) => (prev.some((t) => t.id === tag.id) ? prev : [...prev, tag]));
+      toast.error("Erro ao remover tag");
+    }
   };
-  const toggle = async (tagId: string) => {
-    if (assignedIds.has(tagId)) await remove(tagId);
-    else await assign(tagId);
+  const toggle = async (tag: TagItem) => {
+    if (assignedIds.has(tag.id)) await remove(tag);
+    else await assign(tag);
   };
 
   const filtered = allTags.filter((t) =>
