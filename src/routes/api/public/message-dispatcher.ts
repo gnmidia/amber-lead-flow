@@ -150,6 +150,36 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
             return "sent";
           }
 
+          // ───── Áudio: fire-and-forget para não segurar o Worker ─────
+          if (stepType === "audio" || stepType === "áudio") {
+            const number = lead.remote_jid || msg.whatsapp_number || lead.whatsapp_number;
+            // Marca como enviado ANTES de tocar a Evolution.
+            await supabaseAdmin.from("scheduled_messages").update({
+              status: "sent", dispatch_started_at: null,
+            }).eq("id", msg.id);
+            // Insere a mensagem outbound (evolution_message_id virá pelo webhook send.message).
+            await supabaseAdmin.from("messages").insert({
+              lead_id: msg.lead_id,
+              direction: "outbound",
+              type: msg.message_type,
+              content: msg.content,
+              media_url: msg.media_url,
+              is_ai: false,
+              sent_by: "system",
+              sent_at: new Date().toISOString(),
+            });
+            // Presence + envio sem await.
+            fetch(`${baseUrl}/chat/sendPresence/${msg.instance_name}`, {
+              method: "POST", headers: evoHeaders(apiKey),
+              body: JSON.stringify({ number, options: { delay: 1500, presence: "recording", number } }),
+            }).catch(() => {});
+            fetch(`${baseUrl}/message/sendWhatsAppAudio/${msg.instance_name}`, {
+              method: "POST", headers: evoHeaders(apiKey),
+              body: JSON.stringify({ number, audio: msg.media_url, delay: 1500 }),
+            }).catch(() => {});
+            return "sent";
+          }
+
           const result = await sendToEvolution(baseUrl, apiKey, msg.instance_name, msg, lead);
           if (result.success) {
             await supabaseAdmin.from("scheduled_messages").update({
