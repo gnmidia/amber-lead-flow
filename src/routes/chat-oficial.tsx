@@ -389,7 +389,7 @@ function ChatOficialPage() {
                       <div className="flex items-center justify-between gap-2">
                         <p className="truncate text-sm font-semibold">{display}</p>
                         <span className="text-[10px] text-muted-foreground">
-                          {formatTime(l.last_message_at || l.updated_at)}
+                          {formatConversationTime(l.last_message_at || l.updated_at)}
                         </span>
                       </div>
                       {(l.tags_data?.length || 0) > 0 && (
