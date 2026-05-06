@@ -21,10 +21,10 @@ export const Route = createFileRoute("/funil")({
   component: FunilPage,
 });
 
-type StepType = "Texto" | "Áudio" | "Imagem" | "Vídeo" | "Documento" | "Tag";
+type StepType = "Texto" | "Áudio" | "Imagem" | "Vídeo" | "Documento" | "Tag" | "Delay";
 
-const STEP_TYPE_TO_KIND: Record<StepType, "text" | "audio" | "image" | "video" | "document" | "tag"> = {
-  "Texto": "text", "Áudio": "audio", "Imagem": "image", "Vídeo": "video", "Documento": "document", "Tag": "tag",
+const STEP_TYPE_TO_KIND: Record<StepType, "text" | "audio" | "image" | "video" | "document" | "tag" | "delay"> = {
+  "Texto": "text", "Áudio": "audio", "Imagem": "image", "Vídeo": "video", "Documento": "document", "Tag": "tag", "Delay": "delay",
 };
 
 const ACCEPT_BY_TYPE: Record<StepType, string> = {
@@ -34,6 +34,7 @@ const ACCEPT_BY_TYPE: Record<StepType, string> = {
   "Vídeo": "video/mp4",
   "Documento": "application/pdf",
   "Tag": "",
+  "Delay": "",
 };
 
 type Step = {
@@ -70,15 +71,18 @@ type Funnel = {
 };
 
 const typeIcon: Record<StepType, React.ComponentType<{ className?: string }>> = {
-  Texto: Type, Áudio: Mic, Imagem: ImageIcon, Vídeo: Video, Documento: FileText, Tag: TagIcon,
+  Texto: Type, Áudio: Mic, Imagem: ImageIcon, Vídeo: Video, Documento: FileText, Tag: TagIcon, Delay: Clock,
 };
 
-const STEP_TYPES: StepType[] = ["Texto", "Áudio", "Imagem", "Vídeo", "Documento", "Tag"];
+const STEP_TYPES: StepType[] = ["Texto", "Áudio", "Imagem", "Vídeo", "Documento", "Tag", "Delay"];
 const CHANNELS = ["WABA", "Baileys"];
 
 function delayLabel(s: Step) {
-  if (s.delay_type === "fixo") return `Fixo ${s.delay_fixed ?? 0}s`;
-  return `Oscilante ${s.delay_min ?? 0}s-${s.delay_max ?? 0}s`;
+  if (s.type === "Delay") {
+    if (s.delay_type === "fixo") return `Aguardar ${s.delay_fixed ?? 0}s`;
+    return `Aguardar ${s.delay_min ?? 0}-${s.delay_max ?? 0}s`;
+  }
+  return "";
 }
 
 function FunilPage() {
