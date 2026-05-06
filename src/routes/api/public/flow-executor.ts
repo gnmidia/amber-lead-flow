@@ -49,11 +49,17 @@ export const Route = createFileRoute("/api/public/flow-executor")({
             const block: any = blocks[i];
 
             if (block.block_type === "funnel" && block.reference_id) {
-              await fetch(`${origin}/api/public/funnel-scheduler`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ lead_id, funnel_id: block.reference_id, trigger_time: now.toISOString() }),
-              }).catch(() => {});
+              try {
+                const r = await fetch(`${origin}/api/public/funnel-scheduler`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ lead_id, funnel_id: block.reference_id, trigger_time: now.toISOString() }),
+                });
+                const txt = await r.text();
+                console.log(`[flow-executor] funnel-scheduler ${r.status}: ${txt}`);
+              } catch (e) {
+                console.error("[flow-executor] funnel-scheduler error", e);
+              }
             } else if (block.block_type === "agent" && block.reference_id) {
               await supabaseAdmin.from("leads").update({ current_agent_id: block.reference_id }).eq("id", lead_id);
               break;
