@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { Send, Plus, X, Tag as TagIcon, Workflow as WorkflowIcon, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
