@@ -121,6 +121,7 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
                   valueMatches: (v) => !!v && c.includes(v.toLowerCase()),
                 });
               }
+              const flowCalls: Promise<any>[] = [];
               for (const trig of triggers) {
                 const { data: flows } = await supabaseAdmin
                   .from("flows")
@@ -129,13 +130,19 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
                   .eq("is_active", true);
                 for (const fl of (flows || []) as any[]) {
                   if (trig.valueMatches && !trig.valueMatches(fl.trigger_value)) continue;
-                  fetch(`${origin}/api/public/flow-executor`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ lead_id: lead!.id, flow_id: fl.id }),
-                  }).catch(() => {});
+                  console.log(`[webhook] triggering flow ${fl.id} (${trig.type}) for lead ${lead!.id}`);
+                  flowCalls.push(
+                    fetch(`${origin}/api/public/flow-executor`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ lead_id: lead!.id, flow_id: fl.id }),
+                    })
+                      .then((r) => r.text().then((t) => console.log(`[webhook] flow-executor ${r.status}: ${t}`)))
+                      .catch((e) => console.error("[webhook] flow-executor error", e)),
+                  );
                 }
               }
+              await Promise.all(flowCalls);
             } catch (e) {
               console.error("[webhook] flow trigger error", e);
             }
