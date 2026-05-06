@@ -207,17 +207,15 @@ function BroadcastModal({ flows, tags, onClose, onCreated }: {
     if (minSec < 1 || maxSec < minSec) return toast.error("Intervalo inválido");
     setSaving(true);
     try {
-      const res = await fetch("/api/public/broadcast-create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const { data: json, error } = await supabase.functions.invoke("broadcast-start", {
+        body: {
           name, flow_id: flowId, tag_id: tagId,
           min_interval_seconds: minSec, max_interval_seconds: maxSec,
-        }),
+        },
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Falha ao criar disparo");
-      toast.success(`Disparo criado: ${json.total} leads agendados`);
+      if (error) throw new Error(error.message || "Falha ao criar disparo");
+      if ((json as any)?.error) throw new Error((json as any).error);
+      toast.success(`Disparo criado: ${(json as any).total} leads agendados`);
       onCreated();
     } catch (e: any) {
       toast.error(e.message);
