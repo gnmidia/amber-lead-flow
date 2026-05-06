@@ -82,6 +82,7 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
                 return new Response("error", { status: 500 });
               }
               lead = newLead;
+              isNewLead = true;
             } else if (realPhone && lead.whatsapp_number !== number) {
               // Backfill: agora temos o telefone real, atualiza o lead que estava com LID.
               await supabaseAdmin
