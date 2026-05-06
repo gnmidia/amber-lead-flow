@@ -46,6 +46,7 @@ const sections: NavSection[] = [
     items: [
       { label: "Ofertas", to: "/ofertas", icon: Package },
       { label: "Fluxos", to: "/fluxos", icon: Workflow },
+      { label: "Disparos", to: "/disparos", icon: Send },
       { label: "Agentes IA", to: "/agentes-ia", icon: Bot },
     ],
   },

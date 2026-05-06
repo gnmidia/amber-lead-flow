@@ -23,6 +23,7 @@ import { Route as InteligenciaIaRouteImport } from './routes/inteligencia-ia'
 import { Route as FunilRouteImport } from './routes/funil'
 import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as FilaRouteImport } from './routes/fila'
+import { Route as DisparosRouteImport } from './routes/disparos'
 import { Route as ComprovantesIaRouteImport } from './routes/comprovantes-ia'
 import { Route as ChatOficialRouteImport } from './routes/chat-oficial'
 import { Route as ChatBaileysRouteImport } from './routes/chat-baileys'
@@ -109,6 +110,11 @@ const FinanceiroRoute = FinanceiroRouteImport.update({
 const FilaRoute = FilaRouteImport.update({
   id: '/fila',
   path: '/fila',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DisparosRoute = DisparosRouteImport.update({
+  id: '/disparos',
+  path: '/disparos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComprovantesIaRoute = ComprovantesIaRouteImport.update({
@@ -210,6 +216,7 @@ export interface FileRoutesByFullPath {
   '/chat-baileys': typeof ChatBaileysRoute
   '/chat-oficial': typeof ChatOficialRoute
   '/comprovantes-ia': typeof ComprovantesIaRoute
+  '/disparos': typeof DisparosRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
   '/funil': typeof FunilRoute
@@ -243,6 +250,7 @@ export interface FileRoutesByTo {
   '/chat-baileys': typeof ChatBaileysRoute
   '/chat-oficial': typeof ChatOficialRoute
   '/comprovantes-ia': typeof ComprovantesIaRoute
+  '/disparos': typeof DisparosRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
   '/funil': typeof FunilRoute
@@ -277,6 +285,7 @@ export interface FileRoutesById {
   '/chat-baileys': typeof ChatBaileysRoute
   '/chat-oficial': typeof ChatOficialRoute
   '/comprovantes-ia': typeof ComprovantesIaRoute
+  '/disparos': typeof DisparosRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
   '/funil': typeof FunilRoute
@@ -312,6 +321,7 @@ export interface FileRouteTypes {
     | '/chat-baileys'
     | '/chat-oficial'
     | '/comprovantes-ia'
+    | '/disparos'
     | '/fila'
     | '/financeiro'
     | '/funil'
@@ -345,6 +355,7 @@ export interface FileRouteTypes {
     | '/chat-baileys'
     | '/chat-oficial'
     | '/comprovantes-ia'
+    | '/disparos'
     | '/fila'
     | '/financeiro'
     | '/funil'
@@ -378,6 +389,7 @@ export interface FileRouteTypes {
     | '/chat-baileys'
     | '/chat-oficial'
     | '/comprovantes-ia'
+    | '/disparos'
     | '/fila'
     | '/financeiro'
     | '/funil'
@@ -412,6 +424,7 @@ export interface RootRouteChildren {
   ChatBaileysRoute: typeof ChatBaileysRoute
   ChatOficialRoute: typeof ChatOficialRoute
   ComprovantesIaRoute: typeof ComprovantesIaRoute
+  DisparosRoute: typeof DisparosRoute
   FilaRoute: typeof FilaRoute
   FinanceiroRoute: typeof FinanceiroRoute
   FunilRoute: typeof FunilRoute
@@ -537,6 +550,13 @@ declare module '@tanstack/react-router' {
       path: '/fila'
       fullPath: '/fila'
       preLoaderRoute: typeof FilaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/disparos': {
+      id: '/disparos'
+      path: '/disparos'
+      fullPath: '/disparos'
+      preLoaderRoute: typeof DisparosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/comprovantes-ia': {
@@ -668,6 +688,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChatBaileysRoute: ChatBaileysRoute,
   ChatOficialRoute: ChatOficialRoute,
   ComprovantesIaRoute: ComprovantesIaRoute,
+  DisparosRoute: DisparosRoute,
   FilaRoute: FilaRoute,
   FinanceiroRoute: FinanceiroRoute,
   FunilRoute: FunilRoute,
@@ -697,3 +718,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
