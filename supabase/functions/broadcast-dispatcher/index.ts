@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
       broadcastIds.add(t.broadcast_id);
       try {
         const { data: bc } = await supabase
-          .from("broadcasts").select("flow_id, status, max_interval_seconds")
+          .from("broadcasts").select("flow_id, status, min_interval_seconds, max_interval_seconds")
           .eq("id", t.broadcast_id).maybeSingle();
 
         if (!bc) {
