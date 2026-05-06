@@ -133,6 +133,7 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
           }
 
           // Handle tag-action steps (no message dispatch)
+          if (stepType === "tag") {
             const { data: stepRow } = await supabaseAdmin
               .from("funnel_steps")
               .select("tag_id, tag_operation")
