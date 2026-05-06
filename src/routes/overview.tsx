@@ -48,6 +48,8 @@ function OverviewPage() {
       />
 
       <div className="space-y-8 p-8">
+        <LeadsReceivedSection />
+
         <section>
           <h2 className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Financeiro
