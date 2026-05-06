@@ -25,7 +25,7 @@ function resolveVars(content: string, lead: any): string {
 }
 
 async function sendToEvolution(baseUrl: string, apiKey: string, instance: string, msg: any, lead: any) {
-  const number = msg.whatsapp_number;
+  const number = lead.remote_jid || msg.whatsapp_number || lead.whatsapp_number;
   const delay = 1200;
   try {
     let endpoint = "";
@@ -100,7 +100,7 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
 
           const { data: lead } = await supabaseAdmin
             .from("leads")
-            .select("whatsapp_number, name, push_name, status, ia_paused")
+            .select("whatsapp_number, remote_jid, name, push_name, status, ia_paused")
             .eq("id", msg.lead_id).maybeSingle();
 
           if (!lead || lead.status !== "active") {
