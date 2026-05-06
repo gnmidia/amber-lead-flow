@@ -59,16 +59,19 @@ Deno.serve(async (req) => {
     if (bcError) throw new Error(bcError.message);
 
     let cursorMs = Date.now();
-    const rows = activeIds.map((lead_id: string) => {
-      const row = {
-        broadcast_id: bc!.id,
-        lead_id,
-        scheduled_at: new Date(cursorMs).toISOString(),
-        status: "pending",
-      };
-      cursorMs += rand(minS, maxS) * 1000;
-      return row;
-    });
+    const nowIso = new Date().toISOString();
+    // Sequential queue: only the first lead is scheduled to run now.
+    // The rest are parked far in the future and will be released by the
+    // dispatcher after the previous lead's funnel messages finish.
+    const FAR_FUTURE_BASE = new Date("2999-01-01T00:00:00Z").getTime();
+    const rows = activeIds.map((lead_id: string, idx: number) => ({
+      broadcast_id: bc!.id,
+      lead_id,
+      scheduled_at: idx === 0
+        ? nowIso
+        : new Date(FAR_FUTURE_BASE + idx * 1000).toISOString(),
+      status: "pending",
+    }));
 
     for (let i = 0; i < rows.length; i += 500) {
       const slice = rows.slice(i, i + 500);
