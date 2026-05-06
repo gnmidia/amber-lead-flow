@@ -1,5 +1,33 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { executeFlowForLead } from "@/server/funnel-execution.server";
+
+async function triggerFlowsForInboundMessage(leadId: string, content: string | null, isNewLead: boolean) {
+  const triggers: { type: string; valueMatches?: (v: string | null) => boolean }[] = [];
+  if (isNewLead) triggers.push({ type: "new_lead" });
+  if (content) {
+    const normalized = content.toLowerCase();
+    triggers.push({
+      type: "keyword",
+      valueMatches: (value) => !!value && normalized.includes(value.toLowerCase()),
+    });
+  }
+
+  for (const trig of triggers) {
+    const { data: flows, error } = await supabaseAdmin
+      .from("flows")
+      .select("id, trigger_value")
+      .eq("trigger_type", trig.type)
+      .eq("is_active", true);
+    if (error) throw new Error(`flow trigger lookup failed: ${error.message}`);
+
+    for (const flow of (flows || []) as any[]) {
+      if (trig.valueMatches && !trig.valueMatches(flow.trigger_value)) continue;
+      console.log(`[sync-chats] triggering flow ${flow.id} (${trig.type}) for lead ${leadId}`);
+      await executeFlowForLead({ lead_id: leadId, flow_id: flow.id });
+    }
+  }
+}
 
 export const Route = createFileRoute("/api/public/sync-chats")({
   server: {
@@ -40,6 +68,7 @@ export const Route = createFileRoute("/api/public/sync-chats")({
             existing = byNumber;
           }
           let leadId = existing?.id;
+          let isNewLead = false;
           if (!leadId) {
             const { data: newLead } = await supabaseAdmin.from("leads").insert({
               whatsapp_number: number, remote_jid: remoteJid,
@@ -47,6 +76,7 @@ export const Route = createFileRoute("/api/public/sync-chats")({
               is_new_lead: false, instance_name: instance, tags: [],
             }).select("id").single();
             leadId = newLead?.id;
+            isNewLead = true;
           } else if (realPhone && existing?.whatsapp_number !== number) {
             await supabaseAdmin.from("leads")
               .update({ whatsapp_number: number, remote_jid: remoteJid })
@@ -82,13 +112,18 @@ export const Route = createFileRoute("/api/public/sync-chats")({
             else if (m.documentMessage) type = "document";
 
             const ts = msg.messageTimestamp ? Number(msg.messageTimestamp) * 1000 : Date.now();
-            await supabaseAdmin.from("messages").insert({
+            const { error: insertError } = await supabaseAdmin.from("messages").insert({
               lead_id: leadId, evolution_message_id: evoId,
               direction: fromMe ? "outbound" : "inbound",
               type, content, is_ai: false,
               sent_by: fromMe ? "system" : "lead",
               sent_at: new Date(ts).toISOString(),
             });
+            if (insertError) throw new Error(`message insert failed: ${insertError.message}`);
+
+            if (!fromMe) {
+              await triggerFlowsForInboundMessage(leadId, content, isNewLead);
+            }
           }
           synced++;
         }
