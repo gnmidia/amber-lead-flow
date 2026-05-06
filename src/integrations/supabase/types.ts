@@ -697,6 +697,39 @@ export type Database = {
     }
     Functions: {
       check_completed_funnels: { Args: never; Returns: undefined }
+      claim_scheduled_messages: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempts: number
+          caption: string | null
+          content: string | null
+          created_at: string
+          error_message: string | null
+          evolution_message_id: string | null
+          file_name: string | null
+          funnel_id: string | null
+          id: string
+          instance_name: string
+          lead_id: string | null
+          media_url: string | null
+          message_type: string
+          mimetype: string | null
+          send_at: string
+          status: string
+          step_id: string | null
+          whatsapp_number: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "scheduled_messages"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      requeue_stuck_dispatching: {
+        Args: { p_older_than_seconds?: number }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
