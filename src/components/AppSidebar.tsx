@@ -20,6 +20,7 @@ import {
   UserSquare2,
   Wallet,
   Tag,
+  Send,
 } from "lucide-react";
 
 type NavItem = { label: string; to: string; icon: React.ComponentType<{ className?: string }> };
