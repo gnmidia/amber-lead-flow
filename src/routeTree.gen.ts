@@ -14,7 +14,6 @@ import { Route as TarefasRouteImport } from './routes/tarefas'
 import { Route as TagsRouteImport } from './routes/tags'
 import { Route as PublicoRouteImport } from './routes/publico'
 import { Route as ProjecaoRouteImport } from './routes/projecao'
-import { Route as ProdutosRouteImport } from './routes/produtos'
 import { Route as OverviewRouteImport } from './routes/overview'
 import { Route as OfertasRouteImport } from './routes/ofertas'
 import { Route as MetaAdsRouteImport } from './routes/meta-ads'
@@ -63,11 +62,6 @@ const PublicoRoute = PublicoRouteImport.update({
 const ProjecaoRoute = ProjecaoRouteImport.update({
   id: '/projecao',
   path: '/projecao',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProdutosRoute = ProdutosRouteImport.update({
-  id: '/produtos',
-  path: '/produtos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OverviewRoute = OverviewRouteImport.update({
@@ -212,7 +206,6 @@ export interface FileRoutesByFullPath {
   '/meta-ads': typeof MetaAdsRoute
   '/ofertas': typeof OfertasRoute
   '/overview': typeof OverviewRoute
-  '/produtos': typeof ProdutosRoute
   '/projecao': typeof ProjecaoRoute
   '/publico': typeof PublicoRoute
   '/tags': typeof TagsRoute
@@ -244,7 +237,6 @@ export interface FileRoutesByTo {
   '/meta-ads': typeof MetaAdsRoute
   '/ofertas': typeof OfertasRoute
   '/overview': typeof OverviewRoute
-  '/produtos': typeof ProdutosRoute
   '/projecao': typeof ProjecaoRoute
   '/publico': typeof PublicoRoute
   '/tags': typeof TagsRoute
@@ -277,7 +269,6 @@ export interface FileRoutesById {
   '/meta-ads': typeof MetaAdsRoute
   '/ofertas': typeof OfertasRoute
   '/overview': typeof OverviewRoute
-  '/produtos': typeof ProdutosRoute
   '/projecao': typeof ProjecaoRoute
   '/publico': typeof PublicoRoute
   '/tags': typeof TagsRoute
@@ -311,7 +302,6 @@ export interface FileRouteTypes {
     | '/meta-ads'
     | '/ofertas'
     | '/overview'
-    | '/produtos'
     | '/projecao'
     | '/publico'
     | '/tags'
@@ -343,7 +333,6 @@ export interface FileRouteTypes {
     | '/meta-ads'
     | '/ofertas'
     | '/overview'
-    | '/produtos'
     | '/projecao'
     | '/publico'
     | '/tags'
@@ -375,7 +364,6 @@ export interface FileRouteTypes {
     | '/meta-ads'
     | '/ofertas'
     | '/overview'
-    | '/produtos'
     | '/projecao'
     | '/publico'
     | '/tags'
@@ -408,7 +396,6 @@ export interface RootRouteChildren {
   MetaAdsRoute: typeof MetaAdsRoute
   OfertasRoute: typeof OfertasRoute
   OverviewRoute: typeof OverviewRoute
-  ProdutosRoute: typeof ProdutosRoute
   ProjecaoRoute: typeof ProjecaoRoute
   PublicoRoute: typeof PublicoRoute
   TagsRoute: typeof TagsRoute
@@ -458,13 +445,6 @@ declare module '@tanstack/react-router' {
       path: '/projecao'
       fullPath: '/projecao'
       preLoaderRoute: typeof ProjecaoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/produtos': {
-      id: '/produtos'
-      path: '/produtos'
-      fullPath: '/produtos'
-      preLoaderRoute: typeof ProdutosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/overview': {
@@ -666,7 +646,6 @@ const rootRouteChildren: RootRouteChildren = {
   MetaAdsRoute: MetaAdsRoute,
   OfertasRoute: OfertasRoute,
   OverviewRoute: OverviewRoute,
-  ProdutosRoute: ProdutosRoute,
   ProjecaoRoute: ProjecaoRoute,
   PublicoRoute: PublicoRoute,
   TagsRoute: TagsRoute,
@@ -683,3 +662,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
