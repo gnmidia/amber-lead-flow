@@ -1,146 +1,63 @@
-## Objetivo
+## Diagnóstico (resumo)
 
-Eliminar o timeout do Worker no envio de áudio usando fire-and-forget, sem alterar texto/imagem/vídeo/documento.
+- ✅ Broadcast `282c16d1...` foi criado com `status=running`, 2 leads.
+- ✅ Targets foram criados em `broadcast_targets` (status=`pending`, `scheduled_at` corretos).
+- ✅ Cron `broadcast-dispatcher-every-minute` está ativo (`* * * * *`).
+- ❌ O cron chama `https://project--<id>.lovable.app/...` (URL **publicada**) e o app **não foi publicado**, então retorna **HTTP 404 "Project not found"** a cada minuto. Por isso os 2 targets nunca saem de `pending`.
+- ⚠ Não existem Edge Functions (`broadcast-start` / `broadcast-dispatcher`) — a implementação atual usa server routes do TanStack.
 
-## 1. `src/routes/api/public/message-dispatcher.ts`
+Conclusão: a criação do disparo funcionou. O que falhou é o consumo pelo cron, porque o cron aponta para um domínio inexistente.
 
-Tratar `audio`/`áudio` como caso especial **antes** de chamar `sendToEvolution`:
+## Plano — migrar para Supabase Edge Functions reais
 
-- Marcar imediatamente `scheduled_messages` como `status='sent'`, `dispatch_started_at=null`.
-- Inserir o registro em `messages` (outbound, type='audio', media_url, sem `evolution_message_id` por enquanto) — para que a UI já mostre o áudio.
-- Disparar `fetch` para `/chat/sendPresence` e `/message/sendWhatsAppAudio` **sem `await`** (fire-and-forget) com `.catch(() => {})`.
-- Retornar `"sent"` sem aguardar resposta da Evolution.
+### 1. Criar `supabase/functions/broadcast-start/index.ts`
+Porta do `src/routes/api/public/broadcast-create.ts` para Deno:
+- Body: `{ name, flow_id, tag_id, min_interval_seconds, max_interval_seconds }`
+- Busca leads pela tag, filtra `status='active'`, insere `broadcasts` + `broadcast_targets` com `scheduled_at` rolante (rand entre min/max).
+- Usa `SUPABASE_SERVICE_ROLE_KEY` via `Deno.env`.
+- CORS aberto.
 
-A função `sendToEvolution` continua tratando os outros tipos com `await` normal. O ramo `audio` interno dela vira inalcançável (só chamamos para os demais tipos), mas removerei o branch para evitar código morto.
+### 2. Criar `supabase/functions/broadcast-dispatcher/index.ts`
+Porta do `src/routes/api/public/broadcast-dispatcher.ts`:
+- Chama `claim_broadcast_targets` (já existe no banco).
+- Para cada target: respeita `cancelled` / `paused`, valida lead ativo, reagenda se há funil ativo, senão executa o fluxo.
+- **Execução do fluxo**: porta inline do `executeFlowForLead` (lê `flow_blocks` em ordem; para blocos `funnel` chama `scheduleFunnelForLead` portado; trata `agent`, `tag_assign`, `tag_remove`, `wait`, `condition`).
+- Marca target como `sent` ou `failed`. Roda `checkCompleted` no final.
 
-## 2. `src/routes/api/public/webhook-whatsapp.ts`
+### 3. Configurar `supabase/config.toml`
+Adicionar blocos para as duas funções com `verify_jwt = false` (são chamadas pelo cron com service-role e pela UI com anon).
 
-Adicionar handler para o evento `send.message` (emitido pela Evolution após enviar):
+### 4. Atualizar UI para chamar a Edge Function
+- Em `src/routes/disparos.tsx`, trocar `fetch("/api/public/broadcast-create", ...)` por `supabase.functions.invoke("broadcast-start", { body: {...} })`.
 
-```ts
-if (event === "send.message" && data?.key) {
-  const key = data.key;
-  const remoteJid: string = key.remoteJid ?? "";
-  // só interessa áudio outbound sem evolution_message_id ainda
-  const isAudio = !!data.message?.audioMessage;
-  if (key.fromMe && isAudio && key.id) {
-    // localiza lead pelo remote_jid (ou número normalizado)
-    const { data: lead } = await supabaseAdmin
-      .from("leads").select("id").eq("remote_jid", remoteJid).maybeSingle();
-    if (lead) {
-      // atualiza a mensagem outbound de audio mais recente desse lead
-      // que ainda não tem evolution_message_id
-      const { data: target } = await supabaseAdmin
-        .from("messages")
-        .select("id")
-        .eq("lead_id", lead.id)
-        .eq("direction", "outbound")
-        .eq("type", "audio")
-        .is("evolution_message_id", null)
-        .order("sent_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (target) {
-        await supabaseAdmin.from("messages")
-          .update({ evolution_message_id: key.id })
-          .eq("id", target.id);
-      }
-    }
-  }
-}
-```
-
-Critério de correlação: lead + tipo `audio` + outbound + `evolution_message_id IS NULL` + mais recente. É suficiente porque processamos uma mensagem por lead por tick.
-
-## 3. Migration — `requeue_stuck_dispatching`
-
-Atualizar a função para que áudio:
-- Considere "travado" após **5 minutos** (300s) em vez de 15.
-- Seja requeueado (status `pending`) se `attempts < 2`, em vez de cair direto para `failed`.
-- Só vire `failed` quando `attempts >= 2` (mesma regra dos outros tipos).
-
-Outras mídias (image/video/document) mantêm o comportamento atual (failed direto após o timeout grande, pois podem ter sido entregues).
-
+### 5. Migrar o cron
+SQL a rodar (insert tool, não migration — contém URL/chave):
 ```sql
-CREATE OR REPLACE FUNCTION public.requeue_stuck_dispatching(p_older_than_seconds integer DEFAULT 900)
-RETURNS integer ... AS $$
-DECLARE n int;
-BEGIN
-  WITH stale AS (
-    SELECT id, lower(message_type) AS message_type, attempts,
-           coalesce(dispatch_started_at, created_at) AS started
-    FROM public.scheduled_messages
-    WHERE status = 'dispatching'
-  ),
-  -- áudio: janela curta (300s); retry se attempts<2, senão failed
-  audio_retry AS (
-    UPDATE public.scheduled_messages sm
-    SET status='pending', dispatch_started_at=NULL
-    FROM stale
-    WHERE sm.id=stale.id
-      AND stale.message_type IN ('audio','áudio')
-      AND stale.started < now() - interval '300 seconds'
-      AND stale.attempts < 2
-    RETURNING 1
-  ),
-  audio_fail AS (
-    UPDATE public.scheduled_messages sm
-    SET status='failed', dispatch_started_at=NULL,
-        error_message=coalesce(nullif(sm.error_message,''),'Áudio travado após 2 tentativas.')
-    FROM stale
-    WHERE sm.id=stale.id
-      AND stale.message_type IN ('audio','áudio')
-      AND stale.started < now() - interval '300 seconds'
-      AND stale.attempts >= 2
-    RETURNING 1
-  ),
-  -- demais mídias: comportamento antigo (failed após p_older_than_seconds)
-  other_media_fail AS (
-    UPDATE public.scheduled_messages sm
-    SET status='failed', dispatch_started_at=NULL,
-        error_message=coalesce(nullif(sm.error_message,''),'Envio interrompido após iniciar.')
-    FROM stale
-    WHERE sm.id=stale.id
-      AND stale.message_type IN ('image','imagem','video','document','documento')
-      AND stale.started < now() - (p_older_than_seconds || ' seconds')::interval
-    RETURNING 1
-  ),
-  -- texto e tag/flow_resume: requeue
-  safe_retry AS (
-    UPDATE public.scheduled_messages sm
-    SET status='pending', dispatch_started_at=NULL
-    FROM stale
-    WHERE sm.id=stale.id
-      AND stale.message_type NOT IN ('audio','áudio','image','imagem','video','document','documento')
-      AND stale.started < now() - (p_older_than_seconds || ' seconds')::interval
-    RETURNING 1
-  )
-  SELECT count(*) INTO n FROM (
-    SELECT 1 FROM audio_retry UNION ALL
-    SELECT 1 FROM audio_fail UNION ALL
-    SELECT 1 FROM other_media_fail UNION ALL
-    SELECT 1 FROM safe_retry
-  ) x;
-  RETURN n;
-END;
-$$ LANGUAGE plpgsql SET search_path=public;
+SELECT cron.unschedule('broadcast-dispatcher-every-minute');
+
+SELECT cron.schedule(
+  'broadcast-dispatcher-every-minute',
+  '* * * * *',
+  $$
+  SELECT net.http_post(
+    url:='https://uzuxxgvpgsqmkolmmqcv.supabase.co/functions/v1/broadcast-dispatcher',
+    headers:='{"Content-Type":"application/json","Authorization":"Bearer <anon>"}'::jsonb,
+    body:='{}'::jsonb
+  );
+  $$
+);
 ```
 
-## 4. Reenvio manual do áudio do teste
+### 6. Remover server routes obsoletos
+Apagar `src/routes/api/public/broadcast-create.ts` e `src/routes/api/public/broadcast-dispatcher.ts` (substituídos pelas Edge Functions).
 
-Após a aplicação, identificar o `scheduled_messages` `failed` do teste atual (`message_type='audio'`) e via migration:
+### 7. Verificação
+- `SELECT jobname, schedule, active FROM cron.job;` → confirmar que o job aparece e segue ativo.
+- Invocar `broadcast-dispatcher` manualmente uma vez (via curl ou tool de teste) e confirmar resposta JSON sem 404.
+- Conferir `cron.job_run_details` e `net._http_response` mostrando `200` e `{"dispatched":N}`.
+- Os 2 targets `pending` do disparo `282c16d1...` devem sair de pending na próxima execução.
 
-```sql
-UPDATE public.scheduled_messages
-SET status='pending', attempts=0, error_message=NULL,
-    send_at=now(), dispatch_started_at=NULL
-WHERE id = '<id_do_audio_failed>';
-```
+## Observações
 
-(Identifico o ID exato após você aprovar.) O próximo tick do dispatcher pega e dispara fire-and-forget.
-
-## Fora do escopo
-
-- Texto, imagem, vídeo, documento: nenhuma alteração no caminho de envio.
-- Estrutura de tabelas: nenhuma alteração.
-- Lógica de janela de envio, claim de mensagens, agrupamento por lead: inalterada.
+- A lógica de `executeFlowForLead` é grande; será portada com fidelidade para Deno mas é o ponto de maior risco — testaremos invocando manualmente após o deploy.
+- Após migrar, o sistema deixa de depender da publicação do projeto para os disparos funcionarem.

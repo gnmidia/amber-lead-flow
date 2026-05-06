@@ -1,1 +1,7 @@
 project_id = "uzuxxgvpgsqmkolmmqcv"
+
+[functions.broadcast-start]
+verify_jwt = false
+
+[functions.broadcast-dispatcher]
+verify_jwt = false
