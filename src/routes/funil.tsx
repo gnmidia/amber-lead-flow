@@ -452,7 +452,16 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
 
   const save = useMutation({
     mutationFn: async () => {
-      if (isTag) {
+      if (isDelay) {
+        if (form.delay_type === "fixo" && (!form.delay_fixed || form.delay_fixed < 1)) {
+          throw new Error("Informe os segundos do delay");
+        }
+        if (form.delay_type === "oscilante") {
+          const min = form.delay_min ?? 0;
+          const max = form.delay_max ?? 0;
+          if (min < 1 || max < 1 || max < min) throw new Error("Min/Max do delay inválidos");
+        }
+      } else if (isTag) {
         if (!form.tag_id) throw new Error("Selecione uma tag");
         if (!form.tag_operation) throw new Error("Selecione a operação (atribuir/remover)");
       } else {
@@ -464,18 +473,25 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
         }
       }
       const tagName = isTag ? (tagsQ.data?.find((t) => t.id === form.tag_id)?.name ?? "") : "";
+      const contentToSave = isDelay
+        ? (form.delay_type === "fixo"
+            ? `Aguardar ${form.delay_fixed ?? 0}s`
+            : `Aguardar ${form.delay_min ?? 0}-${form.delay_max ?? 0}s`)
+        : isTag
+        ? `${form.tag_operation === "assign" ? "Atribuir" : "Remover"} tag ${tagName}`
+        : form.content;
       const { error } = await supabase.from("funnel_steps").update({
         order_index: form.order_index,
         type: form.type,
-        content: isTag ? `${form.tag_operation === "assign" ? "Atribuir" : "Remover"} tag ${tagName}` : form.content,
-        caption: isTag ? null : form.caption,
+        content: contentToSave,
+        caption: isTag || isDelay ? null : form.caption,
         delay_type: form.delay_type,
         delay_fixed: form.delay_type === "fixo" ? form.delay_fixed ?? 60 : null,
         delay_min: form.delay_type === "oscilante" ? form.delay_min ?? 60 : null,
         delay_max: form.delay_type === "oscilante" ? form.delay_max ?? 120 : null,
-        media_url: isTag ? null : form.media_url,
-        file_name: isTag ? null : form.file_name,
-        mimetype: isTag ? null : form.mimetype,
+        media_url: isTag || isDelay ? null : form.media_url,
+        file_name: isTag || isDelay ? null : form.file_name,
+        mimetype: isTag || isDelay ? null : form.mimetype,
         tag_id: isTag ? form.tag_id : null,
         tag_operation: isTag ? form.tag_operation : null,
       }).eq("id", form.id);
