@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
 import { MetricCard } from "../components/MetricCard";
 import { CalendarRange, Clock } from "lucide-react";
+import { LeadsReceivedSection } from "../components/LeadsReceivedSection";
 
 export const Route = createFileRoute("/overview")({
   head: () => ({
@@ -47,6 +48,8 @@ function OverviewPage() {
       />
 
       <div className="space-y-8 p-8">
+        <LeadsReceivedSection />
+
         <section>
           <h2 className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Financeiro
