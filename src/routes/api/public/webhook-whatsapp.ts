@@ -35,15 +35,68 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
             let content: string | null = null;
             let mediaUrl: string | null = null;
             let fileName: string | null = null;
+            let mediaMimetype: string | null = null;
+            let mediaKind: "image" | "audio" | "video" | "document" | null = null;
             const msg = data.message ?? {};
             if (msg.conversation) content = msg.conversation;
             else if (msg.extendedTextMessage) content = msg.extendedTextMessage.text;
-            else if (msg.imageMessage) mediaUrl = msg.imageMessage.url;
-            else if (msg.audioMessage) mediaUrl = msg.audioMessage.url;
-            else if (msg.videoMessage) mediaUrl = msg.videoMessage.url;
-            else if (msg.documentMessage) {
+            else if (msg.imageMessage) {
+              mediaUrl = msg.imageMessage.url;
+              mediaMimetype = msg.imageMessage.mimetype || "image/jpeg";
+              mediaKind = "image";
+              content = msg.imageMessage.caption ?? null;
+            } else if (msg.audioMessage) {
+              mediaUrl = msg.audioMessage.url;
+              mediaMimetype = msg.audioMessage.mimetype || "audio/ogg";
+              mediaKind = "audio";
+            } else if (msg.videoMessage) {
+              mediaUrl = msg.videoMessage.url;
+              mediaMimetype = msg.videoMessage.mimetype || "video/mp4";
+              mediaKind = "video";
+              content = msg.videoMessage.caption ?? null;
+            } else if (msg.documentMessage) {
               mediaUrl = msg.documentMessage.url;
+              mediaMimetype = msg.documentMessage.mimetype || "application/pdf";
               fileName = msg.documentMessage.fileName;
+              mediaKind = "document";
+            }
+
+            // URLs vindas direto do payload do WhatsApp são criptografadas (.enc)
+            // e não podem ser tocadas no navegador. Baixa o base64 via Evolution
+            // e salva no storage para servir uma URL pública utilizável.
+            if (mediaKind && key.id) {
+              try {
+                const evoBase = process.env.EVOLUTION_BASE_URL;
+                const evoKey = process.env.EVOLUTION_API_KEY;
+                if (evoBase && evoKey) {
+                  const res = await fetch(`${evoBase}/chat/getBase64FromMediaMessage/${instance}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", apikey: evoKey },
+                    body: JSON.stringify({ message: { key, message: msg }, convertToMp4: false }),
+                  });
+                  const j: any = await res.json().catch(() => ({}));
+                  const b64: string | undefined = j?.base64;
+                  if (b64) {
+                    const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+                    const ext = mediaKind === "audio" ? "ogg"
+                      : mediaKind === "image" ? (mediaMimetype?.split("/")[1] || "jpg")
+                      : mediaKind === "video" ? "mp4"
+                      : (fileName?.split(".").pop() || "bin");
+                    const path = `inbound/${instance}/${key.id}.${ext}`;
+                    const { error: upErr } = await supabaseAdmin.storage
+                      .from("funnel-media")
+                      .upload(path, bin, { contentType: mediaMimetype || "application/octet-stream", upsert: true });
+                    if (!upErr) {
+                      const { data: pub } = supabaseAdmin.storage.from("funnel-media").getPublicUrl(path);
+                      if (pub?.publicUrl) mediaUrl = pub.publicUrl;
+                    } else {
+                      console.error("[webhook] media upload error", upErr);
+                    }
+                  }
+                }
+              } catch (e) {
+                console.error("[webhook] media download error", e);
+              }
             }
 
             // Procura primeiro pelo remote_jid (chave estável), depois pelo número.
