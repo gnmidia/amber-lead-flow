@@ -144,6 +144,13 @@ Deno.serve(async (req) => {
         await supabase.from("broadcast_targets").update({
           status: "sent", processed_at: new Date().toISOString(),
         }).eq("id", t.id);
+        await releaseNextTarget(
+          supabase,
+          t.broadcast_id,
+          t.lead_id,
+          (bc as any).min_interval_seconds || 30,
+          (bc as any).max_interval_seconds || 90,
+        );
         dispatched++;
       } catch (err) {
         await supabase.from("broadcast_targets").update({
