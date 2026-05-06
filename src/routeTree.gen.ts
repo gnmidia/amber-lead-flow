@@ -36,6 +36,7 @@ import { Route as ApiPublicSyncChatsRouteImport } from './routes/api/public/sync
 import { Route as ApiPublicSendMessageRouteImport } from './routes/api/public/send-message'
 import { Route as ApiPublicMessageDispatcherRouteImport } from './routes/api/public/message-dispatcher'
 import { Route as ApiPublicFunnelSchedulerRouteImport } from './routes/api/public/funnel-scheduler'
+import { Route as ApiPublicFlowExecutorRouteImport } from './routes/api/public/flow-executor'
 import { Route as ApiPublicEvolutionStatusRouteImport } from './routes/api/public/evolution-status'
 
 const TransacoesRoute = TransacoesRouteImport.update({
@@ -176,6 +177,11 @@ const ApiPublicFunnelSchedulerRoute =
     path: '/api/public/funnel-scheduler',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicFlowExecutorRoute = ApiPublicFlowExecutorRouteImport.update({
+  id: '/api/public/flow-executor',
+  path: '/api/public/flow-executor',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicEvolutionStatusRoute =
   ApiPublicEvolutionStatusRouteImport.update({
     id: '/api/public/evolution-status',
@@ -207,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/transacoes': typeof TransacoesRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
+  '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
@@ -237,6 +244,7 @@ export interface FileRoutesByTo {
   '/transacoes': typeof TransacoesRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
+  '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
@@ -268,6 +276,7 @@ export interface FileRoutesById {
   '/transacoes': typeof TransacoesRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
+  '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
@@ -300,6 +309,7 @@ export interface FileRouteTypes {
     | '/transacoes'
     | '/fluxos/$id'
     | '/api/public/evolution-status'
+    | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
     | '/api/public/message-dispatcher'
     | '/api/public/send-message'
@@ -330,6 +340,7 @@ export interface FileRouteTypes {
     | '/transacoes'
     | '/fluxos/$id'
     | '/api/public/evolution-status'
+    | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
     | '/api/public/message-dispatcher'
     | '/api/public/send-message'
@@ -360,6 +371,7 @@ export interface FileRouteTypes {
     | '/transacoes'
     | '/fluxos/$id'
     | '/api/public/evolution-status'
+    | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
     | '/api/public/message-dispatcher'
     | '/api/public/send-message'
@@ -390,6 +402,7 @@ export interface RootRouteChildren {
   TarefasRoute: typeof TarefasRoute
   TransacoesRoute: typeof TransacoesRoute
   ApiPublicEvolutionStatusRoute: typeof ApiPublicEvolutionStatusRoute
+  ApiPublicFlowExecutorRoute: typeof ApiPublicFlowExecutorRoute
   ApiPublicFunnelSchedulerRoute: typeof ApiPublicFunnelSchedulerRoute
   ApiPublicMessageDispatcherRoute: typeof ApiPublicMessageDispatcherRoute
   ApiPublicSendMessageRoute: typeof ApiPublicSendMessageRoute
@@ -588,6 +601,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicFunnelSchedulerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/flow-executor': {
+      id: '/api/public/flow-executor'
+      path: '/api/public/flow-executor'
+      fullPath: '/api/public/flow-executor'
+      preLoaderRoute: typeof ApiPublicFlowExecutorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/evolution-status': {
       id: '/api/public/evolution-status'
       path: '/api/public/evolution-status'
@@ -632,6 +652,7 @@ const rootRouteChildren: RootRouteChildren = {
   TarefasRoute: TarefasRoute,
   TransacoesRoute: TransacoesRoute,
   ApiPublicEvolutionStatusRoute: ApiPublicEvolutionStatusRoute,
+  ApiPublicFlowExecutorRoute: ApiPublicFlowExecutorRoute,
   ApiPublicFunnelSchedulerRoute: ApiPublicFunnelSchedulerRoute,
   ApiPublicMessageDispatcherRoute: ApiPublicMessageDispatcherRoute,
   ApiPublicSendMessageRoute: ApiPublicSendMessageRoute,
