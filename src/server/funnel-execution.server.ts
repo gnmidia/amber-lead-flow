@@ -21,7 +21,7 @@ export async function scheduleFunnelForLead({
 
   const { data: lead, error: leadError } = await supabaseAdmin
     .from("leads")
-    .select("whatsapp_number, instance_name")
+    .select("whatsapp_number, remote_jid, instance_name")
     .eq("id", lead_id)
     .maybeSingle();
   assertNoError(leadError, "lead lookup failed");
@@ -79,7 +79,7 @@ export async function scheduleFunnelForLead({
       funnel_id,
       step_id: step.id,
       instance_name: lead.instance_name || process.env.EVOLUTION_INSTANCE_NAME || "cland-main",
-      whatsapp_number: lead.whatsapp_number,
+      whatsapp_number: lead.remote_jid || lead.whatsapp_number,
       message_type: step.type,
       content: step.content,
       media_url: step.media_url,
@@ -130,7 +130,7 @@ export async function executeFlowForLead({
 
   const { data: lead, error: leadError } = await supabaseAdmin
     .from("leads")
-    .select("whatsapp_number, instance_name")
+    .select("whatsapp_number, remote_jid, instance_name")
     .eq("id", lead_id)
     .maybeSingle();
   assertNoError(leadError, "lead lookup failed");
@@ -173,7 +173,7 @@ export async function executeFlowForLead({
       const { error } = await supabaseAdmin.from("scheduled_messages").insert({
         lead_id,
         instance_name: lead.instance_name || process.env.EVOLUTION_INSTANCE_NAME || "",
-        whatsapp_number: lead.whatsapp_number,
+        whatsapp_number: lead.remote_jid || lead.whatsapp_number,
         message_type: "flow_resume",
         content: JSON.stringify({ flow_id, resume_block_index: i + 1 }),
         send_at: resumeAt.toISOString(),
