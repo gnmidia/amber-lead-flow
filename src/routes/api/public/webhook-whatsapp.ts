@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { executeFlowForLead } from "@/server/funnel-execution.server";
 
 export const Route = createFileRoute("/api/public/webhook-whatsapp")({
   server: {
@@ -111,7 +112,6 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
 
             // ───── Disparar fluxos automáticos ─────
             try {
-              const origin = new URL(request.url).origin;
               const triggers: { type: string; valueMatches?: (v: string | null) => boolean }[] = [];
               if (isNewLead) triggers.push({ type: "new_lead" });
               if (content) {
@@ -132,12 +132,8 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
                   if (trig.valueMatches && !trig.valueMatches(fl.trigger_value)) continue;
                   console.log(`[webhook] triggering flow ${fl.id} (${trig.type}) for lead ${lead!.id}`);
                   flowCalls.push(
-                    fetch(`${origin}/api/public/flow-executor`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ lead_id: lead!.id, flow_id: fl.id }),
-                    })
-                      .then((r) => r.text().then((t) => console.log(`[webhook] flow-executor ${r.status}: ${t}`)))
+                    executeFlowForLead({ lead_id: lead!.id, flow_id: fl.id })
+                      .then((result) => console.log(`[webhook] flow-executor ok: ${JSON.stringify(result)}`))
                       .catch((e) => console.error("[webhook] flow-executor error", e)),
                   );
                 }
