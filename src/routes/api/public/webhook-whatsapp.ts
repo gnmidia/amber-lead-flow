@@ -46,6 +46,7 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
             }
 
             // Procura primeiro pelo remote_jid (chave estável), depois pelo número.
+            let isNewLead = false;
             let { data: lead } = await supabaseAdmin
               .from("leads")
               .select("id, whatsapp_number")
