@@ -16,6 +16,7 @@ import { Route as PublicoRouteImport } from './routes/publico'
 import { Route as ProjecaoRouteImport } from './routes/projecao'
 import { Route as ProdutosRouteImport } from './routes/produtos'
 import { Route as OverviewRouteImport } from './routes/overview'
+import { Route as OfertasRouteImport } from './routes/ofertas'
 import { Route as MetaAdsRouteImport } from './routes/meta-ads'
 import { Route as LeadsRouteImport } from './routes/leads'
 import { Route as JarvisRouteImport } from './routes/jarvis'
@@ -72,6 +73,11 @@ const ProdutosRoute = ProdutosRouteImport.update({
 const OverviewRoute = OverviewRouteImport.update({
   id: '/overview',
   path: '/overview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OfertasRoute = OfertasRouteImport.update({
+  id: '/ofertas',
+  path: '/ofertas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MetaAdsRoute = MetaAdsRouteImport.update({
@@ -204,6 +210,7 @@ export interface FileRoutesByFullPath {
   '/jarvis': typeof JarvisRoute
   '/leads': typeof LeadsRoute
   '/meta-ads': typeof MetaAdsRoute
+  '/ofertas': typeof OfertasRoute
   '/overview': typeof OverviewRoute
   '/produtos': typeof ProdutosRoute
   '/projecao': typeof ProjecaoRoute
@@ -235,6 +242,7 @@ export interface FileRoutesByTo {
   '/jarvis': typeof JarvisRoute
   '/leads': typeof LeadsRoute
   '/meta-ads': typeof MetaAdsRoute
+  '/ofertas': typeof OfertasRoute
   '/overview': typeof OverviewRoute
   '/produtos': typeof ProdutosRoute
   '/projecao': typeof ProjecaoRoute
@@ -267,6 +275,7 @@ export interface FileRoutesById {
   '/jarvis': typeof JarvisRoute
   '/leads': typeof LeadsRoute
   '/meta-ads': typeof MetaAdsRoute
+  '/ofertas': typeof OfertasRoute
   '/overview': typeof OverviewRoute
   '/produtos': typeof ProdutosRoute
   '/projecao': typeof ProjecaoRoute
@@ -300,6 +309,7 @@ export interface FileRouteTypes {
     | '/jarvis'
     | '/leads'
     | '/meta-ads'
+    | '/ofertas'
     | '/overview'
     | '/produtos'
     | '/projecao'
@@ -331,6 +341,7 @@ export interface FileRouteTypes {
     | '/jarvis'
     | '/leads'
     | '/meta-ads'
+    | '/ofertas'
     | '/overview'
     | '/produtos'
     | '/projecao'
@@ -362,6 +373,7 @@ export interface FileRouteTypes {
     | '/jarvis'
     | '/leads'
     | '/meta-ads'
+    | '/ofertas'
     | '/overview'
     | '/produtos'
     | '/projecao'
@@ -394,6 +406,7 @@ export interface RootRouteChildren {
   JarvisRoute: typeof JarvisRoute
   LeadsRoute: typeof LeadsRoute
   MetaAdsRoute: typeof MetaAdsRoute
+  OfertasRoute: typeof OfertasRoute
   OverviewRoute: typeof OverviewRoute
   ProdutosRoute: typeof ProdutosRoute
   ProjecaoRoute: typeof ProjecaoRoute
@@ -459,6 +472,13 @@ declare module '@tanstack/react-router' {
       path: '/overview'
       fullPath: '/overview'
       preLoaderRoute: typeof OverviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ofertas': {
+      id: '/ofertas'
+      path: '/ofertas'
+      fullPath: '/ofertas'
+      preLoaderRoute: typeof OfertasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/meta-ads': {
@@ -644,6 +664,7 @@ const rootRouteChildren: RootRouteChildren = {
   JarvisRoute: JarvisRoute,
   LeadsRoute: LeadsRoute,
   MetaAdsRoute: MetaAdsRoute,
+  OfertasRoute: OfertasRoute,
   OverviewRoute: OverviewRoute,
   ProdutosRoute: ProdutosRoute,
   ProjecaoRoute: ProjecaoRoute,
