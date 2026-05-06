@@ -157,6 +157,17 @@ Deno.serve(async (req) => {
           status: "failed", processed_at: new Date().toISOString(),
           error_message: String(err),
         }).eq("id", t.id);
+        // Even on failure, release the next lead so the queue keeps moving.
+        try {
+          const { data: bc2 } = await supabase
+            .from("broadcasts").select("min_interval_seconds, max_interval_seconds")
+            .eq("id", t.broadcast_id).maybeSingle();
+          await releaseNextTarget(
+            supabase, t.broadcast_id, t.lead_id,
+            (bc2 as any)?.min_interval_seconds || 30,
+            (bc2 as any)?.max_interval_seconds || 90,
+          );
+        } catch (_) { /* ignore */ }
         failed++;
       }
     }));
