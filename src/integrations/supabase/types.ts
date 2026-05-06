@@ -56,6 +56,89 @@ export type Database = {
         }
         Relationships: []
       }
+      broadcast_targets: {
+        Row: {
+          broadcast_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          lead_id: string
+          processed_at: string | null
+          scheduled_at: string
+          status: string
+        }
+        Insert: {
+          broadcast_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lead_id: string
+          processed_at?: string | null
+          scheduled_at: string
+          status?: string
+        }
+        Update: {
+          broadcast_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lead_id?: string
+          processed_at?: string | null
+          scheduled_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "broadcast_targets_broadcast_id_fkey"
+            columns: ["broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "broadcasts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      broadcasts: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          flow_id: string
+          id: string
+          max_interval_seconds: number
+          min_interval_seconds: number
+          name: string
+          started_at: string | null
+          status: string
+          tag_id: string
+          total_leads: number
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          flow_id: string
+          id?: string
+          max_interval_seconds?: number
+          min_interval_seconds?: number
+          name?: string
+          started_at?: string | null
+          status?: string
+          tag_id: string
+          total_leads?: number
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          flow_id?: string
+          id?: string
+          max_interval_seconds?: number
+          min_interval_seconds?: number
+          name?: string
+          started_at?: string | null
+          status?: string
+          tag_id?: string
+          total_leads?: number
+        }
+        Relationships: []
+      }
       flow_blocks: {
         Row: {
           block_type: string
@@ -700,6 +783,25 @@ export type Database = {
     }
     Functions: {
       check_completed_funnels: { Args: never; Returns: undefined }
+      claim_broadcast_targets: {
+        Args: { p_limit?: number }
+        Returns: {
+          broadcast_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          lead_id: string
+          processed_at: string | null
+          scheduled_at: string
+          status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "broadcast_targets"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_scheduled_messages: {
         Args: { p_limit?: number }
         Returns: {

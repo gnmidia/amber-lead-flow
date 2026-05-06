@@ -20,6 +20,7 @@ import {
   UserSquare2,
   Wallet,
   Tag,
+  Send,
 } from "lucide-react";
 
 type NavItem = { label: string; to: string; icon: React.ComponentType<{ className?: string }> };
@@ -46,6 +47,7 @@ const sections: NavSection[] = [
     items: [
       { label: "Ofertas", to: "/ofertas", icon: Package },
       { label: "Fluxos", to: "/fluxos", icon: Workflow },
+      { label: "Disparos", to: "/disparos", icon: Send },
       { label: "Agentes IA", to: "/agentes-ia", icon: Bot },
     ],
   },

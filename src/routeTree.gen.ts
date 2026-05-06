@@ -23,6 +23,7 @@ import { Route as InteligenciaIaRouteImport } from './routes/inteligencia-ia'
 import { Route as FunilRouteImport } from './routes/funil'
 import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as FilaRouteImport } from './routes/fila'
+import { Route as DisparosRouteImport } from './routes/disparos'
 import { Route as ComprovantesIaRouteImport } from './routes/comprovantes-ia'
 import { Route as ChatOficialRouteImport } from './routes/chat-oficial'
 import { Route as ChatBaileysRouteImport } from './routes/chat-baileys'
@@ -38,6 +39,8 @@ import { Route as ApiPublicMessageDispatcherRouteImport } from './routes/api/pub
 import { Route as ApiPublicFunnelSchedulerRouteImport } from './routes/api/public/funnel-scheduler'
 import { Route as ApiPublicFlowExecutorRouteImport } from './routes/api/public/flow-executor'
 import { Route as ApiPublicEvolutionStatusRouteImport } from './routes/api/public/evolution-status'
+import { Route as ApiPublicBroadcastDispatcherRouteImport } from './routes/api/public/broadcast-dispatcher'
+import { Route as ApiPublicBroadcastCreateRouteImport } from './routes/api/public/broadcast-create'
 
 const TransacoesRoute = TransacoesRouteImport.update({
   id: '/transacoes',
@@ -107,6 +110,11 @@ const FinanceiroRoute = FinanceiroRouteImport.update({
 const FilaRoute = FilaRouteImport.update({
   id: '/fila',
   path: '/fila',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DisparosRoute = DisparosRouteImport.update({
+  id: '/disparos',
+  path: '/disparos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComprovantesIaRoute = ComprovantesIaRouteImport.update({
@@ -188,6 +196,18 @@ const ApiPublicEvolutionStatusRoute =
     path: '/api/public/evolution-status',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicBroadcastDispatcherRoute =
+  ApiPublicBroadcastDispatcherRouteImport.update({
+    id: '/api/public/broadcast-dispatcher',
+    path: '/api/public/broadcast-dispatcher',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicBroadcastCreateRoute =
+  ApiPublicBroadcastCreateRouteImport.update({
+    id: '/api/public/broadcast-create',
+    path: '/api/public/broadcast-create',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -196,6 +216,7 @@ export interface FileRoutesByFullPath {
   '/chat-baileys': typeof ChatBaileysRoute
   '/chat-oficial': typeof ChatOficialRoute
   '/comprovantes-ia': typeof ComprovantesIaRoute
+  '/disparos': typeof DisparosRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
   '/funil': typeof FunilRoute
@@ -212,6 +233,8 @@ export interface FileRoutesByFullPath {
   '/transacoes': typeof TransacoesRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos/': typeof FluxosIndexRoute
+  '/api/public/broadcast-create': typeof ApiPublicBroadcastCreateRoute
+  '/api/public/broadcast-dispatcher': typeof ApiPublicBroadcastDispatcherRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
@@ -227,6 +250,7 @@ export interface FileRoutesByTo {
   '/chat-baileys': typeof ChatBaileysRoute
   '/chat-oficial': typeof ChatOficialRoute
   '/comprovantes-ia': typeof ComprovantesIaRoute
+  '/disparos': typeof DisparosRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
   '/funil': typeof FunilRoute
@@ -243,6 +267,8 @@ export interface FileRoutesByTo {
   '/transacoes': typeof TransacoesRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos': typeof FluxosIndexRoute
+  '/api/public/broadcast-create': typeof ApiPublicBroadcastCreateRoute
+  '/api/public/broadcast-dispatcher': typeof ApiPublicBroadcastDispatcherRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
@@ -259,6 +285,7 @@ export interface FileRoutesById {
   '/chat-baileys': typeof ChatBaileysRoute
   '/chat-oficial': typeof ChatOficialRoute
   '/comprovantes-ia': typeof ComprovantesIaRoute
+  '/disparos': typeof DisparosRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
   '/funil': typeof FunilRoute
@@ -275,6 +302,8 @@ export interface FileRoutesById {
   '/transacoes': typeof TransacoesRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos/': typeof FluxosIndexRoute
+  '/api/public/broadcast-create': typeof ApiPublicBroadcastCreateRoute
+  '/api/public/broadcast-dispatcher': typeof ApiPublicBroadcastDispatcherRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
@@ -292,6 +321,7 @@ export interface FileRouteTypes {
     | '/chat-baileys'
     | '/chat-oficial'
     | '/comprovantes-ia'
+    | '/disparos'
     | '/fila'
     | '/financeiro'
     | '/funil'
@@ -308,6 +338,8 @@ export interface FileRouteTypes {
     | '/transacoes'
     | '/fluxos/$id'
     | '/fluxos/'
+    | '/api/public/broadcast-create'
+    | '/api/public/broadcast-dispatcher'
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
@@ -323,6 +355,7 @@ export interface FileRouteTypes {
     | '/chat-baileys'
     | '/chat-oficial'
     | '/comprovantes-ia'
+    | '/disparos'
     | '/fila'
     | '/financeiro'
     | '/funil'
@@ -339,6 +372,8 @@ export interface FileRouteTypes {
     | '/transacoes'
     | '/fluxos/$id'
     | '/fluxos'
+    | '/api/public/broadcast-create'
+    | '/api/public/broadcast-dispatcher'
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
@@ -354,6 +389,7 @@ export interface FileRouteTypes {
     | '/chat-baileys'
     | '/chat-oficial'
     | '/comprovantes-ia'
+    | '/disparos'
     | '/fila'
     | '/financeiro'
     | '/funil'
@@ -370,6 +406,8 @@ export interface FileRouteTypes {
     | '/transacoes'
     | '/fluxos/$id'
     | '/fluxos/'
+    | '/api/public/broadcast-create'
+    | '/api/public/broadcast-dispatcher'
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
@@ -386,6 +424,7 @@ export interface RootRouteChildren {
   ChatBaileysRoute: typeof ChatBaileysRoute
   ChatOficialRoute: typeof ChatOficialRoute
   ComprovantesIaRoute: typeof ComprovantesIaRoute
+  DisparosRoute: typeof DisparosRoute
   FilaRoute: typeof FilaRoute
   FinanceiroRoute: typeof FinanceiroRoute
   FunilRoute: typeof FunilRoute
@@ -402,6 +441,8 @@ export interface RootRouteChildren {
   TransacoesRoute: typeof TransacoesRoute
   FluxosIdRoute: typeof FluxosIdRoute
   FluxosIndexRoute: typeof FluxosIndexRoute
+  ApiPublicBroadcastCreateRoute: typeof ApiPublicBroadcastCreateRoute
+  ApiPublicBroadcastDispatcherRoute: typeof ApiPublicBroadcastDispatcherRoute
   ApiPublicEvolutionStatusRoute: typeof ApiPublicEvolutionStatusRoute
   ApiPublicFlowExecutorRoute: typeof ApiPublicFlowExecutorRoute
   ApiPublicFunnelSchedulerRoute: typeof ApiPublicFunnelSchedulerRoute
@@ -511,6 +552,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FilaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/disparos': {
+      id: '/disparos'
+      path: '/disparos'
+      fullPath: '/disparos'
+      preLoaderRoute: typeof DisparosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/comprovantes-ia': {
       id: '/comprovantes-ia'
       path: '/comprovantes-ia'
@@ -616,6 +664,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicEvolutionStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/broadcast-dispatcher': {
+      id: '/api/public/broadcast-dispatcher'
+      path: '/api/public/broadcast-dispatcher'
+      fullPath: '/api/public/broadcast-dispatcher'
+      preLoaderRoute: typeof ApiPublicBroadcastDispatcherRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/broadcast-create': {
+      id: '/api/public/broadcast-create'
+      path: '/api/public/broadcast-create'
+      fullPath: '/api/public/broadcast-create'
+      preLoaderRoute: typeof ApiPublicBroadcastCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -626,6 +688,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChatBaileysRoute: ChatBaileysRoute,
   ChatOficialRoute: ChatOficialRoute,
   ComprovantesIaRoute: ComprovantesIaRoute,
+  DisparosRoute: DisparosRoute,
   FilaRoute: FilaRoute,
   FinanceiroRoute: FinanceiroRoute,
   FunilRoute: FunilRoute,
@@ -642,6 +705,8 @@ const rootRouteChildren: RootRouteChildren = {
   TransacoesRoute: TransacoesRoute,
   FluxosIdRoute: FluxosIdRoute,
   FluxosIndexRoute: FluxosIndexRoute,
+  ApiPublicBroadcastCreateRoute: ApiPublicBroadcastCreateRoute,
+  ApiPublicBroadcastDispatcherRoute: ApiPublicBroadcastDispatcherRoute,
   ApiPublicEvolutionStatusRoute: ApiPublicEvolutionStatusRoute,
   ApiPublicFlowExecutorRoute: ApiPublicFlowExecutorRoute,
   ApiPublicFunnelSchedulerRoute: ApiPublicFunnelSchedulerRoute,
