@@ -30,6 +30,7 @@ import { Route as ChatBaileysRouteImport } from './routes/chat-baileys'
 import { Route as AgentesIaRouteImport } from './routes/agentes-ia'
 import { Route as AgendamentosRouteImport } from './routes/agendamentos'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as FluxosIdRouteImport } from './routes/fluxos.$id'
 import { Route as ApiPublicWebhookWhatsappRouteImport } from './routes/api/public/webhook-whatsapp'
 import { Route as ApiPublicSyncChatsRouteImport } from './routes/api/public/sync-chats'
 import { Route as ApiPublicSendMessageRouteImport } from './routes/api/public/send-message'
@@ -142,6 +143,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FluxosIdRoute = FluxosIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => FluxosRoute,
+} as any)
 const ApiPublicWebhookWhatsappRoute =
   ApiPublicWebhookWhatsappRouteImport.update({
     id: '/api/public/webhook-whatsapp',
@@ -186,7 +192,7 @@ export interface FileRoutesByFullPath {
   '/comprovantes-ia': typeof ComprovantesIaRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
-  '/fluxos': typeof FluxosRoute
+  '/fluxos': typeof FluxosRouteWithChildren
   '/funil': typeof FunilRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
   '/jarvis': typeof JarvisRoute
@@ -199,6 +205,7 @@ export interface FileRoutesByFullPath {
   '/tags': typeof TagsRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
+  '/fluxos/$id': typeof FluxosIdRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
@@ -215,7 +222,7 @@ export interface FileRoutesByTo {
   '/comprovantes-ia': typeof ComprovantesIaRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
-  '/fluxos': typeof FluxosRoute
+  '/fluxos': typeof FluxosRouteWithChildren
   '/funil': typeof FunilRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
   '/jarvis': typeof JarvisRoute
@@ -228,6 +235,7 @@ export interface FileRoutesByTo {
   '/tags': typeof TagsRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
+  '/fluxos/$id': typeof FluxosIdRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
@@ -245,7 +253,7 @@ export interface FileRoutesById {
   '/comprovantes-ia': typeof ComprovantesIaRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
-  '/fluxos': typeof FluxosRoute
+  '/fluxos': typeof FluxosRouteWithChildren
   '/funil': typeof FunilRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
   '/jarvis': typeof JarvisRoute
@@ -258,6 +266,7 @@ export interface FileRoutesById {
   '/tags': typeof TagsRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
+  '/fluxos/$id': typeof FluxosIdRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
@@ -289,6 +298,7 @@ export interface FileRouteTypes {
     | '/tags'
     | '/tarefas'
     | '/transacoes'
+    | '/fluxos/$id'
     | '/api/public/evolution-status'
     | '/api/public/funnel-scheduler'
     | '/api/public/message-dispatcher'
@@ -318,6 +328,7 @@ export interface FileRouteTypes {
     | '/tags'
     | '/tarefas'
     | '/transacoes'
+    | '/fluxos/$id'
     | '/api/public/evolution-status'
     | '/api/public/funnel-scheduler'
     | '/api/public/message-dispatcher'
@@ -347,6 +358,7 @@ export interface FileRouteTypes {
     | '/tags'
     | '/tarefas'
     | '/transacoes'
+    | '/fluxos/$id'
     | '/api/public/evolution-status'
     | '/api/public/funnel-scheduler'
     | '/api/public/message-dispatcher'
@@ -364,7 +376,7 @@ export interface RootRouteChildren {
   ComprovantesIaRoute: typeof ComprovantesIaRoute
   FilaRoute: typeof FilaRoute
   FinanceiroRoute: typeof FinanceiroRoute
-  FluxosRoute: typeof FluxosRoute
+  FluxosRoute: typeof FluxosRouteWithChildren
   FunilRoute: typeof FunilRoute
   InteligenciaIaRoute: typeof InteligenciaIaRoute
   JarvisRoute: typeof JarvisRoute
@@ -534,6 +546,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/fluxos/$id': {
+      id: '/fluxos/$id'
+      path: '/$id'
+      fullPath: '/fluxos/$id'
+      preLoaderRoute: typeof FluxosIdRouteImport
+      parentRoute: typeof FluxosRoute
+    }
     '/api/public/webhook-whatsapp': {
       id: '/api/public/webhook-whatsapp'
       path: '/api/public/webhook-whatsapp'
@@ -579,6 +598,17 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface FluxosRouteChildren {
+  FluxosIdRoute: typeof FluxosIdRoute
+}
+
+const FluxosRouteChildren: FluxosRouteChildren = {
+  FluxosIdRoute: FluxosIdRoute,
+}
+
+const FluxosRouteWithChildren =
+  FluxosRoute._addFileChildren(FluxosRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgendamentosRoute: AgendamentosRoute,
@@ -588,7 +618,7 @@ const rootRouteChildren: RootRouteChildren = {
   ComprovantesIaRoute: ComprovantesIaRoute,
   FilaRoute: FilaRoute,
   FinanceiroRoute: FinanceiroRoute,
-  FluxosRoute: FluxosRoute,
+  FluxosRoute: FluxosRouteWithChildren,
   FunilRoute: FunilRoute,
   InteligenciaIaRoute: InteligenciaIaRoute,
   JarvisRoute: JarvisRoute,
