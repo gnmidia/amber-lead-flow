@@ -797,7 +797,7 @@ function LeadTagsArea({
                   return (
                     <button
                       key={t.id}
-                      onClick={() => toggle(t.id)}
+                      onClick={() => toggle(t)}
                       className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-muted"
                     >
                       <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: t.color }} />
