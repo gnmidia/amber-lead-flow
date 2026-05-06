@@ -207,6 +207,36 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
             }
           }
 
+          // Confirmação tardia da Evolution após o fire-and-forget de áudio.
+          if (event === "send.message" && data?.key?.fromMe && data?.key?.id) {
+            const key = data.key;
+            const remoteJid: string = key.remoteJid ?? "";
+            const isAudio =
+              !!data.message?.audioMessage ||
+              (typeof data.messageType === "string" && data.messageType.toLowerCase().includes("audio"));
+            if (isAudio && remoteJid) {
+              const { data: lead } = await supabaseAdmin
+                .from("leads").select("id").eq("remote_jid", remoteJid).maybeSingle();
+              if (lead) {
+                const { data: target } = await supabaseAdmin
+                  .from("messages")
+                  .select("id")
+                  .eq("lead_id", lead.id)
+                  .eq("direction", "outbound")
+                  .eq("type", "audio")
+                  .is("evolution_message_id", null)
+                  .order("sent_at", { ascending: false })
+                  .limit(1)
+                  .maybeSingle();
+                if (target) {
+                  await supabaseAdmin.from("messages")
+                    .update({ evolution_message_id: key.id })
+                    .eq("id", target.id);
+                }
+              }
+            }
+          }
+
           return new Response("ok");
         } catch (err) {
           console.error("[webhook] error", err);
