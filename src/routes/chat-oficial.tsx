@@ -717,20 +717,40 @@ function LeadTagsArea({
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const assignedIds = new Set(leadTags.map((t) => t.id));
+  const [localTags, setLocalTags] = useState<TagItem[]>(leadTags);
 
-  const assign = async (tagId: string) => {
-    await supabase.from("lead_tags").upsert(
-      { lead_id: leadId, tag_id: tagId, assigned_by: "manual" },
+  useEffect(() => {
+    setLocalTags(leadTags);
+  }, [leadId, leadTags]);
+
+  const assignedIds = new Set(localTags.map((t) => t.id));
+
+  const assign = async (tag: TagItem) => {
+    setLocalTags((prev) => (prev.some((t) => t.id === tag.id) ? prev : [...prev, tag]));
+    const { error } = await supabase.from("lead_tags").upsert(
+      { lead_id: leadId, tag_id: tag.id, assigned_by: "manual" },
       { onConflict: "lead_id,tag_id", ignoreDuplicates: true }
     );
+    if (error) {
+      setLocalTags((prev) => prev.filter((t) => t.id !== tag.id));
+      toast.error("Erro ao adicionar tag");
+    }
   };
-  const remove = async (tagId: string) => {
-    await supabase.from("lead_tags").delete().eq("lead_id", leadId).eq("tag_id", tagId);
+  const remove = async (tag: TagItem) => {
+    setLocalTags((prev) => prev.filter((t) => t.id !== tag.id));
+    const { error } = await supabase
+      .from("lead_tags")
+      .delete()
+      .eq("lead_id", leadId)
+      .eq("tag_id", tag.id);
+    if (error) {
+      setLocalTags((prev) => (prev.some((t) => t.id === tag.id) ? prev : [...prev, tag]));
+      toast.error("Erro ao remover tag");
+    }
   };
-  const toggle = async (tagId: string) => {
-    if (assignedIds.has(tagId)) await remove(tagId);
-    else await assign(tagId);
+  const toggle = async (tag: TagItem) => {
+    if (assignedIds.has(tag.id)) await remove(tag);
+    else await assign(tag);
   };
 
   const filtered = allTags.filter((t) =>
@@ -739,10 +759,10 @@ function LeadTagsArea({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 border-b border-border bg-background/60 px-6 py-2">
-      {leadTags.map((t) => (
+      {localTags.map((t) => (
         <button
           key={t.id}
-          onClick={() => remove(t.id)}
+          onClick={() => remove(t)}
           title="Clique para remover"
           style={{ backgroundColor: t.color + "33", color: t.color, borderColor: t.color }}
           className="group inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase"
@@ -777,7 +797,7 @@ function LeadTagsArea({
                   return (
                     <button
                       key={t.id}
-                      onClick={() => toggle(t.id)}
+                      onClick={() => toggle(t)}
                       className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-muted"
                     >
                       <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: t.color }} />
