@@ -98,11 +98,11 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
     const t = todayStr();
     const y = yesterdayStr();
     const last7 = format(subDays(new Date(), 6), "yyyy-MM-dd");
-    const today = perDay.find((r) => r.day === t)?.new_leads ?? 0;
-    const yesterday = perDay.find((r) => r.day === y)?.new_leads ?? 0;
+    const today = perDay.find((r) => r.day === t)?.total ?? 0;
+    const yesterday = perDay.find((r) => r.day === y)?.total ?? 0;
     const seven = perDay
       .filter((r) => r.day >= last7)
-      .reduce((s, r) => s + (r.new_leads ?? 0), 0);
+      .reduce((s, r) => s + (r.total ?? 0), 0);
     const total = perDay
       .filter((r) => r.day >= startStr && r.day <= endStr)
       .reduce((s, r) => s + (r.total ?? 0), 0);
