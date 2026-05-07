@@ -4,6 +4,7 @@ import { PageHeader } from "../components/PageHeader";
 import { Search, Archive, Send, Paperclip, Mic, Pause, Play, RefreshCw, FileText, Plus, Check, Tag as TagIcon, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { timeSP, dayMonthSP, dayMonthYearSP, ymdSP } from "@/lib/datetime";
 
 export const Route = createFileRoute("/chat-oficial")({
   component: ChatOficialPage,
