@@ -56,7 +56,7 @@ function OverviewPage() {
 
   const labelCustom =
     range?.from && range?.to
-      ? `${format(range.from, "dd/MM/yy", { locale: ptBR })} – ${format(range.to, "dd/MM/yy", { locale: ptBR })}`
+      ? `${dayMonthYearSP(range.from)} – ${dayMonthYearSP(range.to)}`
       : "Personalizar";
 
   return (
