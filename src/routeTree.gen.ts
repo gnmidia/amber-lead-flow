@@ -39,6 +39,7 @@ import { Route as ApiPublicMessageDispatcherRouteImport } from './routes/api/pub
 import { Route as ApiPublicFunnelSchedulerRouteImport } from './routes/api/public/funnel-scheduler'
 import { Route as ApiPublicFlowExecutorRouteImport } from './routes/api/public/flow-executor'
 import { Route as ApiPublicEvolutionStatusRouteImport } from './routes/api/public/evolution-status'
+import { Route as ApiPublicEvolutionDiagRouteImport } from './routes/api/public/evolution-diag'
 
 const TransacoesRoute = TransacoesRouteImport.update({
   id: '/transacoes',
@@ -194,6 +195,11 @@ const ApiPublicEvolutionStatusRoute =
     path: '/api/public/evolution-status',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicEvolutionDiagRoute = ApiPublicEvolutionDiagRouteImport.update({
+  id: '/api/public/evolution-diag',
+  path: '/api/public/evolution-diag',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -219,6 +225,7 @@ export interface FileRoutesByFullPath {
   '/transacoes': typeof TransacoesRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos/': typeof FluxosIndexRoute
+  '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
@@ -251,6 +258,7 @@ export interface FileRoutesByTo {
   '/transacoes': typeof TransacoesRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos': typeof FluxosIndexRoute
+  '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
@@ -284,6 +292,7 @@ export interface FileRoutesById {
   '/transacoes': typeof TransacoesRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos/': typeof FluxosIndexRoute
+  '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
@@ -318,6 +327,7 @@ export interface FileRouteTypes {
     | '/transacoes'
     | '/fluxos/$id'
     | '/fluxos/'
+    | '/api/public/evolution-diag'
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
@@ -350,6 +360,7 @@ export interface FileRouteTypes {
     | '/transacoes'
     | '/fluxos/$id'
     | '/fluxos'
+    | '/api/public/evolution-diag'
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
@@ -382,6 +393,7 @@ export interface FileRouteTypes {
     | '/transacoes'
     | '/fluxos/$id'
     | '/fluxos/'
+    | '/api/public/evolution-diag'
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
@@ -415,6 +427,7 @@ export interface RootRouteChildren {
   TransacoesRoute: typeof TransacoesRoute
   FluxosIdRoute: typeof FluxosIdRoute
   FluxosIndexRoute: typeof FluxosIndexRoute
+  ApiPublicEvolutionDiagRoute: typeof ApiPublicEvolutionDiagRoute
   ApiPublicEvolutionStatusRoute: typeof ApiPublicEvolutionStatusRoute
   ApiPublicFlowExecutorRoute: typeof ApiPublicFlowExecutorRoute
   ApiPublicFunnelSchedulerRoute: typeof ApiPublicFunnelSchedulerRoute
@@ -636,6 +649,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicEvolutionStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/evolution-diag': {
+      id: '/api/public/evolution-diag'
+      path: '/api/public/evolution-diag'
+      fullPath: '/api/public/evolution-diag'
+      preLoaderRoute: typeof ApiPublicEvolutionDiagRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -663,6 +683,7 @@ const rootRouteChildren: RootRouteChildren = {
   TransacoesRoute: TransacoesRoute,
   FluxosIdRoute: FluxosIdRoute,
   FluxosIndexRoute: FluxosIndexRoute,
+  ApiPublicEvolutionDiagRoute: ApiPublicEvolutionDiagRoute,
   ApiPublicEvolutionStatusRoute: ApiPublicEvolutionStatusRoute,
   ApiPublicFlowExecutorRoute: ApiPublicFlowExecutorRoute,
   ApiPublicFunnelSchedulerRoute: ApiPublicFunnelSchedulerRoute,
