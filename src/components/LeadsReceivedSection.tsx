@@ -156,9 +156,10 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
   }, [perDayByTag, selectedTag]);
 
   const tagDayLabel = (day: string) => {
-    const d = parseISO(day);
-    if (isToday(d)) return `Hoje ${fmtDay(day)}`;
-    if (isYesterday(d)) return `Ontem ${fmtDay(day)}`;
+    const today = ymdSP();
+    const yesterday = ymdSPDaysAgo(1);
+    if (day === today) return `Hoje ${fmtDay(day)}`;
+    if (day === yesterday) return `Ontem ${fmtDay(day)}`;
     return fmtDay(day);
   };
 
