@@ -119,7 +119,7 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
 
   // Table — last 7 days with tag breakdown
   const last7Rows = useMemo(() => {
-    const cutoff = format(subDays(new Date(), 6), "yyyy-MM-dd");
+    const cutoff = ymdSPDaysAgo(6);
     const days = perDay.filter((r) => r.day >= cutoff);
     return days.map((row) => {
       const tagsForDay = perDayByTag
