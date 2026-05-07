@@ -4,6 +4,7 @@ import { PageHeader } from "../components/PageHeader";
 import { Search, Archive, Send, Paperclip, Mic, Pause, Play, RefreshCw, FileText, Plus, Check, Tag as TagIcon, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { timeSP, dayMonthSP, dayMonthYearSP, ymdSP } from "@/lib/datetime";
 
 export const Route = createFileRoute("/chat-oficial")({
   component: ChatOficialPage,
@@ -45,27 +46,20 @@ type Filter = "all" | "window34" | "scheduled" | "archived";
 
 function formatTime(iso?: string | null) {
   if (!iso) return "";
-  const d = new Date(iso);
-  return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  return timeSP(iso);
 }
 
 function formatConversationTime(dateString?: string | null): string {
   if (!dateString) return "";
   const date = new Date(dateString);
   const now = new Date();
-  const isToday =
-    date.getDate() === now.getDate() &&
-    date.getMonth() === now.getMonth() &&
-    date.getFullYear() === now.getFullYear();
-  const isCurrentYear = date.getFullYear() === now.getFullYear();
-
-  if (isToday) {
-    return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-  }
-  if (isCurrentYear) {
-    return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-  }
-  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
+  const dateYmd = ymdSP(date);
+  const nowYmd = ymdSP(now);
+  if (dateYmd === nowYmd) return timeSP(date);
+  // mesmo ano em SP?
+  const sameYear = dateYmd.slice(0, 4) === nowYmd.slice(0, 4);
+  if (sameYear) return dayMonthSP(date);
+  return dayMonthYearSP(date);
 }
 
 function initialsOf(name: string | null, number: string) {

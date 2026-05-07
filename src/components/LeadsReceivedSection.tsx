@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { subDays, format, parseISO, isToday, isYesterday } from "date-fns";
+import { ymdSP, ymdSPDaysAgo, dayMonthFromYmd } from "@/lib/datetime";
 import {
   BarChart,
   Bar,
@@ -21,9 +21,9 @@ type LeadsPerDayByTagRow = {
 };
 type Tag = { id: string; name: string; color: string };
 
-const fmtDay = (d: string) => format(parseISO(d), "dd/MM");
-const todayStr = () => format(new Date(), "yyyy-MM-dd");
-const yesterdayStr = () => format(subDays(new Date(), 1), "yyyy-MM-dd");
+const fmtDay = (d: string) => dayMonthFromYmd(d);
+const todayStr = () => ymdSP();
+const yesterdayStr = () => ymdSPDaysAgo(1);
 
 type Props = { startDate: Date; endDate: Date };
 
@@ -34,16 +34,16 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTagId, setSelectedTagId] = useState<string | "ALL">("ALL");
 
-  const startStr = format(startDate, "yyyy-MM-dd");
-  const endStr = format(endDate, "yyyy-MM-dd");
+  const startStr = ymdSP(startDate);
+  const endStr = ymdSP(endDate);
   // Always fetch at least the last 30 days so summary cards (Hoje / Ontem / 7d)
   // and the 30-day chart keep working regardless of the selected period.
   const fetchFromStr = useMemo(() => {
-    const minStart = format(subDays(new Date(), 29), "yyyy-MM-dd");
+    const minStart = ymdSPDaysAgo(29);
     return startStr < minStart ? startStr : minStart;
   }, [startStr]);
   const fetchToStr = useMemo(() => {
-    const today = format(new Date(), "yyyy-MM-dd");
+    const today = ymdSP();
     return endStr > today ? endStr : today;
   }, [endStr]);
 
@@ -97,7 +97,7 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
   const summary = useMemo(() => {
     const t = todayStr();
     const y = yesterdayStr();
-    const last7 = format(subDays(new Date(), 6), "yyyy-MM-dd");
+    const last7 = ymdSPDaysAgo(6);
     const today = perDay.find((r) => r.day === t)?.total ?? 0;
     const yesterday = perDay.find((r) => r.day === y)?.total ?? 0;
     const seven = perDay
@@ -119,7 +119,7 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
 
   // Table — last 7 days with tag breakdown
   const last7Rows = useMemo(() => {
-    const cutoff = format(subDays(new Date(), 6), "yyyy-MM-dd");
+    const cutoff = ymdSPDaysAgo(6);
     const days = perDay.filter((r) => r.day >= cutoff);
     return days.map((row) => {
       const tagsForDay = perDayByTag
@@ -156,9 +156,10 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
   }, [perDayByTag, selectedTag]);
 
   const tagDayLabel = (day: string) => {
-    const d = parseISO(day);
-    if (isToday(d)) return `Hoje ${fmtDay(day)}`;
-    if (isYesterday(d)) return `Ontem ${fmtDay(day)}`;
+    const today = ymdSP();
+    const yesterday = ymdSPDaysAgo(1);
+    if (day === today) return `Hoje ${fmtDay(day)}`;
+    if (day === yesterday) return `Ontem ${fmtDay(day)}`;
     return fmtDay(day);
   };
 
