@@ -97,7 +97,7 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
   const summary = useMemo(() => {
     const t = todayStr();
     const y = yesterdayStr();
-    const last7 = format(subDays(new Date(), 6), "yyyy-MM-dd");
+    const last7 = ymdSPDaysAgo(6);
     const today = perDay.find((r) => r.day === t)?.total ?? 0;
     const yesterday = perDay.find((r) => r.day === y)?.total ?? 0;
     const seven = perDay
