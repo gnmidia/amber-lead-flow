@@ -219,11 +219,19 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
                   <XAxis dataKey="day" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                   <Tooltip
+                    cursor={{ fill: "hsl(var(--muted) / 0.25)" }}
+                    wrapperStyle={{
+                      transform: "translate(-50%, -110%)",
+                      pointerEvents: "none",
+                    }}
+                    allowEscapeViewBox={{ x: true, y: true }}
+                    offset={0}
                     contentStyle={{
                       background: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
                       borderRadius: 8,
                       fontSize: 12,
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
                     }}
                   />
                   <Bar dataKey="total" fill="#F97316" radius={[4, 4, 0, 0]} />
