@@ -103,13 +103,19 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
     const seven = perDay
       .filter((r) => r.day >= last7)
       .reduce((s, r) => s + (r.new_leads ?? 0), 0);
-    const total = perDay.reduce((s, r) => s + (r.total ?? 0), 0);
+    const total = perDay
+      .filter((r) => r.day >= startStr && r.day <= endStr)
+      .reduce((s, r) => s + (r.total ?? 0), 0);
     return { today, yesterday, seven, total };
-  }, [perDay]);
+  }, [perDay, startStr, endStr]);
 
-  // Chart all leads (last 30 days, ascending)
+  // Chart all leads (period selected, ascending)
   const chartAll = useMemo(() => {
-    return [...perDay]
+    return perDay
+      .filter((r) => r.day >= startStr && r.day <= endStr)
+      .sort((a, b) => a.day.localeCompare(b.day))
+      .map((r) => ({ day: fmtDay(r.day), total: r.total, raw: r.day }));
+  }, [perDay, startStr, endStr]);
       .sort((a, b) => a.day.localeCompare(b.day))
       .map((r) => ({ day: fmtDay(r.day), total: r.total, raw: r.day }));
   }, [perDay]);
