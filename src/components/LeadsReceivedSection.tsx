@@ -116,9 +116,6 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
       .sort((a, b) => a.day.localeCompare(b.day))
       .map((r) => ({ day: fmtDay(r.day), total: r.total, raw: r.day }));
   }, [perDay, startStr, endStr]);
-      .sort((a, b) => a.day.localeCompare(b.day))
-      .map((r) => ({ day: fmtDay(r.day), total: r.total, raw: r.day }));
-  }, [perDay]);
 
   // Table — last 7 days with tag breakdown
   const last7Rows = useMemo(() => {
