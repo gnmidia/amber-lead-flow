@@ -21,9 +21,9 @@ type LeadsPerDayByTagRow = {
 };
 type Tag = { id: string; name: string; color: string };
 
-const fmtDay = (d: string) => format(parseISO(d), "dd/MM");
-const todayStr = () => format(new Date(), "yyyy-MM-dd");
-const yesterdayStr = () => format(subDays(new Date(), 1), "yyyy-MM-dd");
+const fmtDay = (d: string) => dayMonthFromYmd(d);
+const todayStr = () => ymdSP();
+const yesterdayStr = () => ymdSPDaysAgo(1);
 
 type Props = { startDate: Date; endDate: Date };
 
@@ -34,16 +34,16 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTagId, setSelectedTagId] = useState<string | "ALL">("ALL");
 
-  const startStr = format(startDate, "yyyy-MM-dd");
-  const endStr = format(endDate, "yyyy-MM-dd");
+  const startStr = ymdSP(startDate);
+  const endStr = ymdSP(endDate);
   // Always fetch at least the last 30 days so summary cards (Hoje / Ontem / 7d)
   // and the 30-day chart keep working regardless of the selected period.
   const fetchFromStr = useMemo(() => {
-    const minStart = format(subDays(new Date(), 29), "yyyy-MM-dd");
+    const minStart = ymdSPDaysAgo(29);
     return startStr < minStart ? startStr : minStart;
   }, [startStr]);
   const fetchToStr = useMemo(() => {
-    const today = format(new Date(), "yyyy-MM-dd");
+    const today = ymdSP();
     return endStr > today ? endStr : today;
   }, [endStr]);
 
