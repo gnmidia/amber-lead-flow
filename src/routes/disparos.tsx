@@ -137,7 +137,7 @@ function DisparosPage() {
                     <span className="inline-flex items-center gap-1"><WorkflowIcon className="h-3 w-3" />{flow?.name || "—"}</span>
                     <span className="inline-flex items-center gap-1"><TagIcon className="h-3 w-3" style={{ color: tag?.color }} />{tag?.name || "—"}</span>
                     <span>Intervalo: {b.min_interval_seconds}s – {b.max_interval_seconds}s</span>
-                    <span>Criado: {new Date(b.created_at).toLocaleString()}</span>
+                    <span>Criado: {fullDateTimeSP(b.created_at)}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
