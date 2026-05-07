@@ -36,20 +36,30 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
 
   const startStr = format(startDate, "yyyy-MM-dd");
   const endStr = format(endDate, "yyyy-MM-dd");
+  // Always fetch at least the last 30 days so summary cards (Hoje / Ontem / 7d)
+  // and the 30-day chart keep working regardless of the selected period.
+  const fetchFromStr = useMemo(() => {
+    const minStart = format(subDays(new Date(), 29), "yyyy-MM-dd");
+    return startStr < minStart ? startStr : minStart;
+  }, [startStr]);
+  const fetchToStr = useMemo(() => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    return endStr > today ? endStr : today;
+  }, [endStr]);
 
   const loadAll = useCallback(async () => {
     const [{ data: d1 }, { data: d2 }, { data: d3 }] = await Promise.all([
       supabase
         .from("leads_per_day" as never)
         .select("*")
-        .gte("day", startStr)
-        .lte("day", endStr)
+        .gte("day", fetchFromStr)
+        .lte("day", fetchToStr)
         .order("day", { ascending: false }),
       supabase
         .from("leads_per_day_by_tag" as never)
         .select("*")
-        .gte("day", startStr)
-        .lte("day", endStr)
+        .gte("day", fetchFromStr)
+        .lte("day", fetchToStr)
         .order("day", { ascending: false }),
       supabase
         .from("tags")
@@ -60,7 +70,7 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
     setPerDay((d1 as LeadsPerDayRow[]) || []);
     setPerDayByTag((d2 as LeadsPerDayByTagRow[]) || []);
     setTags((d3 as Tag[]) || []);
-  }, [startStr, endStr]);
+  }, [fetchFromStr, fetchToStr]);
 
 
   useEffect(() => {
@@ -93,16 +103,19 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
     const seven = perDay
       .filter((r) => r.day >= last7)
       .reduce((s, r) => s + (r.new_leads ?? 0), 0);
-    const total = perDay.reduce((s, r) => s + (r.total ?? 0), 0);
+    const total = perDay
+      .filter((r) => r.day >= startStr && r.day <= endStr)
+      .reduce((s, r) => s + (r.total ?? 0), 0);
     return { today, yesterday, seven, total };
-  }, [perDay]);
+  }, [perDay, startStr, endStr]);
 
-  // Chart all leads (last 30 days, ascending)
+  // Chart all leads (period selected, ascending)
   const chartAll = useMemo(() => {
-    return [...perDay]
+    return perDay
+      .filter((r) => r.day >= startStr && r.day <= endStr)
       .sort((a, b) => a.day.localeCompare(b.day))
       .map((r) => ({ day: fmtDay(r.day), total: r.total, raw: r.day }));
-  }, [perDay]);
+  }, [perDay, startStr, endStr]);
 
   // Table — last 7 days with tag breakdown
   const last7Rows = useMemo(() => {
