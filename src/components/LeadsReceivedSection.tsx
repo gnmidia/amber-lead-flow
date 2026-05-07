@@ -36,20 +36,30 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
 
   const startStr = format(startDate, "yyyy-MM-dd");
   const endStr = format(endDate, "yyyy-MM-dd");
+  // Always fetch at least the last 30 days so summary cards (Hoje / Ontem / 7d)
+  // and the 30-day chart keep working regardless of the selected period.
+  const fetchFromStr = useMemo(() => {
+    const minStart = format(subDays(new Date(), 29), "yyyy-MM-dd");
+    return startStr < minStart ? startStr : minStart;
+  }, [startStr]);
+  const fetchToStr = useMemo(() => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    return endStr > today ? endStr : today;
+  }, [endStr]);
 
   const loadAll = useCallback(async () => {
     const [{ data: d1 }, { data: d2 }, { data: d3 }] = await Promise.all([
       supabase
         .from("leads_per_day" as never)
         .select("*")
-        .gte("day", startStr)
-        .lte("day", endStr)
+        .gte("day", fetchFromStr)
+        .lte("day", fetchToStr)
         .order("day", { ascending: false }),
       supabase
         .from("leads_per_day_by_tag" as never)
         .select("*")
-        .gte("day", startStr)
-        .lte("day", endStr)
+        .gte("day", fetchFromStr)
+        .lte("day", fetchToStr)
         .order("day", { ascending: false }),
       supabase
         .from("tags")
@@ -60,7 +70,7 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
     setPerDay((d1 as LeadsPerDayRow[]) || []);
     setPerDayByTag((d2 as LeadsPerDayByTagRow[]) || []);
     setTags((d3 as Tag[]) || []);
-  }, [startStr, endStr]);
+  }, [fetchFromStr, fetchToStr]);
 
 
   useEffect(() => {
