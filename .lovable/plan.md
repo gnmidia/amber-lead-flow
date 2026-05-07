@@ -1,63 +1,43 @@
-## Diagnóstico (resumo)
+## Diagnóstico atual
 
-- ✅ Broadcast `282c16d1...` foi criado com `status=running`, 2 leads.
-- ✅ Targets foram criados em `broadcast_targets` (status=`pending`, `scheduled_at` corretos).
-- ✅ Cron `broadcast-dispatcher-every-minute` está ativo (`* * * * *`).
-- ❌ O cron chama `https://project--<id>.lovable.app/...` (URL **publicada**) e o app **não foi publicado**, então retorna **HTTP 404 "Project not found"** a cada minuto. Por isso os 2 targets nunca saem de `pending`.
-- ⚠ Não existem Edge Functions (`broadcast-start` / `broadcast-dispatcher`) — a implementação atual usa server routes do TanStack.
+Acabei de testar os dois domínios:
 
-Conclusão: a criação do disparo funcionou. O que falhou é o consumo pelo cron, porque o cron aponta para um domínio inexistente.
+| Domínio | Status | Resultado |
+|---|---|---|
+| `project--4cb49bae…lovable.app/api/public/webhook-whatsapp` (produção) | **404** | "Publish or update your Lovable project for it to appear here." |
+| `project--4cb49bae…-dev.lovable.app/api/public/webhook-whatsapp` (preview) | **200 ok** | Lead "Teste Plan" inserido com sucesso às 19:03:04 |
 
-## Plano — migrar para Supabase Edge Functions reais
+Ou seja: o domínio de **produção continua não publicado** (ou o publish não concluiu). O domínio de **preview** está 100% funcional — payload é aceito, lead criado, mensagem persistida.
 
-### 1. Criar `supabase/functions/broadcast-start/index.ts`
-Porta do `src/routes/api/public/broadcast-create.ts` para Deno:
-- Body: `{ name, flow_id, tag_id, min_interval_seconds, max_interval_seconds }`
-- Busca leads pela tag, filtra `status='active'`, insere `broadcasts` + `broadcast_targets` com `scheduled_at` rolante (rand entre min/max).
-- Usa `SUPABASE_SERVICE_ROLE_KEY` via `Deno.env`.
-- CORS aberto.
+## Plano
 
-### 2. Criar `supabase/functions/broadcast-dispatcher/index.ts`
-Porta do `src/routes/api/public/broadcast-dispatcher.ts`:
-- Chama `claim_broadcast_targets` (já existe no banco).
-- Para cada target: respeita `cancelled` / `paused`, valida lead ativo, reagenda se há funil ativo, senão executa o fluxo.
-- **Execução do fluxo**: porta inline do `executeFlowForLead` (lê `flow_blocks` em ordem; para blocos `funnel` chama `scheduleFunnelForLead` portado; trata `agent`, `tag_assign`, `tag_remove`, `wait`, `condition`).
-- Marca target como `sent` ou `failed`. Roda `checkCompleted` no final.
+Você tem duas opções; ambas resolvem o problema. Recomendo a #1.
 
-### 3. Configurar `supabase/config.toml`
-Adicionar blocos para as duas funções com `verify_jwt = false` (são chamadas pelo cron com service-role e pela UI com anon).
+### Opção 1 — Publicar o projeto (recomendado)
 
-### 4. Atualizar UI para chamar a Edge Function
-- Em `src/routes/disparos.tsx`, trocar `fetch("/api/public/broadcast-create", ...)` por `supabase.functions.invoke("broadcast-start", { body: {...} })`.
+1. Clicar em **Publish** no topo direito do editor.
+2. Manter a URL atual do webhook na Evolution (`project--4cb49bae…lovable.app/...`) — ela passa a funcionar imediatamente após o primeiro publish.
+3. Enviar uma mensagem real de outro número para o `DashWhats`.
+4. Rodar `SELECT … FROM leads ORDER BY created_at DESC LIMIT 3` para confirmar.
 
-### 5. Migrar o cron
-SQL a rodar (insert tool, não migration — contém URL/chave):
-```sql
-SELECT cron.unschedule('broadcast-dispatcher-every-minute');
+Vantagem: a URL fica estável para sempre, mesmo que o preview seja regenerado.
 
-SELECT cron.schedule(
-  'broadcast-dispatcher-every-minute',
-  '* * * * *',
-  $$
-  SELECT net.http_post(
-    url:='https://uzuxxgvpgsqmkolmmqcv.supabase.co/functions/v1/broadcast-dispatcher',
-    headers:='{"Content-Type":"application/json","Authorization":"Bearer <anon>"}'::jsonb,
-    body:='{}'::jsonb
-  );
-  $$
-);
+### Opção 2 — Apontar o webhook da Evolution para o domínio de preview
+
+Atualizar a configuração na Evolution via:
+```
+POST /webhook/set/DashWhats
+{
+  "url": "https://project--4cb49bae-afe3-4c97-ab68-38e668ee52f9-dev.lovable.app/api/public/webhook-whatsapp",
+  "enabled": true,
+  "webhookByEvents": false,
+  "webhookBase64": true,
+  "events": ["MESSAGES_UPSERT","CONNECTION_UPDATE","SEND_MESSAGE"]
+}
 ```
 
-### 6. Remover server routes obsoletos
-Apagar `src/routes/api/public/broadcast-create.ts` e `src/routes/api/public/broadcast-dispatcher.ts` (substituídos pelas Edge Functions).
+Desvantagem: o domínio `-dev` reflete o último build de preview; se o preview for regenerado de forma estranha pode haver janela de instabilidade. Para webhook de produção, prefira publicar.
 
-### 7. Verificação
-- `SELECT jobname, schedule, active FROM cron.job;` → confirmar que o job aparece e segue ativo.
-- Invocar `broadcast-dispatcher` manualmente uma vez (via curl ou tool de teste) e confirmar resposta JSON sem 404.
-- Conferir `cron.job_run_details` e `net._http_response` mostrando `200` e `{"dispatched":N}`.
-- Os 2 targets `pending` do disparo `282c16d1...` devem sair de pending na próxima execução.
+## Qual opção seguir?
 
-## Observações
-
-- A lógica de `executeFlowForLead` é grande; será portada com fidelidade para Deno mas é o ponto de maior risco — testaremos invocando manualmente após o deploy.
-- Após migrar, o sistema deixa de depender da publicação do projeto para os disparos funcionarem.
+Me confirma qual caminho você quer (ou se já clicou em Publish e quer que eu re-teste o domínio de produção). Quando você decidir, eu saio do modo de plano e executo.
