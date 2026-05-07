@@ -6,8 +6,9 @@ import { CalendarRange, Clock } from "lucide-react";
 import { LeadsReceivedSection } from "../components/LeadsReceivedSection";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format, startOfDay, endOfDay, subDays } from "date-fns";
+import { startOfDay, endOfDay, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { dayMonthYearSP } from "@/lib/datetime";
 import type { DateRange } from "react-day-picker";
 
 export const Route = createFileRoute("/overview")({
