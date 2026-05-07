@@ -353,12 +353,9 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
                     <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                     <Tooltip
                       cursor={{ fill: "hsl(var(--muted) / 0.25)" }}
-                      wrapperStyle={{
-                        transform: "translate(-50%, -110%)",
-                        pointerEvents: "none",
-                      }}
-                      allowEscapeViewBox={{ x: true, y: true }}
-                      offset={0}
+                      position={{ y: 0 }}
+                      offset={-40}
+                      wrapperStyle={{ pointerEvents: "none", zIndex: 50 }}
                       contentStyle={{
                         background: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
