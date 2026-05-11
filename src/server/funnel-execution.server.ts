@@ -145,11 +145,12 @@ export async function executeFlowForLead({
 
   const { data: lead, error: leadError } = await supabaseAdmin
     .from("leads")
-    .select("whatsapp_number, remote_jid, instance_name")
+    .select("whatsapp_number, remote_jid, instance_name, operation_id")
     .eq("id", lead_id)
     .maybeSingle();
   assertNoError(leadError, "lead lookup failed");
   if (!lead) throw new Error("lead not found");
+  const opInstance = await getOperationInstance((lead as any).operation_id);
 
   const now = new Date();
 
