@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UsuariosRouteImport } from './routes/usuarios'
 import { Route as TransacoesRouteImport } from './routes/transacoes'
 import { Route as TarefasRouteImport } from './routes/tarefas'
 import { Route as TagsRouteImport } from './routes/tags'
@@ -46,6 +47,11 @@ import { Route as ApiPublicFlowExecutorRouteImport } from './routes/api/public/f
 import { Route as ApiPublicEvolutionStatusRouteImport } from './routes/api/public/evolution-status'
 import { Route as ApiPublicEvolutionDiagRouteImport } from './routes/api/public/evolution-diag'
 
+const UsuariosRoute = UsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TransacoesRoute = TransacoesRouteImport.update({
   id: '/transacoes',
   path: '/transacoes',
@@ -258,6 +264,7 @@ export interface FileRoutesByFullPath {
   '/tags': typeof TagsRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
+  '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos/': typeof FluxosIndexRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
@@ -296,6 +303,7 @@ export interface FileRoutesByTo {
   '/tags': typeof TagsRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
+  '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos': typeof FluxosIndexRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
@@ -335,6 +343,7 @@ export interface FileRoutesById {
   '/tags': typeof TagsRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
+  '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos/': typeof FluxosIndexRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
@@ -375,6 +384,7 @@ export interface FileRouteTypes {
     | '/tags'
     | '/tarefas'
     | '/transacoes'
+    | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos/'
     | '/api/public/evolution-diag'
@@ -413,6 +423,7 @@ export interface FileRouteTypes {
     | '/tags'
     | '/tarefas'
     | '/transacoes'
+    | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos'
     | '/api/public/evolution-diag'
@@ -451,6 +462,7 @@ export interface FileRouteTypes {
     | '/tags'
     | '/tarefas'
     | '/transacoes'
+    | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos/'
     | '/api/public/evolution-diag'
@@ -490,6 +502,7 @@ export interface RootRouteChildren {
   TagsRoute: typeof TagsRoute
   TarefasRoute: typeof TarefasRoute
   TransacoesRoute: typeof TransacoesRoute
+  UsuariosRoute: typeof UsuariosRoute
   FluxosIdRoute: typeof FluxosIdRoute
   FluxosIndexRoute: typeof FluxosIndexRoute
   ApiPublicEvolutionDiagRoute: typeof ApiPublicEvolutionDiagRoute
@@ -504,6 +517,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/usuarios': {
+      id: '/usuarios'
+      path: '/usuarios'
+      fullPath: '/usuarios'
+      preLoaderRoute: typeof UsuariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/transacoes': {
       id: '/transacoes'
       path: '/transacoes'
@@ -786,6 +806,7 @@ const rootRouteChildren: RootRouteChildren = {
   TagsRoute: TagsRoute,
   TarefasRoute: TarefasRoute,
   TransacoesRoute: TransacoesRoute,
+  UsuariosRoute: UsuariosRoute,
   FluxosIdRoute: FluxosIdRoute,
   FluxosIndexRoute: FluxosIndexRoute,
   ApiPublicEvolutionDiagRoute: ApiPublicEvolutionDiagRoute,
