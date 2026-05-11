@@ -1,81 +1,77 @@
-## Correção de leads duplicados (3 frentes)
+## Diagnóstico
 
-### Casos confirmados a mesclar
+A sincronização "termina com sucesso" mas as mensagens continuam antigas porque **o frontend não envia o `operation_id` para o endpoint `/api/public/sync-chats`**.
 
-| Manter (principal) | Apagar (duplicado) |
-|---|---|
-| Agnaldo Geraldo Flores — `553798184946@s.whatsapp.net` | `9904781791403@lid` |
-| Eduardo — `556984497325@s.whatsapp.net` | `59704508158053@lid` |
+### Fluxo atual (bugado)
 
----
-
-### Etapa 1 — Migration: mesclar duplicados + unique index
-
-Uma única migration SQL faz:
-
-1. Para cada par, em transação:
-   - `UPDATE messages SET lead_id = <principal> WHERE lead_id = <duplicado>`
-   - `UPDATE lead_tags SET lead_id = <principal> WHERE lead_id = <duplicado>` (com `ON CONFLICT DO NOTHING` se houver tag duplicada — usa `DELETE` dos colidentes antes do update)
-   - `UPDATE lead_funnel_states SET lead_id = <principal> WHERE lead_id = <duplicado>`
-   - `UPDATE scheduled_messages SET lead_id = <principal> WHERE lead_id = <duplicado>`
-   - `UPDATE sales SET lead_id = <principal> WHERE lead_id = <duplicado>`
-   - `DELETE FROM leads WHERE id = <duplicado>`
-   - Conta linhas movidas via CTE `RETURNING` para log
-2. Cria o índice de proteção:
-   ```sql
-   CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_remote_jid_unique
-   ON public.leads(operation_id, remote_jid)
-   WHERE remote_jid IS NOT NULL;
+1. `src/routes/chat-oficial.tsx` (linha 245) faz:
+   ```ts
+   fetch("/api/public/sync-chats", { method: "POST" })
    ```
+   — sem body, sem `operation_id`.
 
-A migration usa os IDs reais (resolvidos por `WHERE remote_jid = ...`), então é idempotente em relação à ordem.
+2. `src/routes/api/public/sync-chats.ts` lê `body?.operation_id` → `null`.
 
----
+3. O endpoint até resolve a instância via fallback `EVOLUTION_INSTANCE_NAME=DashWhats` e busca os chats na Evolution normalmente.
 
-### Etapa 2 — Reforçar deduplicação no código
+4. **Mas dentro do loop de chats existe esta verificação (linhas 67-70):**
+   ```ts
+   if (!operationId) {
+     console.warn("[sync-chats] missing operation_id; skipping chat");
+     continue;
+   }
+   ```
+   → **todos os chats são pulados**, nenhum lead/mensagem é inserido.
 
-Criar um helper único `src/server/lead-dedup.server.ts` com `findOrUpsertLead({ remoteJid, senderPn, instance, operationId, ... })` aplicando a regra:
+5. O loop finaliza com `synced` contando apenas chats processados (também 0, mas o toast mostra "Sincronizados 0 chats" como sucesso, dando a falsa impressão de conclusão).
 
-**Chegou `@s.whatsapp.net`** (telefone real no JID):
-1. Match por `remote_jid` exato → atualiza/retorna.
-2. Match por `whatsapp_number = number` → atualiza `remote_jid` real e retorna.
-3. Match por `remote_jid LIKE '%@lid' AND whatsapp_number = number` (LID antigo cujos dígitos ficaram no campo) → reescreve `remote_jid` e `whatsapp_number` para o real e retorna.
-4. Match por `remote_jid LIKE '%@lid'` cujo lead tenha `senderPn` salvo (não temos coluna; cobrimos via 3) → cai no INSERT.
-5. INSERT.
+Isso explica perfeitamente o sintoma: status "concluído" + nenhuma mensagem nova.
 
-**Chegou `@lid` com `senderPn` preenchido** (LID + telefone real conhecido):
-1. Match por `remote_jid` exato (`@lid`) → atualiza `whatsapp_number` com `senderPn` e retorna.
-2. Match por `remote_jid = ${senderPn}@s.whatsapp.net` → atualiza `remote_jid` para o `@lid` (mais estável dali em diante) e retorna.
-3. Match por `whatsapp_number = senderPn` → atualiza `remote_jid` para o `@lid` e retorna.
-4. INSERT com `remote_jid=@lid` e `whatsapp_number=senderPn`.
+### Causa raiz
 
-**Chegou `@lid` sem `senderPn`** (cenário que gerou os duplicados):
-1. Match por `remote_jid` exato → retorna.
-2. INSERT com `whatsapp_number = <dígitos do LID>` (comportamento atual). O backfill futuro converte quando o `senderPn` aparecer (rota 1 acima).
-
-Substituir os blocos atuais de `webhook-whatsapp.ts` (linhas 111–156) e `sync-chats.ts` (linhas 67–91) pelo helper. Tratar o `unique violation` (código `23505`) caindo de volta no `select` por `remote_jid` (corrida entre webhooks).
+Na etapa de isolamento multi-operação, o backend passou a exigir `operation_id` no payload, mas o frontend (`chat-oficial.tsx`) não foi atualizado para enviá-lo.
 
 ---
 
-### Etapa 3 — Validação pós-deploy
+## Correção proposta
 
-- Re-executar a query de duplicados por `name` na operação → deve retornar 0.
-- Confirmar `pg_indexes` mostra `idx_leads_remote_jid_unique`.
-- Forçar dois eventos consecutivos do mesmo contato (um `@lid` sem `senderPn`, outro `@s.whatsapp.net`) e confirmar que vira **um único** lead.
+### 1. Enviar `operation_id` no `handleSync`
+
+Em `src/routes/chat-oficial.tsx`:
+
+- Importar `useOperation` de `@/contexts/OperationContext` (verificar se já está importado em outro ponto do arquivo).
+- Pegar `currentOperationId` no componente.
+- Atualizar o `fetch`:
+  ```ts
+  const res = await fetch("/api/public/sync-chats", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ operation_id: currentOperationId }),
+  });
+  ```
+- Bloquear o clique (ou exibir toast de erro) se `currentOperationId` estiver vazio, evitando reincidência silenciosa.
+
+### 2. Tornar o endpoint mais defensivo
+
+Em `src/routes/api/public/sync-chats.ts`:
+
+- Se `operation_id` não vier no body, retornar **HTTP 400** com mensagem clara (`"operation_id é obrigatório"`) em vez de retornar 200 com `synced: 0`. Isso previne falsos "sucessos" silenciosos no futuro (ex.: outras telas que venham a chamar o endpoint).
+
+### 3. Auditar outros chamadores
+
+Verificar se há outras chamadas para `/api/public/sync-chats` no projeto (por ex. botões em outras rotas) e garantir que todas enviam `operation_id`. Pelo grep inicial, só `chat-oficial.tsx` chama esse endpoint.
 
 ---
 
-### Detalhes técnicos
+## Critérios de validação
 
-- O `lead_tags` tem `UNIQUE(lead_id, tag_id)`? **Não tem unique declarado** (só PK em `id`), então `UPDATE` direto não viola. Mantemos sem `ON CONFLICT`.
-- O índice é parcial em `remote_jid IS NOT NULL` — não bloqueia leads históricos sem JID.
-- O índice inclui `operation_id` para permitir o mesmo contato em operações diferentes (multi-operação).
-- Nenhum lead além dos 2 `@lid` confirmados é tocado.
-- A migration não toca `auth`, `storage`, `realtime`, `vault`.
+- Após a correção, clicar em "Sincronizar conversas" deve:
+  - Enviar `operation_id` no body (verificável na aba Network).
+  - Retornar `synced > 0` quando houver chats novos/atualizados.
+  - Trazer mensagens recentes para a UI.
+- Chamar o endpoint sem `operation_id` deve retornar 400, não 200.
 
-### Arquivos previstos
+## Arquivos a modificar
 
-- `supabase/migrations/<timestamp>_dedupe_leads.sql` — merge + unique index
-- `src/server/lead-dedup.server.ts` — novo helper
-- `src/routes/api/public/webhook-whatsapp.ts` — usa helper
-- `src/routes/api/public/sync-chats.ts` — usa helper
+- `src/routes/chat-oficial.tsx` — incluir `operation_id` no POST.
+- `src/routes/api/public/sync-chats.ts` — retornar 400 se faltar `operation_id`.
