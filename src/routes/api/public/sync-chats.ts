@@ -155,7 +155,6 @@ export const Route = createFileRoute("/api/public/sync-chats")({
         }
 
         return Response.json({ synced, new_messages: newMessages });
-        return Response.json({ synced });
       },
     },
   },
