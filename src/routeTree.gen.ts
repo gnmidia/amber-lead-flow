@@ -15,6 +15,7 @@ import { Route as TagsRouteImport } from './routes/tags'
 import { Route as PublicoRouteImport } from './routes/publico'
 import { Route as ProjecaoRouteImport } from './routes/projecao'
 import { Route as OverviewRouteImport } from './routes/overview'
+import { Route as OperacoesRouteImport } from './routes/operacoes'
 import { Route as OfertasRouteImport } from './routes/ofertas'
 import { Route as MetaAdsRouteImport } from './routes/meta-ads'
 import { Route as LeadsRouteImport } from './routes/leads'
@@ -69,6 +70,11 @@ const ProjecaoRoute = ProjecaoRouteImport.update({
 const OverviewRoute = OverviewRouteImport.update({
   id: '/overview',
   path: '/overview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OperacoesRoute = OperacoesRouteImport.update({
+  id: '/operacoes',
+  path: '/operacoes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OfertasRoute = OfertasRouteImport.update({
@@ -217,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/leads': typeof LeadsRoute
   '/meta-ads': typeof MetaAdsRoute
   '/ofertas': typeof OfertasRoute
+  '/operacoes': typeof OperacoesRoute
   '/overview': typeof OverviewRoute
   '/projecao': typeof ProjecaoRoute
   '/publico': typeof PublicoRoute
@@ -250,6 +257,7 @@ export interface FileRoutesByTo {
   '/leads': typeof LeadsRoute
   '/meta-ads': typeof MetaAdsRoute
   '/ofertas': typeof OfertasRoute
+  '/operacoes': typeof OperacoesRoute
   '/overview': typeof OverviewRoute
   '/projecao': typeof ProjecaoRoute
   '/publico': typeof PublicoRoute
@@ -284,6 +292,7 @@ export interface FileRoutesById {
   '/leads': typeof LeadsRoute
   '/meta-ads': typeof MetaAdsRoute
   '/ofertas': typeof OfertasRoute
+  '/operacoes': typeof OperacoesRoute
   '/overview': typeof OverviewRoute
   '/projecao': typeof ProjecaoRoute
   '/publico': typeof PublicoRoute
@@ -319,6 +328,7 @@ export interface FileRouteTypes {
     | '/leads'
     | '/meta-ads'
     | '/ofertas'
+    | '/operacoes'
     | '/overview'
     | '/projecao'
     | '/publico'
@@ -352,6 +362,7 @@ export interface FileRouteTypes {
     | '/leads'
     | '/meta-ads'
     | '/ofertas'
+    | '/operacoes'
     | '/overview'
     | '/projecao'
     | '/publico'
@@ -385,6 +396,7 @@ export interface FileRouteTypes {
     | '/leads'
     | '/meta-ads'
     | '/ofertas'
+    | '/operacoes'
     | '/overview'
     | '/projecao'
     | '/publico'
@@ -419,6 +431,7 @@ export interface RootRouteChildren {
   LeadsRoute: typeof LeadsRoute
   MetaAdsRoute: typeof MetaAdsRoute
   OfertasRoute: typeof OfertasRoute
+  OperacoesRoute: typeof OperacoesRoute
   OverviewRoute: typeof OverviewRoute
   ProjecaoRoute: typeof ProjecaoRoute
   PublicoRoute: typeof PublicoRoute
@@ -479,6 +492,13 @@ declare module '@tanstack/react-router' {
       path: '/overview'
       fullPath: '/overview'
       preLoaderRoute: typeof OverviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/operacoes': {
+      id: '/operacoes'
+      path: '/operacoes'
+      fullPath: '/operacoes'
+      preLoaderRoute: typeof OperacoesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ofertas': {
@@ -675,6 +695,7 @@ const rootRouteChildren: RootRouteChildren = {
   LeadsRoute: LeadsRoute,
   MetaAdsRoute: MetaAdsRoute,
   OfertasRoute: OfertasRoute,
+  OperacoesRoute: OperacoesRoute,
   OverviewRoute: OverviewRoute,
   ProjecaoRoute: ProjecaoRoute,
   PublicoRoute: PublicoRoute,
