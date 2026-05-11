@@ -132,6 +132,7 @@ function Row({ k, v }: { k: string; v: string }) {
 }
 
 function AgentModal({ agent, tags, onClose, onSaved }: { agent: Agent | null; tags: TagItem[]; onClose: () => void; onSaved: () => void }) {
+  const { currentOperationId } = useOperation();
   const [name, setName] = useState(agent?.name || "");
   const [objective, setObjective] = useState(agent?.objective || "");
   const [product, setProduct] = useState(agent?.product || "");
@@ -150,6 +151,7 @@ function AgentModal({ agent, tags, onClose, onSaved }: { agent: Agent | null; ta
 
   const save = async () => {
     if (!name.trim()) { toast.error("Nome obrigatório"); return; }
+    if (!agent && !currentOperationId) { toast.error("Operação não selecionada"); return; }
     setSaving(true);
     const payload = {
       name, objective: objective || null, product: product || null, tone,
@@ -158,7 +160,7 @@ function AgentModal({ agent, tags, onClose, onSaved }: { agent: Agent | null; ta
     };
     const { error } = agent
       ? await supabase.from("agents").update(payload).eq("id", agent.id)
-      : await supabase.from("agents").insert(payload);
+      : await supabase.from("agents").insert({ ...payload, operation_id: currentOperationId! } as any);
     setSaving(false);
     if (error) toast.error(error.message);
     else { toast.success(agent ? "Agente atualizado" : "Agente criado"); onSaved(); }
