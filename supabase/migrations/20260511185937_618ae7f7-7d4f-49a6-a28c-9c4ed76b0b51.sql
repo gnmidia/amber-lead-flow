@@ -1,0 +1,1 @@
+UPDATE public.user_profiles SET status='approved', role='admin', approved_at=now() WHERE email='gabrielnavarro.nn@gmail.com';
