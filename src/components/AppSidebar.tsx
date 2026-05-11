@@ -1,6 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { useOperation } from "@/contexts/OperationContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { LogOut, ShieldCheck } from "lucide-react";
 import {
   LayoutDashboard,
   TrendingUp,
