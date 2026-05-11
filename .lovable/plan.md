@@ -1,43 +1,81 @@
-## Diagnóstico atual
+## Correção de leads duplicados (3 frentes)
 
-Acabei de testar os dois domínios:
+### Casos confirmados a mesclar
 
-| Domínio | Status | Resultado |
-|---|---|---|
-| `project--4cb49bae…lovable.app/api/public/webhook-whatsapp` (produção) | **404** | "Publish or update your Lovable project for it to appear here." |
-| `project--4cb49bae…-dev.lovable.app/api/public/webhook-whatsapp` (preview) | **200 ok** | Lead "Teste Plan" inserido com sucesso às 19:03:04 |
+| Manter (principal) | Apagar (duplicado) |
+|---|---|
+| Agnaldo Geraldo Flores — `553798184946@s.whatsapp.net` | `9904781791403@lid` |
+| Eduardo — `556984497325@s.whatsapp.net` | `59704508158053@lid` |
 
-Ou seja: o domínio de **produção continua não publicado** (ou o publish não concluiu). O domínio de **preview** está 100% funcional — payload é aceito, lead criado, mensagem persistida.
+---
 
-## Plano
+### Etapa 1 — Migration: mesclar duplicados + unique index
 
-Você tem duas opções; ambas resolvem o problema. Recomendo a #1.
+Uma única migration SQL faz:
 
-### Opção 1 — Publicar o projeto (recomendado)
+1. Para cada par, em transação:
+   - `UPDATE messages SET lead_id = <principal> WHERE lead_id = <duplicado>`
+   - `UPDATE lead_tags SET lead_id = <principal> WHERE lead_id = <duplicado>` (com `ON CONFLICT DO NOTHING` se houver tag duplicada — usa `DELETE` dos colidentes antes do update)
+   - `UPDATE lead_funnel_states SET lead_id = <principal> WHERE lead_id = <duplicado>`
+   - `UPDATE scheduled_messages SET lead_id = <principal> WHERE lead_id = <duplicado>`
+   - `UPDATE sales SET lead_id = <principal> WHERE lead_id = <duplicado>`
+   - `DELETE FROM leads WHERE id = <duplicado>`
+   - Conta linhas movidas via CTE `RETURNING` para log
+2. Cria o índice de proteção:
+   ```sql
+   CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_remote_jid_unique
+   ON public.leads(operation_id, remote_jid)
+   WHERE remote_jid IS NOT NULL;
+   ```
 
-1. Clicar em **Publish** no topo direito do editor.
-2. Manter a URL atual do webhook na Evolution (`project--4cb49bae…lovable.app/...`) — ela passa a funcionar imediatamente após o primeiro publish.
-3. Enviar uma mensagem real de outro número para o `DashWhats`.
-4. Rodar `SELECT … FROM leads ORDER BY created_at DESC LIMIT 3` para confirmar.
+A migration usa os IDs reais (resolvidos por `WHERE remote_jid = ...`), então é idempotente em relação à ordem.
 
-Vantagem: a URL fica estável para sempre, mesmo que o preview seja regenerado.
+---
 
-### Opção 2 — Apontar o webhook da Evolution para o domínio de preview
+### Etapa 2 — Reforçar deduplicação no código
 
-Atualizar a configuração na Evolution via:
-```
-POST /webhook/set/DashWhats
-{
-  "url": "https://project--4cb49bae-afe3-4c97-ab68-38e668ee52f9-dev.lovable.app/api/public/webhook-whatsapp",
-  "enabled": true,
-  "webhookByEvents": false,
-  "webhookBase64": true,
-  "events": ["MESSAGES_UPSERT","CONNECTION_UPDATE","SEND_MESSAGE"]
-}
-```
+Criar um helper único `src/server/lead-dedup.server.ts` com `findOrUpsertLead({ remoteJid, senderPn, instance, operationId, ... })` aplicando a regra:
 
-Desvantagem: o domínio `-dev` reflete o último build de preview; se o preview for regenerado de forma estranha pode haver janela de instabilidade. Para webhook de produção, prefira publicar.
+**Chegou `@s.whatsapp.net`** (telefone real no JID):
+1. Match por `remote_jid` exato → atualiza/retorna.
+2. Match por `whatsapp_number = number` → atualiza `remote_jid` real e retorna.
+3. Match por `remote_jid LIKE '%@lid' AND whatsapp_number = number` (LID antigo cujos dígitos ficaram no campo) → reescreve `remote_jid` e `whatsapp_number` para o real e retorna.
+4. Match por `remote_jid LIKE '%@lid'` cujo lead tenha `senderPn` salvo (não temos coluna; cobrimos via 3) → cai no INSERT.
+5. INSERT.
 
-## Qual opção seguir?
+**Chegou `@lid` com `senderPn` preenchido** (LID + telefone real conhecido):
+1. Match por `remote_jid` exato (`@lid`) → atualiza `whatsapp_number` com `senderPn` e retorna.
+2. Match por `remote_jid = ${senderPn}@s.whatsapp.net` → atualiza `remote_jid` para o `@lid` (mais estável dali em diante) e retorna.
+3. Match por `whatsapp_number = senderPn` → atualiza `remote_jid` para o `@lid` e retorna.
+4. INSERT com `remote_jid=@lid` e `whatsapp_number=senderPn`.
 
-Me confirma qual caminho você quer (ou se já clicou em Publish e quer que eu re-teste o domínio de produção). Quando você decidir, eu saio do modo de plano e executo.
+**Chegou `@lid` sem `senderPn`** (cenário que gerou os duplicados):
+1. Match por `remote_jid` exato → retorna.
+2. INSERT com `whatsapp_number = <dígitos do LID>` (comportamento atual). O backfill futuro converte quando o `senderPn` aparecer (rota 1 acima).
+
+Substituir os blocos atuais de `webhook-whatsapp.ts` (linhas 111–156) e `sync-chats.ts` (linhas 67–91) pelo helper. Tratar o `unique violation` (código `23505`) caindo de volta no `select` por `remote_jid` (corrida entre webhooks).
+
+---
+
+### Etapa 3 — Validação pós-deploy
+
+- Re-executar a query de duplicados por `name` na operação → deve retornar 0.
+- Confirmar `pg_indexes` mostra `idx_leads_remote_jid_unique`.
+- Forçar dois eventos consecutivos do mesmo contato (um `@lid` sem `senderPn`, outro `@s.whatsapp.net`) e confirmar que vira **um único** lead.
+
+---
+
+### Detalhes técnicos
+
+- O `lead_tags` tem `UNIQUE(lead_id, tag_id)`? **Não tem unique declarado** (só PK em `id`), então `UPDATE` direto não viola. Mantemos sem `ON CONFLICT`.
+- O índice é parcial em `remote_jid IS NOT NULL` — não bloqueia leads históricos sem JID.
+- O índice inclui `operation_id` para permitir o mesmo contato em operações diferentes (multi-operação).
+- Nenhum lead além dos 2 `@lid` confirmados é tocado.
+- A migration não toca `auth`, `storage`, `realtime`, `vault`.
+
+### Arquivos previstos
+
+- `supabase/migrations/<timestamp>_dedupe_leads.sql` — merge + unique index
+- `src/server/lead-dedup.server.ts` — novo helper
+- `src/routes/api/public/webhook-whatsapp.ts` — usa helper
+- `src/routes/api/public/sync-chats.ts` — usa helper
