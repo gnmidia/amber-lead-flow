@@ -138,6 +138,18 @@ function OverviewPage() {
 
         <section>
           <h2 className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Vendas
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricCard label="Total de Vendas" value={totalSales.toLocaleString("pt-BR")} sub="no período" />
+            <MetricCard label="Receita Total" value={fmt(totalRevenue)} sub="vendas registradas" accent="success" />
+            <MetricCard label="Ticket Médio" value={fmt(avgTicket)} sub="por venda" />
+            <MetricCard label="ROAS" value="--" sub="aguardando integração Meta Ads" />
+          </div>
+        </section>
+
+        <section>
+          <h2 className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Financeiro
           </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
