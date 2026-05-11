@@ -74,15 +74,21 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { useState } from "react";
 import { OperationProvider } from "../contexts/OperationContext";
+import { AuthProvider } from "../contexts/AuthContext";
+import { AuthGuard } from "../lib/auth-guard";
 
 function RootComponent() {
   const [client] = useState(() => new QueryClient());
   return (
     <QueryClientProvider client={client}>
-      <OperationProvider>
-        <AppLayout />
-        <Toaster theme="dark" position="top-right" richColors />
-      </OperationProvider>
+      <AuthProvider>
+        <AuthGuard>
+          <OperationProvider>
+            <AppLayout />
+            <Toaster theme="dark" position="top-right" richColors />
+          </OperationProvider>
+        </AuthGuard>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
