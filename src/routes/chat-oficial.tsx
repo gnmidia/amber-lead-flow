@@ -560,17 +560,20 @@ function MessageBody({ m }: { m: Message }) {
 }
 
 function ActivateFunnelButton({ leadId }: { leadId: string }) {
+  const { currentOperationId } = useOperation();
   const [funnels, setFunnels] = useState<{ id: string; name: string }[]>([]);
   const [selected, setSelected] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (!currentOperationId) return;
     supabase
       .from("funnels")
       .select("id, name")
+      .eq("operation_id", currentOperationId)
       .order("position")
       .then(({ data }) => setFunnels(data ?? []));
-  }, []);
+  }, [currentOperationId]);
 
   const activate = async () => {
     if (!selected) return;
