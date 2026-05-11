@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
-import { Search, Filter, Plus, X } from "lucide-react";
+import { Search, Filter, Plus, X, DollarSign } from "lucide-react";
+import { SaleModal } from "@/components/SaleModal";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
