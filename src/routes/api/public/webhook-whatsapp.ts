@@ -136,6 +136,7 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
                   is_new_lead: true,
                   first_contact_at: messageTimestamp,
                   instance_name: instance,
+                  operation_id: operationId,
                   tags: ["LEAD_NOVO"],
                 })
                 .select("id, whatsapp_number")
