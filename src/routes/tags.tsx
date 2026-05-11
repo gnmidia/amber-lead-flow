@@ -145,6 +145,7 @@ function TagModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { currentOperationId } = useOperation();
   const [name, setName] = useState(tag?.name || "");
   const [color, setColor] = useState(tag?.color || TAG_COLORS[0]);
   const [description, setDescription] = useState(tag?.description || "");
@@ -155,11 +156,12 @@ function TagModal({
       toast.error("Nome obrigatório");
       return;
     }
+    if (!tag && !currentOperationId) { toast.error("Operação não selecionada"); return; }
     setSaving(true);
     const payload = { name, color, description: description || null };
     const { error } = tag
       ? await supabase.from("tags").update(payload).eq("id", tag.id)
-      : await supabase.from("tags").insert(payload);
+      : await supabase.from("tags").insert({ ...payload, operation_id: currentOperationId! } as any);
     setSaving(false);
     if (error) toast.error(error.message);
     else {
