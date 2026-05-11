@@ -190,7 +190,8 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
                   .from("flows")
                   .select("id, trigger_value")
                   .eq("trigger_type", trig.type)
-                  .eq("is_active", true);
+                  .eq("is_active", true)
+                  .eq("operation_id", operationId);
                 for (const fl of (flows || []) as any[]) {
                   if (trig.valueMatches && !trig.valueMatches(fl.trigger_value)) continue;
                   console.log(`[webhook] triggering flow ${fl.id} (${trig.type}) for lead ${lead!.id}`);
