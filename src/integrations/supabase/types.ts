@@ -23,6 +23,7 @@ export type Database = {
           is_active: boolean
           name: string
           objective: string | null
+          operation_id: string
           product: string | null
           prompt: string | null
           tone: string | null
@@ -36,6 +37,7 @@ export type Database = {
           is_active?: boolean
           name: string
           objective?: string | null
+          operation_id?: string
           product?: string | null
           prompt?: string | null
           tone?: string | null
@@ -49,12 +51,21 @@ export type Database = {
           is_active?: boolean
           name?: string
           objective?: string | null
+          operation_id?: string
           product?: string | null
           prompt?: string | null
           tone?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "agents_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "operations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       broadcast_targets: {
         Row: {
@@ -106,6 +117,7 @@ export type Database = {
           max_interval_seconds: number
           min_interval_seconds: number
           name: string
+          operation_id: string
           started_at: string | null
           status: string
           tag_id: string
@@ -119,6 +131,7 @@ export type Database = {
           max_interval_seconds?: number
           min_interval_seconds?: number
           name?: string
+          operation_id?: string
           started_at?: string | null
           status?: string
           tag_id: string
@@ -132,12 +145,21 @@ export type Database = {
           max_interval_seconds?: number
           min_interval_seconds?: number
           name?: string
+          operation_id?: string
           started_at?: string | null
           status?: string
           tag_id?: string
           total_leads?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "broadcasts_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "operations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       flow_blocks: {
         Row: {
@@ -196,6 +218,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          operation_id: string
           trigger_type: string
           trigger_value: string | null
           updated_at: string
@@ -206,6 +229,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          operation_id?: string
           trigger_type?: string
           trigger_value?: string | null
           updated_at?: string
@@ -216,11 +240,20 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          operation_id?: string
           trigger_type?: string
           trigger_value?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "flows_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "operations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       funnel_steps: {
         Row: {
@@ -313,6 +346,7 @@ export type Database = {
           id: string
           internal_id: string
           name: string
+          operation_id: string
           position: number
           respostas: number
           start_max: number
@@ -329,6 +363,7 @@ export type Database = {
           id?: string
           internal_id: string
           name: string
+          operation_id?: string
           position?: number
           respostas?: number
           start_max?: number
@@ -345,6 +380,7 @@ export type Database = {
           id?: string
           internal_id?: string
           name?: string
+          operation_id?: string
           position?: number
           respostas?: number
           start_max?: number
@@ -353,7 +389,15 @@ export type Database = {
           window_end?: string
           window_start?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "funnels_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "operations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       instances: {
         Row: {
@@ -363,6 +407,7 @@ export type Database = {
           id: string
           instance_id: string | null
           instance_name: string
+          operation_id: string
           qr_code: string | null
           status: string
           updated_at: string
@@ -374,6 +419,7 @@ export type Database = {
           id?: string
           instance_id?: string | null
           instance_name: string
+          operation_id?: string
           qr_code?: string | null
           status?: string
           updated_at?: string
@@ -385,11 +431,20 @@ export type Database = {
           id?: string
           instance_id?: string | null
           instance_name?: string
+          operation_id?: string
           qr_code?: string | null
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "instances_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "operations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lead_funnel_states: {
         Row: {
@@ -504,6 +559,7 @@ export type Database = {
           is_new_lead: boolean
           last_interaction_at: string | null
           name: string | null
+          operation_id: string
           push_name: string | null
           remote_jid: string | null
           status: string
@@ -521,6 +577,7 @@ export type Database = {
           is_new_lead?: boolean
           last_interaction_at?: string | null
           name?: string | null
+          operation_id?: string
           push_name?: string | null
           remote_jid?: string | null
           status?: string
@@ -538,6 +595,7 @@ export type Database = {
           is_new_lead?: boolean
           last_interaction_at?: string | null
           name?: string | null
+          operation_id?: string
           push_name?: string | null
           remote_jid?: string | null
           status?: string
@@ -545,7 +603,15 @@ export type Database = {
           updated_at?: string
           whatsapp_number?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "leads_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "operations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messages: {
         Row: {
@@ -614,6 +680,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          operation_id: string
           pix_key: string | null
           price: number
           product_name: string | null
@@ -626,6 +693,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          operation_id?: string
           pix_key?: string | null
           price: number
           product_name?: string | null
@@ -638,11 +706,50 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          operation_id?: string
           pix_key?: string | null
           price?: number
           product_name?: string | null
           recipient?: string | null
           updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offers_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "operations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      operations: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          id: string
+          instance_name: string | null
+          is_active: boolean
+          name: string
+          slug: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          instance_name?: string | null
+          is_active?: boolean
+          name: string
+          slug: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          instance_name?: string | null
+          is_active?: boolean
+          name?: string
+          slug?: string
         }
         Relationships: []
       }
@@ -749,6 +856,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           name: string
+          operation_id: string
         }
         Insert: {
           color?: string
@@ -757,6 +865,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name: string
+          operation_id?: string
         }
         Update: {
           color?: string
@@ -765,8 +874,17 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string
+          operation_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tags_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "operations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
