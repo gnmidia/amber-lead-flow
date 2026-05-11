@@ -130,6 +130,7 @@ function OfertasPage() {
 }
 
 function OfferModal({ offer, onClose, onSaved }: { offer: Offer | null; onClose: () => void; onSaved: () => void }) {
+  const { currentOperationId } = useOperation();
   const [name, setName] = useState(offer?.name || "");
   const [productName, setProductName] = useState(offer?.product_name || "");
   const [description, setDescription] = useState(offer?.description || "");
@@ -143,6 +144,7 @@ function OfferModal({ offer, onClose, onSaved }: { offer: Offer | null; onClose:
     if (!name.trim()) { toast.error("Nome obrigatório"); return; }
     const num = Number(price.replace(",", "."));
     if (!num || num <= 0) { toast.error("Preço inválido"); return; }
+    if (!offer && !currentOperationId) { toast.error("Operação não selecionada"); return; }
 
     setSaving(true);
     const payload = {
@@ -156,7 +158,7 @@ function OfferModal({ offer, onClose, onSaved }: { offer: Offer | null; onClose:
     };
     const { error } = offer
       ? await supabase.from("offers").update(payload).eq("id", offer.id)
-      : await supabase.from("offers").insert(payload);
+      : await supabase.from("offers").insert({ ...payload, operation_id: currentOperationId! } as any);
     setSaving(false);
     if (error) {
       if (error.code === "23505") toast.error("Já existe uma oferta com esse preço — cada preço deve ser único.");
