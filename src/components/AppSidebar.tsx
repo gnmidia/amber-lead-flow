@@ -1,4 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useState, useRef, useEffect } from "react";
+import { useOperation } from "@/contexts/OperationContext";
 import {
   LayoutDashboard,
   TrendingUp,
@@ -21,6 +23,9 @@ import {
   Wallet,
   Tag,
   Send,
+  ChevronsUpDown,
+  Check,
+  Building2,
 } from "lucide-react";
 
 type NavItem = { label: string; to: string; icon: React.ComponentType<{ className?: string }> };
