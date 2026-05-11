@@ -83,6 +83,13 @@ export const Route = createFileRoute("/api/public/sync-chats")({
             phoneNumber: chat.phoneNumber || null,
           });
 
+          // Usa o timestamp da última mensagem do chat como first_contact_at
+          // (evita marcar leads antigos como "novos hoje" quando criados via sync).
+          const chatTs = Number(
+            chat.lastMessageTimestamp || chat.updatedAt || chat.updated_at || chat.t || chat.messageTimestamp || 0,
+          );
+          const firstContactAt = chatTs > 0 ? new Date(chatTs * 1000).toISOString() : undefined;
+
           const { leadId, isNew } = await findOrUpsertLead({
             remoteJid: identity.remoteJid,
             alternateRemoteJids: identity.alternateRemoteJids,
@@ -90,6 +97,7 @@ export const Route = createFileRoute("/api/public/sync-chats")({
             pushName: chat.pushName || chat.name || null,
             instance,
             operationId,
+            firstContactAt,
             isNewLeadDefault: false,
             defaultTags: [],
           });
