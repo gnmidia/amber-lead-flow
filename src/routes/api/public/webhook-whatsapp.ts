@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { executeFlowForLead } from "@/server/funnel-execution.server";
 import { getOperationByInstance } from "@/server/operations.server";
+import { findOrUpsertLead } from "@/server/lead-dedup.server";
 
 export const Route = createFileRoute("/api/public/webhook-whatsapp")({
   server: {
@@ -108,52 +109,19 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
               }
             }
 
-            // Procura primeiro pelo remote_jid (chave estável), depois pelo número.
-            let isNewLead = false;
-            let { data: lead } = await supabaseAdmin
-              .from("leads")
-              .select("id, whatsapp_number")
-              .eq("remote_jid", remoteJid)
-              .maybeSingle();
-
-            if (!lead) {
-              const { data: byNumber } = await supabaseAdmin
-                .from("leads")
-                .select("id, whatsapp_number")
-                .eq("whatsapp_number", number)
-                .maybeSingle();
-              lead = byNumber;
-            }
-
-            if (!lead) {
-              const { data: newLead, error } = await supabaseAdmin
-                .from("leads")
-                .insert({
-                  whatsapp_number: number,
-                  remote_jid: remoteJid,
-                  name: pushName || number,
-                  push_name: pushName,
-                  is_new_lead: true,
-                  first_contact_at: messageTimestamp,
-                  instance_name: instance,
-                  operation_id: operationId,
-                  tags: ["LEAD_NOVO"],
-                })
-                .select("id, whatsapp_number")
-                .single();
-              if (error) {
-                console.error("[webhook] insert lead error", error);
-                return new Response("error", { status: 500 });
-              }
-              lead = newLead;
-              isNewLead = true;
-            } else if (realPhone && lead.whatsapp_number !== number) {
-              // Backfill: agora temos o telefone real, atualiza o lead que estava com LID.
-              await supabaseAdmin
-                .from("leads")
-                .update({ whatsapp_number: number, remote_jid: remoteJid })
-                .eq("id", lead.id);
-            }
+            // Resolve (find or create) the lead with LID-aware dedup.
+            const { leadId, isNew } = await findOrUpsertLead({
+              remoteJid,
+              senderPn: realPhone,
+              pushName,
+              instance,
+              operationId,
+              firstContactAt: messageTimestamp,
+              isNewLeadDefault: true,
+              defaultTags: ["LEAD_NOVO"],
+            });
+            const isNewLead = isNew;
+            const lead = { id: leadId };
 
             await supabaseAdmin.from("messages").insert({
               lead_id: lead!.id,
