@@ -14,6 +14,14 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
           const data = payload.data;
 
           if (event === "messages.upsert" && data?.key) {
+            const op = await getOperationByInstance(instance);
+            if (!op) {
+              console.warn(`[webhook] no operation found for instance=${instance}`);
+              return new Response(`No operation for instance ${instance}`, { status: 400 });
+            }
+            const operationId = op.id;
+            console.log(`[webhook] instance=${instance} -> operation=${operationId}`);
+
             const key = data.key;
             const remoteJid: string = key.remoteJid ?? "";
             if (key.fromMe || remoteJid.endsWith("@g.us")) {
