@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { executeFlowForLead } from "@/server/funnel-execution.server";
 import { getOperationByInstance } from "@/server/operations.server";
-import { findOrUpsertLead } from "@/server/lead-dedup.server";
+import { findOrUpsertLead, resolveLeadIdentity } from "@/server/lead-dedup.server";
 
 export const Route = createFileRoute("/api/public/webhook-whatsapp")({
   server: {
@@ -24,19 +24,19 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
             console.log(`[webhook] instance=${instance} -> operation=${operationId}`);
 
             const key = data.key;
-            const remoteJid: string = key.remoteJid ?? "";
-            if (key.fromMe || remoteJid.endsWith("@g.us")) {
+            const sourceRemoteJid: string = key.remoteJid ?? "";
+            if (key.fromMe || sourceRemoteJid.endsWith("@g.us")) {
               return new Response("ok");
             }
 
-            // Extrai o número real do telefone. Para JIDs @lid, o telefone real
-            // vem em senderPn / participantPn (Evolution API). Caso contrário,
-            // remove o sufixo padrão @s.whatsapp.net / @c.us.
-            const realPhone: string | null =
-              key.senderPn || key.participantPn || data.senderPn || data.participantPn || null;
-            const isLid = remoteJid.endsWith("@lid");
-            const fallback = remoteJid.replace(/@s\.whatsapp\.net$|@c\.us$|@lid$/, "");
-            const number = (realPhone || (isLid ? fallback : fallback)).replace(/\D/g, "") || fallback;
+            const identity = resolveLeadIdentity({
+              remoteJid: sourceRemoteJid,
+              remoteJidAlt: key.remoteJidAlt || data.remoteJidAlt || null,
+              senderPn: key.senderPn || data.senderPn || null,
+              participantPn: key.participantPn || data.participantPn || null,
+              phoneNumber: data.phoneNumber || null,
+            });
+            const number = identity.realPhone || identity.remoteJid.replace(/@s\.whatsapp\.net$|@c\.us$|@lid$/, "");
 
             const pushName = data.pushName ?? null;
             const messageType: string = data.messageType ?? "unknown";
@@ -111,8 +111,9 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
 
             // Resolve (find or create) the lead with LID-aware dedup.
             const { leadId, isNew } = await findOrUpsertLead({
-              remoteJid,
-              senderPn: realPhone,
+              remoteJid: identity.remoteJid,
+              alternateRemoteJids: identity.alternateRemoteJids,
+              senderPn: identity.realPhone,
               pushName,
               instance,
               operationId,
@@ -189,7 +190,14 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
           // Confirmação tardia da Evolution após o fire-and-forget de áudio.
           if (event === "send.message" && data?.key?.fromMe && data?.key?.id) {
             const key = data.key;
-            const remoteJid: string = key.remoteJid ?? "";
+            const identity = resolveLeadIdentity({
+              remoteJid: key.remoteJid ?? "",
+              remoteJidAlt: key.remoteJidAlt || data.remoteJidAlt || null,
+              senderPn: key.senderPn || data.senderPn || null,
+              participantPn: key.participantPn || data.participantPn || null,
+              phoneNumber: data.phoneNumber || null,
+            });
+            const remoteJid = identity.remoteJid;
             const isAudio =
               !!data.message?.audioMessage ||
               (typeof data.messageType === "string" && data.messageType.toLowerCase().includes("audio"));
