@@ -73,7 +73,6 @@ import { AppLayout } from "../components/AppLayout";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { useState } from "react";
-import { OperationProvider } from "../contexts/OperationContext";
 import { AuthProvider } from "../contexts/AuthContext";
 import { AuthGuard } from "../lib/auth-guard";
 
