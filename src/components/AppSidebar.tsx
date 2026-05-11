@@ -78,6 +78,12 @@ const sections: NavSection[] = [
       { label: "Financeiro", to: "/financeiro", icon: Wallet },
     ],
   },
+  {
+    title: "Configurações",
+    items: [
+      { label: "Operações", to: "/operacoes", icon: Building2 },
+    ],
+  },
 ];
 
 export function AppSidebar() {
