@@ -29,6 +29,22 @@ Deno.serve(async (req) => {
       { auth: { persistSession: false } },
     );
 
+    // Resolve operation from the selected flow → operations.instance_name.
+    const { data: flowRow, error: flowErr } = await supabase
+      .from("flows").select("operation_id").eq("id", flow_id).maybeSingle();
+    if (flowErr || !flowRow) {
+      return new Response(JSON.stringify({ error: "flow not found" }), { status: 400, headers: cors });
+    }
+    const operationId = (flowRow as any).operation_id as string | null;
+    let instanceName: string | null = null;
+    if (operationId) {
+      const { data: opRow } = await supabase
+        .from("operations").select("instance_name").eq("id", operationId).maybeSingle();
+      instanceName = (opRow as any)?.instance_name || null;
+    }
+    if (!instanceName) instanceName = Deno.env.get("EVOLUTION_INSTANCE_NAME") || null;
+    console.log(`[broadcast-start] flow=${flow_id} op=${operationId} instance=${instanceName}`);
+
     const { data: leadTags, error: ltError } = await supabase
       .from("lead_tags").select("lead_id").eq("tag_id", tag_id);
     if (ltError) throw new Error(ltError.message);
@@ -38,24 +54,30 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Nenhum lead encontrado para essa etiqueta" }), { status: 400, headers: cors });
     }
 
-    const { data: leads, error: leadsError } = await supabase
-      .from("leads").select("id, status").in("id", leadIds);
+    // Scope leads to the same operation as the flow to keep operations isolated.
+    const leadsQuery = supabase
+      .from("leads").select("id, status, operation_id").in("id", leadIds);
+    const { data: leads, error: leadsError } = operationId
+      ? await leadsQuery.eq("operation_id", operationId)
+      : await leadsQuery;
     if (leadsError) throw new Error(leadsError.message);
     const activeIds = (leads || []).filter((l: any) => l.status === "active").map((l: any) => l.id);
     if (activeIds.length === 0) {
       return new Response(JSON.stringify({ error: "Nenhum lead ativo para essa etiqueta" }), { status: 400, headers: cors });
     }
 
+    const bcInsert: any = {
+      name: body.name || "Disparo",
+      flow_id, tag_id,
+      min_interval_seconds: minS,
+      max_interval_seconds: maxS,
+      total_leads: activeIds.length,
+      status: "running",
+      started_at: new Date().toISOString(),
+    };
+    if (operationId) bcInsert.operation_id = operationId;
     const { data: bc, error: bcError } = await supabase
-      .from("broadcasts").insert({
-        name: body.name || "Disparo",
-        flow_id, tag_id,
-        min_interval_seconds: minS,
-        max_interval_seconds: maxS,
-        total_leads: activeIds.length,
-        status: "running",
-        started_at: new Date().toISOString(),
-      }).select("id").single();
+      .from("broadcasts").insert(bcInsert).select("id").single();
     if (bcError) throw new Error(bcError.message);
 
     let cursorMs = Date.now();

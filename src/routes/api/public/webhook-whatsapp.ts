@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { executeFlowForLead } from "@/server/funnel-execution.server";
+import { getOperationByInstance } from "@/server/operations.server";
 
 export const Route = createFileRoute("/api/public/webhook-whatsapp")({
   server: {
@@ -13,6 +14,14 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
           const data = payload.data;
 
           if (event === "messages.upsert" && data?.key) {
+            const op = await getOperationByInstance(instance);
+            if (!op) {
+              console.warn(`[webhook] no operation found for instance=${instance}`);
+              return new Response(`No operation for instance ${instance}`, { status: 400 });
+            }
+            const operationId = op.id;
+            console.log(`[webhook] instance=${instance} -> operation=${operationId}`);
+
             const key = data.key;
             const remoteJid: string = key.remoteJid ?? "";
             if (key.fromMe || remoteJid.endsWith("@g.us")) {
@@ -127,6 +136,7 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
                   is_new_lead: true,
                   first_contact_at: messageTimestamp,
                   instance_name: instance,
+                  operation_id: operationId,
                   tags: ["LEAD_NOVO"],
                 })
                 .select("id, whatsapp_number")
@@ -180,7 +190,8 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
                   .from("flows")
                   .select("id, trigger_value")
                   .eq("trigger_type", trig.type)
-                  .eq("is_active", true);
+                  .eq("is_active", true)
+                  .eq("operation_id", operationId);
                 for (const fl of (flows || []) as any[]) {
                   if (trig.valueMatches && !trig.valueMatches(fl.trigger_value)) continue;
                   console.log(`[webhook] triggering flow ${fl.id} (${trig.type}) for lead ${lead!.id}`);

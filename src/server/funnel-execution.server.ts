@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { getOperationInstance } from "@/server/operations.server";
 
 function rand(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -21,11 +22,12 @@ export async function scheduleFunnelForLead({
 
   const { data: lead, error: leadError } = await supabaseAdmin
     .from("leads")
-    .select("whatsapp_number, remote_jid, instance_name")
+    .select("whatsapp_number, remote_jid, instance_name, operation_id")
     .eq("id", lead_id)
     .maybeSingle();
   assertNoError(leadError, "lead lookup failed");
   if (!lead) throw new Error("lead not found");
+  const opInstance = await getOperationInstance((lead as any).operation_id);
 
   const { data: funnel, error: funnelError } = await supabaseAdmin
     .from("funnels")
@@ -90,7 +92,7 @@ export async function scheduleFunnelForLead({
       lead_id,
       funnel_id,
       step_id: step.id,
-      instance_name: lead.instance_name || process.env.EVOLUTION_INSTANCE_NAME || "cland-main",
+      instance_name: opInstance || lead.instance_name || process.env.EVOLUTION_INSTANCE_NAME || "cland-main",
       whatsapp_number: lead.remote_jid || lead.whatsapp_number,
       message_type: step.type,
       content: step.content,
@@ -143,11 +145,12 @@ export async function executeFlowForLead({
 
   const { data: lead, error: leadError } = await supabaseAdmin
     .from("leads")
-    .select("whatsapp_number, remote_jid, instance_name")
+    .select("whatsapp_number, remote_jid, instance_name, operation_id")
     .eq("id", lead_id)
     .maybeSingle();
   assertNoError(leadError, "lead lookup failed");
   if (!lead) throw new Error("lead not found");
+  const opInstance = await getOperationInstance((lead as any).operation_id);
 
   const now = new Date();
 
@@ -185,7 +188,7 @@ export async function executeFlowForLead({
       const resumeAt = new Date(now.getTime() + block.wait_minutes * 60_000);
       const { error } = await supabaseAdmin.from("scheduled_messages").insert({
         lead_id,
-        instance_name: lead.instance_name || process.env.EVOLUTION_INSTANCE_NAME || "",
+        instance_name: opInstance || lead.instance_name || process.env.EVOLUTION_INSTANCE_NAME || "",
         whatsapp_number: lead.remote_jid || lead.whatsapp_number,
         message_type: "flow_resume",
         content: JSON.stringify({ flow_id, resume_block_index: i + 1 }),

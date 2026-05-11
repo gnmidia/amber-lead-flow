@@ -18,6 +18,23 @@ function assertNoError(error: any, context: string) {
   if (error) throw new Error(`${context}: ${error.message || "erro desconhecido"}`);
 }
 
+export async function getOperationInstance(
+  supabase: ReturnType<typeof getAdmin>,
+  operationId: string | null | undefined,
+): Promise<string | null> {
+  const fallback = Deno.env.get("EVOLUTION_INSTANCE_NAME") || null;
+  if (!operationId) return fallback;
+  const { data, error } = await supabase
+    .from("operations").select("instance_name").eq("id", operationId).maybeSingle();
+  if (error) {
+    console.warn(`[ops] instance lookup failed for op=${operationId}:`, error.message);
+    return fallback;
+  }
+  const inst = (data as any)?.instance_name || fallback;
+  console.log(`[ops] resolved op=${operationId} -> instance=${inst}`);
+  return inst;
+}
+
 export async function scheduleFunnelForLead(
   supabase: ReturnType<typeof getAdmin>,
   { lead_id, funnel_id, trigger_time }: { lead_id: string; funnel_id: string; trigger_time?: string },
@@ -25,10 +42,11 @@ export async function scheduleFunnelForLead(
   if (!lead_id || !funnel_id) throw new Error("missing lead_id/funnel_id");
 
   const { data: lead, error: leadError } = await supabase
-    .from("leads").select("whatsapp_number, remote_jid, instance_name")
+    .from("leads").select("whatsapp_number, remote_jid, instance_name, operation_id")
     .eq("id", lead_id).maybeSingle();
   assertNoError(leadError, "lead lookup failed");
   if (!lead) throw new Error("lead not found");
+  const opInstance = await getOperationInstance(supabase, (lead as any).operation_id);
 
   const { data: funnel, error: funnelError } = await supabase
     .from("funnels").select("*").eq("id", funnel_id).maybeSingle();
@@ -79,7 +97,7 @@ export async function scheduleFunnelForLead(
       lead_id,
       funnel_id,
       step_id: step.id,
-      instance_name: (lead as any).instance_name || Deno.env.get("EVOLUTION_INSTANCE_NAME") || "cland-main",
+      instance_name: opInstance || (lead as any).instance_name || Deno.env.get("EVOLUTION_INSTANCE_NAME") || "cland-main",
       whatsapp_number: (lead as any).remote_jid || (lead as any).whatsapp_number,
       message_type: step.type,
       content: step.content,
@@ -118,10 +136,11 @@ export async function executeFlowForLead(
   if (!blocks || blocks.length === 0) return { ok: true, msg: "no blocks" };
 
   const { data: lead, error: leadError } = await supabase
-    .from("leads").select("whatsapp_number, remote_jid, instance_name")
+    .from("leads").select("whatsapp_number, remote_jid, instance_name, operation_id")
     .eq("id", lead_id).maybeSingle();
   assertNoError(leadError, "lead lookup failed");
   if (!lead) throw new Error("lead not found");
+  const opInstance = await getOperationInstance(supabase, (lead as any).operation_id);
 
   const now = new Date();
 
@@ -151,7 +170,7 @@ export async function executeFlowForLead(
       const resumeAt = new Date(now.getTime() + block.wait_minutes * 60_000);
       const { error } = await supabase.from("scheduled_messages").insert({
         lead_id,
-        instance_name: (lead as any).instance_name || Deno.env.get("EVOLUTION_INSTANCE_NAME") || "",
+        instance_name: opInstance || (lead as any).instance_name || Deno.env.get("EVOLUTION_INSTANCE_NAME") || "",
         whatsapp_number: (lead as any).remote_jid || (lead as any).whatsapp_number,
         message_type: "flow_resume",
         content: JSON.stringify({ flow_id, resume_block_index: i + 1 }),

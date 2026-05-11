@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { executeFlowForLead } from "@/server/funnel-execution.server";
+import { getOperationInstance } from "@/server/operations.server";
 
 async function triggerFlowsForInboundMessage(leadId: string, content: string | null, isNewLead: boolean) {
   const triggers: { type: string; valueMatches?: (v: string | null) => boolean }[] = [];
@@ -32,13 +33,17 @@ async function triggerFlowsForInboundMessage(leadId: string, content: string | n
 export const Route = createFileRoute("/api/public/sync-chats")({
   server: {
     handlers: {
-      POST: async () => {
+      POST: async ({ request }) => {
         const baseUrl = process.env.EVOLUTION_BASE_URL;
         const apiKey = process.env.EVOLUTION_API_KEY;
-        const instance = process.env.EVOLUTION_INSTANCE_NAME;
+        const body = await request.json().catch(() => ({} as any));
+        const operationId: string | null = body?.operation_id || null;
+        // Resolve instance from operation; fall back to env (single-instance legacy).
+        const instance = (await getOperationInstance(operationId)) || null;
         if (!baseUrl || !apiKey || !instance) {
-          return Response.json({ error: "Evolution env not configured" }, { status: 500 });
+          return Response.json({ error: "Evolution env/instance not configured" }, { status: 500 });
         }
+        console.log(`[sync-chats] op=${operationId} instance=${instance}`);
         const headers = { "Content-Type": "application/json", apikey: apiKey };
 
         const chatsRes = await fetch(`${baseUrl}/chat/findChats/${instance}`, {
@@ -70,11 +75,13 @@ export const Route = createFileRoute("/api/public/sync-chats")({
           let leadId = existing?.id;
           let isNewLead = false;
           if (!leadId) {
-            const { data: newLead } = await supabaseAdmin.from("leads").insert({
+            const insertPayload: any = {
               whatsapp_number: number, remote_jid: remoteJid,
               name: displayName, push_name: chat.pushName || chat.name || null,
               is_new_lead: false, instance_name: instance, tags: [],
-            }).select("id").single();
+            };
+            if (operationId) insertPayload.operation_id = operationId;
+            const { data: newLead } = await supabaseAdmin.from("leads").insert(insertPayload).select("id").single();
             leadId = newLead?.id;
             isNewLead = true;
           } else if (realPhone && existing?.whatsapp_number !== number) {
