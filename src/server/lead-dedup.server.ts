@@ -32,6 +32,12 @@ type LeadRow = {
   tags: string[] | null;
 };
 
+type LeadUpdatePatch = {
+  remote_jid?: string;
+  whatsapp_number?: string;
+  tags?: string[];
+};
+
 const SUFFIX_RE = /@s\.whatsapp\.net$|@c\.us$|@lid$/;
 const onlyDigits = (s: string) => s.replace(/\D/g, "");
 
@@ -107,7 +113,7 @@ async function ensureLeadIdentity(
   targetRemoteJid: string,
   realPhone: string | null,
 ): Promise<LeadRow> {
-  const patch: Record<string, unknown> = {};
+  const patch: LeadUpdatePatch = {};
   if (lead.remote_jid !== targetRemoteJid) patch.remote_jid = targetRemoteJid;
   if (realPhone && lead.whatsapp_number !== realPhone) patch.whatsapp_number = realPhone;
   if (!Object.keys(patch).length) return lead;
@@ -164,7 +170,7 @@ async function mergeLeadIntoPrimary(
     new Set([...(primaryLead.tags || []), ...(duplicateLead.tags || [])].filter(Boolean)),
   );
   const lead = await ensureLeadIdentity(primaryLead, targetRemoteJid, realPhone);
-  const patch: Record<string, unknown> = {};
+  const patch: LeadUpdatePatch = {};
   if (mergedTags.length && mergedTags.length !== (lead.tags || []).length) patch.tags = mergedTags;
   if (Object.keys(patch).length) {
     await supabaseAdmin.from("leads").update(patch).eq("id", lead.id);
