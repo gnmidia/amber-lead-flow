@@ -36,11 +36,15 @@ function LeadsPage() {
   const [search, setSearch] = useState("");
   const [activatingLead, setActivatingLead] = useState<Lead | null>(null);
 
+  const { currentOperationId } = useOperation();
+
   const { data: leads = [], isLoading } = useQuery({
-    queryKey: ["leads"],
+    queryKey: ["leads", currentOperationId],
+    enabled: !!currentOperationId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("leads").select("*")
+        .eq("operation_id", currentOperationId!)
         .order("last_interaction_at", { ascending: false }).limit(200);
       if (error) throw error;
       return data as Lead[];
