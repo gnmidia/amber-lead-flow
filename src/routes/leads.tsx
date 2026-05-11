@@ -140,10 +140,16 @@ function ActivateFunnelModal({ lead, onClose }: { lead: Lead; onClose: () => voi
   const [funnelId, setFunnelId] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
 
+  const { currentOperationId } = useOperation();
+
   const { data: funnels = [] } = useQuery({
-    queryKey: ["funnels-list"],
+    queryKey: ["funnels-list", currentOperationId],
+    enabled: !!currentOperationId,
     queryFn: async () => {
-      const { data, error } = await supabase.from("funnels").select("id, name").order("name");
+      const { data, error } = await supabase
+        .from("funnels").select("id, name")
+        .eq("operation_id", currentOperationId!)
+        .order("name");
       if (error) throw error;
       return data as { id: string; name: string }[];
     },
