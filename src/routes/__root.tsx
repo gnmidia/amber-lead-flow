@@ -73,13 +73,16 @@ import { AppLayout } from "../components/AppLayout";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { useState } from "react";
+import { OperationProvider } from "../contexts/OperationContext";
 
 function RootComponent() {
   const [client] = useState(() => new QueryClient());
   return (
     <QueryClientProvider client={client}>
-      <AppLayout />
-      <Toaster theme="dark" position="top-right" richColors />
+      <OperationProvider>
+        <AppLayout />
+        <Toaster theme="dark" position="top-right" richColors />
+      </OperationProvider>
     </QueryClientProvider>
   );
 }

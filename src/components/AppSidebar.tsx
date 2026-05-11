@@ -1,4 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useState, useRef, useEffect } from "react";
+import { useOperation } from "@/contexts/OperationContext";
 import {
   LayoutDashboard,
   TrendingUp,
@@ -21,6 +23,9 @@ import {
   Wallet,
   Tag,
   Send,
+  ChevronsUpDown,
+  Check,
+  Building2,
 } from "lucide-react";
 
 type NavItem = { label: string; to: string; icon: React.ComponentType<{ className?: string }> };
@@ -92,6 +97,8 @@ export function AppSidebar() {
         </div>
       </div>
 
+      <OperationSelector />
+
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         {sections.map((section) => (
           <div key={section.title} className="mb-5">
@@ -140,3 +147,68 @@ export function AppSidebar() {
     </aside>
   );
 }
+
+function OperationSelector() {
+  const { operations, currentOperation, setCurrentOperation, isLoading } = useOperation();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative border-b border-sidebar-border px-3 py-3">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        disabled={isLoading || operations.length === 0}
+        className="flex w-full items-center gap-2 rounded-md border border-sidebar-border bg-background/40 px-3 py-2 text-left transition-colors hover:border-primary/40 disabled:opacity-50"
+      >
+        <Building2 className="h-4 w-4 text-primary" />
+        <div className="flex min-w-0 flex-1 flex-col leading-tight">
+          <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Operação
+          </span>
+          <span className="truncate text-xs font-medium text-foreground">
+            {isLoading ? "Carregando…" : currentOperation?.name ?? "Nenhuma"}
+          </span>
+        </div>
+        <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+      </button>
+
+      {open && operations.length > 0 && (
+        <div className="absolute left-3 right-3 top-full z-40 mt-1 overflow-hidden rounded-md border border-sidebar-border bg-popover shadow-xl">
+          <ul className="max-h-64 overflow-y-auto py-1">
+            {operations.map((op) => {
+              const active = op.id === currentOperation?.id;
+              return (
+                <li key={op.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentOperation(op);
+                      setOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-sidebar-accent/40 ${
+                      active ? "text-primary" : "text-foreground"
+                    }`}
+                  >
+                    <span className="flex-1 truncate font-medium">{op.name}</span>
+                    {active && <Check className="h-3.5 w-3.5" />}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
