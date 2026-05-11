@@ -36,6 +36,7 @@ function timeAgo(iso: string | null) {
 function LeadsPage() {
   const [search, setSearch] = useState("");
   const [activatingLead, setActivatingLead] = useState<Lead | null>(null);
+  const [sellingLead, setSellingLead] = useState<Lead | null>(null);
 
   const { currentOperationId } = useOperation();
 
