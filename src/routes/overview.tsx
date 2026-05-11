@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { PageHeader } from "../components/PageHeader";
 import { MetricCard } from "../components/MetricCard";
 import { CalendarRange, Clock } from "lucide-react";
@@ -10,6 +12,8 @@ import { startOfDay, endOfDay, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { dayMonthYearSP } from "@/lib/datetime";
 import type { DateRange } from "react-day-picker";
+import { supabase } from "@/integrations/supabase/client";
+import { useOperation } from "@/contexts/OperationContext";
 
 export const Route = createFileRoute("/overview")({
   head: () => ({
@@ -53,6 +57,28 @@ function OverviewPage() {
 
   const periodStart = range?.from ? startOfDay(range.from) : subDays(new Date(), 29);
   const periodEnd = range?.to ? endOfDay(range.to) : endOfDay(new Date());
+
+  const { currentOperationId } = useOperation();
+  const dateFrom = format(periodStart, "yyyy-MM-dd");
+  const dateTo = format(periodEnd, "yyyy-MM-dd");
+
+  const { data: salesSummary } = useQuery({
+    queryKey: ["sales-summary", currentOperationId, dateFrom, dateTo],
+    enabled: !!currentOperationId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("sales_summary" as any, {
+        op_id: currentOperationId!,
+        date_from: dateFrom,
+        date_to: dateTo,
+      });
+      if (error) throw error;
+      return (data ?? {}) as { total_sales?: number; total_revenue?: number; avg_ticket?: number };
+    },
+  });
+
+  const totalSales = Number(salesSummary?.total_sales ?? 0);
+  const totalRevenue = Number(salesSummary?.total_revenue ?? 0);
+  const avgTicket = Number(salesSummary?.avg_ticket ?? 0);
 
   const labelCustom =
     range?.from && range?.to
@@ -109,6 +135,18 @@ function OverviewPage() {
 
       <div className="space-y-8 p-8">
         <LeadsReceivedSection startDate={periodStart} endDate={periodEnd} />
+
+        <section>
+          <h2 className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Vendas
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricCard label="Total de Vendas" value={totalSales.toLocaleString("pt-BR")} sub="no período" />
+            <MetricCard label="Receita Total" value={fmt(totalRevenue)} sub="vendas registradas" accent="success" />
+            <MetricCard label="Ticket Médio" value={fmt(avgTicket)} sub="por venda" />
+            <MetricCard label="ROAS" value="--" sub="aguardando integração Meta Ads" />
+          </div>
+        </section>
 
         <section>
           <h2 className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">

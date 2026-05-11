@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
-import { Search, Filter, Plus, X } from "lucide-react";
+import { Search, Filter, Plus, X, DollarSign } from "lucide-react";
+import { SaleModal } from "@/components/SaleModal";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +36,7 @@ function timeAgo(iso: string | null) {
 function LeadsPage() {
   const [search, setSearch] = useState("");
   const [activatingLead, setActivatingLead] = useState<Lead | null>(null);
+  const [sellingLead, setSellingLead] = useState<Lead | null>(null);
 
   const { currentOperationId } = useOperation();
 
@@ -116,11 +118,18 @@ function LeadsPage() {
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{timeAgo(l.last_interaction_at)}</td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => setActivatingLead(l)}
-                      className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-semibold hover:border-primary/40 hover:text-primary">
-                      <Plus className="h-3 w-3" /> Adicionar ao Funil
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => setSellingLead(l)}
+                        className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-semibold hover:border-success/40 hover:text-success">
+                        <DollarSign className="h-3 w-3" /> Registrar Venda
+                      </button>
+                      <button
+                        onClick={() => setActivatingLead(l)}
+                        className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-semibold hover:border-primary/40 hover:text-primary">
+                        <Plus className="h-3 w-3" /> Adicionar ao Funil
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -131,6 +140,9 @@ function LeadsPage() {
 
       {activatingLead && (
         <ActivateFunnelModal lead={activatingLead} onClose={() => setActivatingLead(null)} />
+      )}
+      {sellingLead && (
+        <SaleModal lead={sellingLead} onClose={() => setSellingLead(null)} />
       )}
     </>
   );

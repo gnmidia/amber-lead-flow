@@ -739,6 +739,68 @@ export type Database = {
         }
         Relationships: []
       }
+      sales: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          lead_id: string
+          notes: string | null
+          offer_id: string
+          operation_id: string
+          sale_date: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          lead_id: string
+          notes?: string | null
+          offer_id: string
+          operation_id: string
+          sale_date: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          lead_id?: string
+          notes?: string | null
+          offer_id?: string
+          operation_id?: string
+          sale_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads_with_last_message"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_operation_id_fkey"
+            columns: ["operation_id"]
+            isOneToOne: false
+            referencedRelation: "operations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scheduled_messages: {
         Row: {
           attempts: number
@@ -971,6 +1033,10 @@ export type Database = {
       requeue_stuck_dispatching: {
         Args: { p_older_than_seconds?: number }
         Returns: number
+      }
+      sales_summary: {
+        Args: { date_from: string; date_to: string; op_id: string }
+        Returns: Json
       }
     }
     Enums: {
