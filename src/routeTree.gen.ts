@@ -9,9 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UsuariosRouteImport } from './routes/usuarios'
 import { Route as TransacoesRouteImport } from './routes/transacoes'
 import { Route as TarefasRouteImport } from './routes/tarefas'
 import { Route as TagsRouteImport } from './routes/tags'
+import { Route as RegistrarRouteImport } from './routes/registrar'
 import { Route as PublicoRouteImport } from './routes/publico'
 import { Route as ProjecaoRouteImport } from './routes/projecao'
 import { Route as OverviewRouteImport } from './routes/overview'
@@ -21,6 +23,7 @@ import { Route as MetaAdsRouteImport } from './routes/meta-ads'
 import { Route as LeadsRouteImport } from './routes/leads'
 import { Route as JarvisRouteImport } from './routes/jarvis'
 import { Route as InteligenciaIaRouteImport } from './routes/inteligencia-ia'
+import { Route as HubRouteImport } from './routes/hub'
 import { Route as FunilRouteImport } from './routes/funil'
 import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as FilaRouteImport } from './routes/fila'
@@ -28,6 +31,8 @@ import { Route as DisparosRouteImport } from './routes/disparos'
 import { Route as ComprovantesIaRouteImport } from './routes/comprovantes-ia'
 import { Route as ChatOficialRouteImport } from './routes/chat-oficial'
 import { Route as ChatBaileysRouteImport } from './routes/chat-baileys'
+import { Route as BloqueadoRouteImport } from './routes/bloqueado'
+import { Route as AguardandoRouteImport } from './routes/aguardando'
 import { Route as AgentesIaRouteImport } from './routes/agentes-ia'
 import { Route as AgendamentosRouteImport } from './routes/agendamentos'
 import { Route as IndexRouteImport } from './routes/index'
@@ -42,6 +47,11 @@ import { Route as ApiPublicFlowExecutorRouteImport } from './routes/api/public/f
 import { Route as ApiPublicEvolutionStatusRouteImport } from './routes/api/public/evolution-status'
 import { Route as ApiPublicEvolutionDiagRouteImport } from './routes/api/public/evolution-diag'
 
+const UsuariosRoute = UsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TransacoesRoute = TransacoesRouteImport.update({
   id: '/transacoes',
   path: '/transacoes',
@@ -55,6 +65,11 @@ const TarefasRoute = TarefasRouteImport.update({
 const TagsRoute = TagsRouteImport.update({
   id: '/tags',
   path: '/tags',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegistrarRoute = RegistrarRouteImport.update({
+  id: '/registrar',
+  path: '/registrar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PublicoRoute = PublicoRouteImport.update({
@@ -102,6 +117,11 @@ const InteligenciaIaRoute = InteligenciaIaRouteImport.update({
   path: '/inteligencia-ia',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HubRoute = HubRouteImport.update({
+  id: '/hub',
+  path: '/hub',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FunilRoute = FunilRouteImport.update({
   id: '/funil',
   path: '/funil',
@@ -135,6 +155,16 @@ const ChatOficialRoute = ChatOficialRouteImport.update({
 const ChatBaileysRoute = ChatBaileysRouteImport.update({
   id: '/chat-baileys',
   path: '/chat-baileys',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BloqueadoRoute = BloqueadoRouteImport.update({
+  id: '/bloqueado',
+  path: '/bloqueado',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AguardandoRoute = AguardandoRouteImport.update({
+  id: '/aguardando',
+  path: '/aguardando',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgentesIaRoute = AgentesIaRouteImport.update({
@@ -211,6 +241,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agendamentos': typeof AgendamentosRoute
   '/agentes-ia': typeof AgentesIaRoute
+  '/aguardando': typeof AguardandoRoute
+  '/bloqueado': typeof BloqueadoRoute
   '/chat-baileys': typeof ChatBaileysRoute
   '/chat-oficial': typeof ChatOficialRoute
   '/comprovantes-ia': typeof ComprovantesIaRoute
@@ -218,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
   '/funil': typeof FunilRoute
+  '/hub': typeof HubRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
   '/jarvis': typeof JarvisRoute
   '/leads': typeof LeadsRoute
@@ -227,9 +260,11 @@ export interface FileRoutesByFullPath {
   '/overview': typeof OverviewRoute
   '/projecao': typeof ProjecaoRoute
   '/publico': typeof PublicoRoute
+  '/registrar': typeof RegistrarRoute
   '/tags': typeof TagsRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
+  '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos/': typeof FluxosIndexRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
@@ -245,6 +280,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agendamentos': typeof AgendamentosRoute
   '/agentes-ia': typeof AgentesIaRoute
+  '/aguardando': typeof AguardandoRoute
+  '/bloqueado': typeof BloqueadoRoute
   '/chat-baileys': typeof ChatBaileysRoute
   '/chat-oficial': typeof ChatOficialRoute
   '/comprovantes-ia': typeof ComprovantesIaRoute
@@ -252,6 +289,7 @@ export interface FileRoutesByTo {
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
   '/funil': typeof FunilRoute
+  '/hub': typeof HubRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
   '/jarvis': typeof JarvisRoute
   '/leads': typeof LeadsRoute
@@ -261,9 +299,11 @@ export interface FileRoutesByTo {
   '/overview': typeof OverviewRoute
   '/projecao': typeof ProjecaoRoute
   '/publico': typeof PublicoRoute
+  '/registrar': typeof RegistrarRoute
   '/tags': typeof TagsRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
+  '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos': typeof FluxosIndexRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
@@ -280,6 +320,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/agendamentos': typeof AgendamentosRoute
   '/agentes-ia': typeof AgentesIaRoute
+  '/aguardando': typeof AguardandoRoute
+  '/bloqueado': typeof BloqueadoRoute
   '/chat-baileys': typeof ChatBaileysRoute
   '/chat-oficial': typeof ChatOficialRoute
   '/comprovantes-ia': typeof ComprovantesIaRoute
@@ -287,6 +329,7 @@ export interface FileRoutesById {
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
   '/funil': typeof FunilRoute
+  '/hub': typeof HubRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
   '/jarvis': typeof JarvisRoute
   '/leads': typeof LeadsRoute
@@ -296,9 +339,11 @@ export interface FileRoutesById {
   '/overview': typeof OverviewRoute
   '/projecao': typeof ProjecaoRoute
   '/publico': typeof PublicoRoute
+  '/registrar': typeof RegistrarRoute
   '/tags': typeof TagsRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
+  '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos/': typeof FluxosIndexRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
@@ -316,6 +361,8 @@ export interface FileRouteTypes {
     | '/'
     | '/agendamentos'
     | '/agentes-ia'
+    | '/aguardando'
+    | '/bloqueado'
     | '/chat-baileys'
     | '/chat-oficial'
     | '/comprovantes-ia'
@@ -323,6 +370,7 @@ export interface FileRouteTypes {
     | '/fila'
     | '/financeiro'
     | '/funil'
+    | '/hub'
     | '/inteligencia-ia'
     | '/jarvis'
     | '/leads'
@@ -332,9 +380,11 @@ export interface FileRouteTypes {
     | '/overview'
     | '/projecao'
     | '/publico'
+    | '/registrar'
     | '/tags'
     | '/tarefas'
     | '/transacoes'
+    | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos/'
     | '/api/public/evolution-diag'
@@ -350,6 +400,8 @@ export interface FileRouteTypes {
     | '/'
     | '/agendamentos'
     | '/agentes-ia'
+    | '/aguardando'
+    | '/bloqueado'
     | '/chat-baileys'
     | '/chat-oficial'
     | '/comprovantes-ia'
@@ -357,6 +409,7 @@ export interface FileRouteTypes {
     | '/fila'
     | '/financeiro'
     | '/funil'
+    | '/hub'
     | '/inteligencia-ia'
     | '/jarvis'
     | '/leads'
@@ -366,9 +419,11 @@ export interface FileRouteTypes {
     | '/overview'
     | '/projecao'
     | '/publico'
+    | '/registrar'
     | '/tags'
     | '/tarefas'
     | '/transacoes'
+    | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos'
     | '/api/public/evolution-diag'
@@ -384,6 +439,8 @@ export interface FileRouteTypes {
     | '/'
     | '/agendamentos'
     | '/agentes-ia'
+    | '/aguardando'
+    | '/bloqueado'
     | '/chat-baileys'
     | '/chat-oficial'
     | '/comprovantes-ia'
@@ -391,6 +448,7 @@ export interface FileRouteTypes {
     | '/fila'
     | '/financeiro'
     | '/funil'
+    | '/hub'
     | '/inteligencia-ia'
     | '/jarvis'
     | '/leads'
@@ -400,9 +458,11 @@ export interface FileRouteTypes {
     | '/overview'
     | '/projecao'
     | '/publico'
+    | '/registrar'
     | '/tags'
     | '/tarefas'
     | '/transacoes'
+    | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos/'
     | '/api/public/evolution-diag'
@@ -419,6 +479,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgendamentosRoute: typeof AgendamentosRoute
   AgentesIaRoute: typeof AgentesIaRoute
+  AguardandoRoute: typeof AguardandoRoute
+  BloqueadoRoute: typeof BloqueadoRoute
   ChatBaileysRoute: typeof ChatBaileysRoute
   ChatOficialRoute: typeof ChatOficialRoute
   ComprovantesIaRoute: typeof ComprovantesIaRoute
@@ -426,6 +488,7 @@ export interface RootRouteChildren {
   FilaRoute: typeof FilaRoute
   FinanceiroRoute: typeof FinanceiroRoute
   FunilRoute: typeof FunilRoute
+  HubRoute: typeof HubRoute
   InteligenciaIaRoute: typeof InteligenciaIaRoute
   JarvisRoute: typeof JarvisRoute
   LeadsRoute: typeof LeadsRoute
@@ -435,9 +498,11 @@ export interface RootRouteChildren {
   OverviewRoute: typeof OverviewRoute
   ProjecaoRoute: typeof ProjecaoRoute
   PublicoRoute: typeof PublicoRoute
+  RegistrarRoute: typeof RegistrarRoute
   TagsRoute: typeof TagsRoute
   TarefasRoute: typeof TarefasRoute
   TransacoesRoute: typeof TransacoesRoute
+  UsuariosRoute: typeof UsuariosRoute
   FluxosIdRoute: typeof FluxosIdRoute
   FluxosIndexRoute: typeof FluxosIndexRoute
   ApiPublicEvolutionDiagRoute: typeof ApiPublicEvolutionDiagRoute
@@ -452,6 +517,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/usuarios': {
+      id: '/usuarios'
+      path: '/usuarios'
+      fullPath: '/usuarios'
+      preLoaderRoute: typeof UsuariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/transacoes': {
       id: '/transacoes'
       path: '/transacoes'
@@ -471,6 +543,13 @@ declare module '@tanstack/react-router' {
       path: '/tags'
       fullPath: '/tags'
       preLoaderRoute: typeof TagsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/registrar': {
+      id: '/registrar'
+      path: '/registrar'
+      fullPath: '/registrar'
+      preLoaderRoute: typeof RegistrarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/publico': {
@@ -536,6 +615,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InteligenciaIaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/hub': {
+      id: '/hub'
+      path: '/hub'
+      fullPath: '/hub'
+      preLoaderRoute: typeof HubRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/funil': {
       id: '/funil'
       path: '/funil'
@@ -583,6 +669,20 @@ declare module '@tanstack/react-router' {
       path: '/chat-baileys'
       fullPath: '/chat-baileys'
       preLoaderRoute: typeof ChatBaileysRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bloqueado': {
+      id: '/bloqueado'
+      path: '/bloqueado'
+      fullPath: '/bloqueado'
+      preLoaderRoute: typeof BloqueadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/aguardando': {
+      id: '/aguardando'
+      path: '/aguardando'
+      fullPath: '/aguardando'
+      preLoaderRoute: typeof AguardandoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/agentes-ia': {
@@ -683,6 +783,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgendamentosRoute: AgendamentosRoute,
   AgentesIaRoute: AgentesIaRoute,
+  AguardandoRoute: AguardandoRoute,
+  BloqueadoRoute: BloqueadoRoute,
   ChatBaileysRoute: ChatBaileysRoute,
   ChatOficialRoute: ChatOficialRoute,
   ComprovantesIaRoute: ComprovantesIaRoute,
@@ -690,6 +792,7 @@ const rootRouteChildren: RootRouteChildren = {
   FilaRoute: FilaRoute,
   FinanceiroRoute: FinanceiroRoute,
   FunilRoute: FunilRoute,
+  HubRoute: HubRoute,
   InteligenciaIaRoute: InteligenciaIaRoute,
   JarvisRoute: JarvisRoute,
   LeadsRoute: LeadsRoute,
@@ -699,9 +802,11 @@ const rootRouteChildren: RootRouteChildren = {
   OverviewRoute: OverviewRoute,
   ProjecaoRoute: ProjecaoRoute,
   PublicoRoute: PublicoRoute,
+  RegistrarRoute: RegistrarRoute,
   TagsRoute: TagsRoute,
   TarefasRoute: TarefasRoute,
   TransacoesRoute: TransacoesRoute,
+  UsuariosRoute: UsuariosRoute,
   FluxosIdRoute: FluxosIdRoute,
   FluxosIndexRoute: FluxosIndexRoute,
   ApiPublicEvolutionDiagRoute: ApiPublicEvolutionDiagRoute,

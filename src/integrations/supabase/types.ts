@@ -934,6 +934,47 @@ export type Database = {
           },
         ]
       }
+      user_profiles: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          role: string
+          status: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          role?: string
+          status?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          role?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       leads_with_last_message: {
@@ -1012,6 +1053,9 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      current_user_role: { Args: never; Returns: string }
+      current_user_status: { Args: never; Returns: string }
+      is_admin: { Args: { _uid: string }; Returns: boolean }
       leads_per_day: {
         Args: { op_id: string }
         Returns: {

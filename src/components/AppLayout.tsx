@@ -1,13 +1,35 @@
-import { Outlet } from "@tanstack/react-router";
+import { Outlet, useRouterState } from "@tanstack/react-router";
 import { AppSidebar } from "./AppSidebar";
+import { OperationProvider } from "@/contexts/OperationContext";
+
+const NO_CHROME_ROUTES = new Set([
+  "/",
+  "/hub",
+  "/registrar",
+  "/aguardando",
+  "/bloqueado",
+]);
 
 export function AppLayout() {
-  return (
-    <div className="min-h-screen w-full bg-background text-foreground">
-      <AppSidebar />
-      <main className="ml-64 min-h-screen overflow-x-hidden">
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const noChrome = NO_CHROME_ROUTES.has(pathname);
+
+  if (noChrome) {
+    return (
+      <div className="min-h-screen w-full bg-background text-foreground">
         <Outlet />
-      </main>
-    </div>
+      </div>
+    );
+  }
+
+  return (
+    <OperationProvider>
+      <div className="min-h-screen w-full bg-background text-foreground">
+        <AppSidebar />
+        <main className="ml-64 min-h-screen overflow-x-hidden">
+          <Outlet />
+        </main>
+      </div>
+    </OperationProvider>
   );
 }
