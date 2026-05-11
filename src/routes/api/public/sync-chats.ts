@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { executeFlowForLead } from "@/server/funnel-execution.server";
 import { getOperationInstance } from "@/server/operations.server";
-import { findOrUpsertLead } from "@/server/lead-dedup.server";
+import { findOrUpsertLead, resolveLeadIdentity } from "@/server/lead-dedup.server";
 
 async function triggerFlowsForInboundMessage(leadId: string, content: string | null, isNewLead: boolean) {
   const triggers: { type: string; valueMatches?: (v: string | null) => boolean }[] = [];
@@ -74,13 +74,19 @@ export const Route = createFileRoute("/api/public/sync-chats")({
         let synced = 0;
         let newMessages = 0;
         for (const chat of chats) {
-          const remoteJid: string = chat.remoteJid || chat.id;
-          const realPhone: string | null =
-            chat.senderPn || chat.participantPn || chat.phoneNumber || null;
+          const sourceRemoteJid: string = chat.remoteJid || chat.id;
+          const identity = resolveLeadIdentity({
+            remoteJid: sourceRemoteJid,
+            remoteJidAlt: chat.remoteJidAlt || chat.lastMessage?.key?.remoteJidAlt || null,
+            senderPn: chat.senderPn || chat.lastMessage?.key?.senderPn || null,
+            participantPn: chat.participantPn || chat.lastMessage?.key?.participantPn || null,
+            phoneNumber: chat.phoneNumber || null,
+          });
 
           const { leadId, isNew } = await findOrUpsertLead({
-            remoteJid,
-            senderPn: realPhone,
+            remoteJid: identity.remoteJid,
+            alternateRemoteJids: identity.alternateRemoteJids,
+            senderPn: identity.realPhone,
             pushName: chat.pushName || chat.name || null,
             instance,
             operationId,
@@ -93,7 +99,7 @@ export const Route = createFileRoute("/api/public/sync-chats")({
           const msgsRes = await fetch(`${baseUrl}/chat/findMessages/${instance}`, {
             method: "POST", headers,
             body: JSON.stringify({
-              where: { key: { remoteJid } },
+              where: { key: { remoteJid: sourceRemoteJid } },
               limit: msgsLimit,
               sort: { messageTimestamp: -1 },
             }),
