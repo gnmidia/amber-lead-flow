@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TransacoesRouteImport } from './routes/transacoes'
 import { Route as TarefasRouteImport } from './routes/tarefas'
 import { Route as TagsRouteImport } from './routes/tags'
+import { Route as RegistrarRouteImport } from './routes/registrar'
 import { Route as PublicoRouteImport } from './routes/publico'
 import { Route as ProjecaoRouteImport } from './routes/projecao'
 import { Route as OverviewRouteImport } from './routes/overview'
@@ -21,6 +22,7 @@ import { Route as MetaAdsRouteImport } from './routes/meta-ads'
 import { Route as LeadsRouteImport } from './routes/leads'
 import { Route as JarvisRouteImport } from './routes/jarvis'
 import { Route as InteligenciaIaRouteImport } from './routes/inteligencia-ia'
+import { Route as HubRouteImport } from './routes/hub'
 import { Route as FunilRouteImport } from './routes/funil'
 import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as FilaRouteImport } from './routes/fila'
@@ -55,6 +57,11 @@ const TarefasRoute = TarefasRouteImport.update({
 const TagsRoute = TagsRouteImport.update({
   id: '/tags',
   path: '/tags',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegistrarRoute = RegistrarRouteImport.update({
+  id: '/registrar',
+  path: '/registrar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PublicoRoute = PublicoRouteImport.update({
@@ -100,6 +107,11 @@ const JarvisRoute = JarvisRouteImport.update({
 const InteligenciaIaRoute = InteligenciaIaRouteImport.update({
   id: '/inteligencia-ia',
   path: '/inteligencia-ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HubRoute = HubRouteImport.update({
+  id: '/hub',
+  path: '/hub',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FunilRoute = FunilRouteImport.update({
@@ -218,6 +230,7 @@ export interface FileRoutesByFullPath {
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
   '/funil': typeof FunilRoute
+  '/hub': typeof HubRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
   '/jarvis': typeof JarvisRoute
   '/leads': typeof LeadsRoute
@@ -227,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/overview': typeof OverviewRoute
   '/projecao': typeof ProjecaoRoute
   '/publico': typeof PublicoRoute
+  '/registrar': typeof RegistrarRoute
   '/tags': typeof TagsRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
@@ -252,6 +266,7 @@ export interface FileRoutesByTo {
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
   '/funil': typeof FunilRoute
+  '/hub': typeof HubRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
   '/jarvis': typeof JarvisRoute
   '/leads': typeof LeadsRoute
@@ -261,6 +276,7 @@ export interface FileRoutesByTo {
   '/overview': typeof OverviewRoute
   '/projecao': typeof ProjecaoRoute
   '/publico': typeof PublicoRoute
+  '/registrar': typeof RegistrarRoute
   '/tags': typeof TagsRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
@@ -287,6 +303,7 @@ export interface FileRoutesById {
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
   '/funil': typeof FunilRoute
+  '/hub': typeof HubRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
   '/jarvis': typeof JarvisRoute
   '/leads': typeof LeadsRoute
@@ -296,6 +313,7 @@ export interface FileRoutesById {
   '/overview': typeof OverviewRoute
   '/projecao': typeof ProjecaoRoute
   '/publico': typeof PublicoRoute
+  '/registrar': typeof RegistrarRoute
   '/tags': typeof TagsRoute
   '/tarefas': typeof TarefasRoute
   '/transacoes': typeof TransacoesRoute
@@ -323,6 +341,7 @@ export interface FileRouteTypes {
     | '/fila'
     | '/financeiro'
     | '/funil'
+    | '/hub'
     | '/inteligencia-ia'
     | '/jarvis'
     | '/leads'
@@ -332,6 +351,7 @@ export interface FileRouteTypes {
     | '/overview'
     | '/projecao'
     | '/publico'
+    | '/registrar'
     | '/tags'
     | '/tarefas'
     | '/transacoes'
@@ -357,6 +377,7 @@ export interface FileRouteTypes {
     | '/fila'
     | '/financeiro'
     | '/funil'
+    | '/hub'
     | '/inteligencia-ia'
     | '/jarvis'
     | '/leads'
@@ -366,6 +387,7 @@ export interface FileRouteTypes {
     | '/overview'
     | '/projecao'
     | '/publico'
+    | '/registrar'
     | '/tags'
     | '/tarefas'
     | '/transacoes'
@@ -391,6 +413,7 @@ export interface FileRouteTypes {
     | '/fila'
     | '/financeiro'
     | '/funil'
+    | '/hub'
     | '/inteligencia-ia'
     | '/jarvis'
     | '/leads'
@@ -400,6 +423,7 @@ export interface FileRouteTypes {
     | '/overview'
     | '/projecao'
     | '/publico'
+    | '/registrar'
     | '/tags'
     | '/tarefas'
     | '/transacoes'
@@ -426,6 +450,7 @@ export interface RootRouteChildren {
   FilaRoute: typeof FilaRoute
   FinanceiroRoute: typeof FinanceiroRoute
   FunilRoute: typeof FunilRoute
+  HubRoute: typeof HubRoute
   InteligenciaIaRoute: typeof InteligenciaIaRoute
   JarvisRoute: typeof JarvisRoute
   LeadsRoute: typeof LeadsRoute
@@ -435,6 +460,7 @@ export interface RootRouteChildren {
   OverviewRoute: typeof OverviewRoute
   ProjecaoRoute: typeof ProjecaoRoute
   PublicoRoute: typeof PublicoRoute
+  RegistrarRoute: typeof RegistrarRoute
   TagsRoute: typeof TagsRoute
   TarefasRoute: typeof TarefasRoute
   TransacoesRoute: typeof TransacoesRoute
@@ -471,6 +497,13 @@ declare module '@tanstack/react-router' {
       path: '/tags'
       fullPath: '/tags'
       preLoaderRoute: typeof TagsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/registrar': {
+      id: '/registrar'
+      path: '/registrar'
+      fullPath: '/registrar'
+      preLoaderRoute: typeof RegistrarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/publico': {
@@ -534,6 +567,13 @@ declare module '@tanstack/react-router' {
       path: '/inteligencia-ia'
       fullPath: '/inteligencia-ia'
       preLoaderRoute: typeof InteligenciaIaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hub': {
+      id: '/hub'
+      path: '/hub'
+      fullPath: '/hub'
+      preLoaderRoute: typeof HubRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/funil': {
@@ -690,6 +730,7 @@ const rootRouteChildren: RootRouteChildren = {
   FilaRoute: FilaRoute,
   FinanceiroRoute: FinanceiroRoute,
   FunilRoute: FunilRoute,
+  HubRoute: HubRoute,
   InteligenciaIaRoute: InteligenciaIaRoute,
   JarvisRoute: JarvisRoute,
   LeadsRoute: LeadsRoute,
@@ -699,6 +740,7 @@ const rootRouteChildren: RootRouteChildren = {
   OverviewRoute: OverviewRoute,
   ProjecaoRoute: ProjecaoRoute,
   PublicoRoute: PublicoRoute,
+  RegistrarRoute: RegistrarRoute,
   TagsRoute: TagsRoute,
   TarefasRoute: TarefasRoute,
   TransacoesRoute: TransacoesRoute,
@@ -716,3 +758,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
