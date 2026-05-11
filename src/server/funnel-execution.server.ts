@@ -92,7 +92,7 @@ export async function scheduleFunnelForLead({
       lead_id,
       funnel_id,
       step_id: step.id,
-      instance_name: lead.instance_name || process.env.EVOLUTION_INSTANCE_NAME || "cland-main",
+      instance_name: opInstance || lead.instance_name || process.env.EVOLUTION_INSTANCE_NAME || "cland-main",
       whatsapp_number: lead.remote_jid || lead.whatsapp_number,
       message_type: step.type,
       content: step.content,
