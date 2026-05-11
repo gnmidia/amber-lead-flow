@@ -97,6 +97,8 @@ export function AppSidebar() {
         </div>
       </div>
 
+      <OperationSelector />
+
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         {sections.map((section) => (
           <div key={section.title} className="mb-5">
