@@ -29,6 +29,7 @@ const yesterdayStr = () => ymdSPDaysAgo(1);
 type Props = { startDate: Date; endDate: Date };
 
 export function LeadsReceivedSection({ startDate, endDate }: Props) {
+  const { currentOperationId } = useOperation();
   const [tab, setTab] = useState<"all" | "byTag">("all");
   const [perDay, setPerDay] = useState<LeadsPerDayRow[]>([]);
   const [perDayByTag, setPerDayByTag] = useState<LeadsPerDayByTagRow[]>([]);
@@ -49,32 +50,35 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
   }, [endStr]);
 
   const loadAll = useCallback(async () => {
+    if (!currentOperationId) return;
     const [{ data: d1 }, { data: d2 }, { data: d3 }] = await Promise.all([
-      supabase
-        .from("leads_per_day" as never)
-        .select("*")
-        .gte("day", fetchFromStr)
-        .lte("day", fetchToStr)
-        .order("day", { ascending: false }),
-      supabase
-        .from("leads_per_day_by_tag" as never)
-        .select("*")
-        .gte("day", fetchFromStr)
-        .lte("day", fetchToStr)
-        .order("day", { ascending: false }),
+      supabase.rpc("leads_per_day" as never, { op_id: currentOperationId } as never),
+      supabase.rpc("leads_per_day_by_tag" as never, { op_id: currentOperationId } as never),
       supabase
         .from("tags")
         .select("id, name, color")
         .eq("is_active", true)
+        .eq("operation_id", currentOperationId)
         .order("name"),
     ]);
-    setPerDay((d1 as LeadsPerDayRow[]) || []);
-    setPerDayByTag((d2 as LeadsPerDayByTagRow[]) || []);
+    const filterRange = <T extends { day: string }>(rows: T[] | null | undefined) =>
+      (rows || []).filter((r) => r.day >= fetchFromStr && r.day <= fetchToStr);
+    setPerDay(
+      filterRange(d1 as LeadsPerDayRow[] | null).sort((a, b) =>
+        b.day.localeCompare(a.day),
+      ),
+    );
+    setPerDayByTag(
+      filterRange(d2 as LeadsPerDayByTagRow[] | null).sort((a, b) =>
+        b.day.localeCompare(a.day),
+      ),
+    );
     setTags((d3 as Tag[]) || []);
-  }, [fetchFromStr, fetchToStr]);
+  }, [fetchFromStr, fetchToStr, currentOperationId]);
 
 
   useEffect(() => {
+    if (!currentOperationId) return;
     loadAll();
     const ch = supabase
       .channel("leads-dashboard")
@@ -92,7 +96,7 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [loadAll]);
+  }, [loadAll, currentOperationId]);
 
   // Summary
   const summary = useMemo(() => {
