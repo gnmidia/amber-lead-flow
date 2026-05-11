@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { executeFlowForLead } from "@/server/funnel-execution.server";
+import { getOperationInstance } from "@/server/operations.server";
 
 async function triggerFlowsForInboundMessage(leadId: string, content: string | null, isNewLead: boolean) {
   const triggers: { type: string; valueMatches?: (v: string | null) => boolean }[] = [];
