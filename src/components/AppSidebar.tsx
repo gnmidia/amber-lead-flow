@@ -115,7 +115,7 @@ export function AppSidebar() {
       <OperationSelector />
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
-        {sections.map((section) => (
+        {visibleSections.map((section) => (
           <div key={section.title} className="mb-5">
             <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
               {section.title}
@@ -150,13 +150,23 @@ export function AppSidebar() {
       <div className="border-t border-sidebar-border px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">
-            CL
+            {(profile?.full_name ?? profile?.email ?? "?").slice(0, 2).toUpperCase()}
           </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-xs font-medium text-foreground">Operador</span>
-            <span className="text-[10px] text-muted-foreground">acesso único</span>
+          <div className="flex min-w-0 flex-col leading-tight">
+            <span className="truncate text-xs font-medium text-foreground">
+              {profile?.full_name ?? profile?.email ?? "Usuário"}
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              {profile?.role === "admin" ? "Admin" : "Operador"}
+            </span>
           </div>
-          <span className="ml-auto h-2 w-2 rounded-full bg-success shadow-[0_0_8px_oklch(0.7_0.18_145/0.8)]" />
+          <button
+            onClick={signOut}
+            title="Sair"
+            className="ml-auto rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-sidebar-accent/40 hover:text-foreground"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </aside>
