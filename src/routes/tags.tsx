@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
+import { useOperation } from "@/contexts/OperationContext";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/tags")({ component: TagsPage });
@@ -25,13 +26,15 @@ const formatTagName = (v: string) =>
   v.toUpperCase().replace(/\s+/g, "_").replace(/[^A-Z0-9_]/g, "");
 
 function TagsPage() {
+  const { currentOperationId } = useOperation();
   const [tags, setTags] = useState<Tag[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [editing, setEditing] = useState<Tag | null>(null);
   const [creating, setCreating] = useState(false);
 
   const load = async () => {
-    const { data } = await supabase.from("tags").select("*").order("name");
+    if (!currentOperationId) return;
+    const { data } = await supabase.from("tags").select("*").eq("operation_id", currentOperationId).order("name");
     setTags((data || []) as Tag[]);
     const { data: lt } = await supabase.from("lead_tags").select("tag_id");
     const c: Record<string, number> = {};
@@ -41,7 +44,7 @@ function TagsPage() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [currentOperationId]);
 
   const onDelete = async (t: Tag) => {
     if (!confirm(`Excluir a tag ${t.name}?`)) return;
@@ -142,6 +145,7 @@ function TagModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { currentOperationId } = useOperation();
   const [name, setName] = useState(tag?.name || "");
   const [color, setColor] = useState(tag?.color || TAG_COLORS[0]);
   const [description, setDescription] = useState(tag?.description || "");
@@ -152,11 +156,12 @@ function TagModal({
       toast.error("Nome obrigatório");
       return;
     }
+    if (!tag && !currentOperationId) { toast.error("Operação não selecionada"); return; }
     setSaving(true);
     const payload = { name, color, description: description || null };
     const { error } = tag
       ? await supabase.from("tags").update(payload).eq("id", tag.id)
-      : await supabase.from("tags").insert(payload);
+      : await supabase.from("tags").insert({ ...payload, operation_id: currentOperationId! } as any);
     setSaving(false);
     if (error) toast.error(error.message);
     else {

@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useOperation } from "@/contexts/OperationContext";
 import { toast } from "sonner";
 import {
   DndContext, PointerSensor, closestCenter, useSensor, useSensors,
@@ -87,15 +88,19 @@ function delayLabel(s: Step) {
 
 function FunilPage() {
   const qc = useQueryClient();
+  const { currentOperationId } = useOperation();
   const [expanded, setExpanded] = useState<string[]>([]);
   const [editingStep, setEditingStep] = useState<Step | null>(null);
   const [editingFunnel, setEditingFunnel] = useState<Funnel | "new" | null>(null);
 
   const funnelsQ = useQuery({
-    queryKey: ["funnels"],
+    queryKey: ["funnels", currentOperationId],
+    enabled: !!currentOperationId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("funnels").select("*").order("position");
+        .from("funnels").select("*")
+        .eq("operation_id", currentOperationId!)
+        .order("position");
       if (error) throw error;
       return data as Funnel[];
     },
@@ -440,11 +445,15 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
   const needsMedia = !isTag && !isDelay && form.type !== "Texto";
   const requiresContent = form.type === "Texto";
 
+  const { currentOperationId } = useOperation();
   const tagsQ = useQuery({
-    queryKey: ["tags-active"],
+    queryKey: ["tags-active", currentOperationId],
+    enabled: !!currentOperationId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("tags").select("id,name,color").eq("is_active", true).order("name");
+        .from("tags").select("id,name,color")
+        .eq("operation_id", currentOperationId!)
+        .eq("is_active", true).order("name");
       if (error) throw error;
       return data as { id: string; name: string; color: string }[];
     },
@@ -695,6 +704,7 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
 
 function FunnelDrawer({ funnel, onClose }: { funnel: Funnel | null; onClose: () => void }) {
   const qc = useQueryClient();
+  const { currentOperationId } = useOperation();
   const isNew = !funnel;
   const [form, setForm] = useState<Omit<Funnel, "id">>(() => ({
     name: funnel?.name ?? "",
@@ -716,7 +726,8 @@ function FunnelDrawer({ funnel, onClose }: { funnel: Funnel | null; onClose: () 
         throw new Error("Nome e ID interno são obrigatórios");
       }
       if (isNew) {
-        const { error } = await supabase.from("funnels").insert(form);
+        if (!currentOperationId) throw new Error("Operação não selecionada");
+        const { error } = await supabase.from("funnels").insert({ ...form, operation_id: currentOperationId } as any);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("funnels").update(form).eq("id", funnel!.id);

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { Plus, Pencil, Trash2, X, Tag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useOperation } from "@/contexts/OperationContext";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/ofertas")({ component: OfertasPage });
@@ -22,15 +23,19 @@ const fmt = (n: number) =>
   Number(n).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 function OfertasPage() {
+  const { currentOperationId } = useOperation();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [editing, setEditing] = useState<Offer | null>(null);
   const [creating, setCreating] = useState(false);
 
   const load = async () => {
-    const { data } = await supabase.from("offers").select("*").order("price", { ascending: true });
+    if (!currentOperationId) return;
+    const { data } = await supabase.from("offers").select("*")
+      .eq("operation_id", currentOperationId)
+      .order("price", { ascending: true });
     setOffers((data || []) as Offer[]);
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [currentOperationId]);
 
   const onDelete = async (o: Offer) => {
     if (!confirm(`Excluir a oferta ${o.name}?`)) return;
@@ -125,6 +130,7 @@ function OfertasPage() {
 }
 
 function OfferModal({ offer, onClose, onSaved }: { offer: Offer | null; onClose: () => void; onSaved: () => void }) {
+  const { currentOperationId } = useOperation();
   const [name, setName] = useState(offer?.name || "");
   const [productName, setProductName] = useState(offer?.product_name || "");
   const [description, setDescription] = useState(offer?.description || "");
@@ -138,6 +144,7 @@ function OfferModal({ offer, onClose, onSaved }: { offer: Offer | null; onClose:
     if (!name.trim()) { toast.error("Nome obrigatório"); return; }
     const num = Number(price.replace(",", "."));
     if (!num || num <= 0) { toast.error("Preço inválido"); return; }
+    if (!offer && !currentOperationId) { toast.error("Operação não selecionada"); return; }
 
     setSaving(true);
     const payload = {
@@ -151,7 +158,7 @@ function OfferModal({ offer, onClose, onSaved }: { offer: Offer | null; onClose:
     };
     const { error } = offer
       ? await supabase.from("offers").update(payload).eq("id", offer.id)
-      : await supabase.from("offers").insert(payload);
+      : await supabase.from("offers").insert({ ...payload, operation_id: currentOperationId! } as any);
     setSaving(false);
     if (error) {
       if (error.code === "23505") toast.error("Já existe uma oferta com esse preço — cada preço deve ser único.");

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { Plus, GitBranch, Pencil, Trash2, X, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useOperation } from "@/contexts/OperationContext";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/fluxos/")({ component: FluxosPage });
@@ -26,6 +27,7 @@ const TRIGGER_LABELS: Record<string, string> = {
 };
 
 function FluxosPage() {
+  const { currentOperationId } = useOperation();
   const [flows, setFlows] = useState<Flow[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
@@ -34,9 +36,10 @@ function FluxosPage() {
   const navigate = useNavigate();
 
   const load = async () => {
+    if (!currentOperationId) return;
     const [{ data: f }, { data: t }] = await Promise.all([
-      supabase.from("flows").select("*").order("created_at", { ascending: false }),
-      supabase.from("tags").select("id,name,color").eq("is_active", true).order("name"),
+      supabase.from("flows").select("*").eq("operation_id", currentOperationId).order("created_at", { ascending: false }),
+      supabase.from("tags").select("id,name,color").eq("operation_id", currentOperationId).eq("is_active", true).order("name"),
     ]);
     setFlows((f || []) as Flow[]);
     setTags((t || []) as Tag[]);
@@ -52,7 +55,7 @@ function FluxosPage() {
       setCounts(c);
     }
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [currentOperationId]);
 
   const onDelete = async (f: Flow) => {
     if (!confirm(`Excluir o fluxo ${f.name}?`)) return;
@@ -131,6 +134,7 @@ function FluxosPage() {
 }
 
 function FlowModal({ flow, tags, onClose, onSaved }: { flow: Flow | null; tags: Tag[]; onClose: () => void; onSaved: () => void }) {
+  const { currentOperationId } = useOperation();
   const [name, setName] = useState(flow?.name || "");
   const [description, setDescription] = useState(flow?.description || "");
   const [triggerType, setTriggerType] = useState(flow?.trigger_type || "new_lead");
@@ -140,6 +144,7 @@ function FlowModal({ flow, tags, onClose, onSaved }: { flow: Flow | null; tags: 
 
   const save = async () => {
     if (!name.trim()) { toast.error("Nome obrigatório"); return; }
+    if (!flow && !currentOperationId) { toast.error("Operação não selecionada"); return; }
     setSaving(true);
     const payload = {
       name,
@@ -150,7 +155,7 @@ function FlowModal({ flow, tags, onClose, onSaved }: { flow: Flow | null; tags: 
     };
     const { error } = flow
       ? await supabase.from("flows").update(payload).eq("id", flow.id)
-      : await supabase.from("flows").insert(payload);
+      : await supabase.from("flows").insert({ ...payload, operation_id: currentOperationId! } as any);
     setSaving(false);
     if (error) toast.error(error.message);
     else { toast.success(flow ? "Fluxo atualizado" : "Fluxo criado"); onSaved(); }

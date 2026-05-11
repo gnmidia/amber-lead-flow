@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { Send, Plus, X, Tag as TagIcon, Workflow as WorkflowIcon, RefreshCw, Pause, Play, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useOperation } from "@/contexts/OperationContext";
 import { toast } from "sonner";
 import { fullDateTimeSP } from "@/lib/datetime";
 
@@ -37,6 +38,7 @@ function statusBadge(status: string) {
 }
 
 function DisparosPage() {
+  const { currentOperationId } = useOperation();
   const [flows, setFlows] = useState<Flow[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
@@ -44,10 +46,11 @@ function DisparosPage() {
   const [creating, setCreating] = useState(false);
 
   const load = async () => {
+    if (!currentOperationId) return;
     const [{ data: f }, { data: t }, { data: b }] = await Promise.all([
-      supabase.from("flows").select("id,name").eq("is_active", true).order("name"),
-      supabase.from("tags").select("id,name,color").eq("is_active", true).order("name"),
-      supabase.from("broadcasts").select("*").order("created_at", { ascending: false }).limit(50),
+      supabase.from("flows").select("id,name").eq("operation_id", currentOperationId).eq("is_active", true).order("name"),
+      supabase.from("tags").select("id,name,color").eq("operation_id", currentOperationId).eq("is_active", true).order("name"),
+      supabase.from("broadcasts").select("*").eq("operation_id", currentOperationId).order("created_at", { ascending: false }).limit(50),
     ]);
     setFlows((f || []) as Flow[]);
     setTags((t || []) as Tag[]);
@@ -79,7 +82,7 @@ function DisparosPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "broadcast_targets" }, () => load())
       .subscribe();
     return () => { clearInterval(t); supabase.removeChannel(channel); };
-  }, []);
+  }, [currentOperationId]);
 
   const pause = async (id: string) => {
     const { error } = await supabase.from("broadcasts").update({ status: "paused" }).eq("id", id);
@@ -181,6 +184,7 @@ function DisparosPage() {
 function BroadcastModal({ flows, tags, onClose, onCreated }: {
   flows: Flow[]; tags: Tag[]; onClose: () => void; onCreated: () => void;
 }) {
+  const { currentOperationId } = useOperation();
   const [name, setName] = useState("Disparo");
   const [flowId, setFlowId] = useState("");
   const [tagId, setTagId] = useState("");
@@ -190,17 +194,18 @@ function BroadcastModal({ flows, tags, onClose, onCreated }: {
   const [count, setCount] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!tagId) { setCount(null); return; }
+    if (!tagId || !currentOperationId) { setCount(null); return; }
     (async () => {
       const { data } = await supabase.from("lead_tags").select("lead_id").eq("tag_id", tagId);
       const ids = Array.from(new Set((data || []).map((r: any) => r.lead_id)));
       if (ids.length === 0) { setCount(0); return; }
       const { count: c } = await supabase
         .from("leads").select("id", { count: "exact", head: true })
+        .eq("operation_id", currentOperationId)
         .in("id", ids).eq("status", "active");
       setCount(c || 0);
     })();
-  }, [tagId]);
+  }, [tagId, currentOperationId]);
 
   const submit = async () => {
     if (!flowId) return toast.error("Selecione um fluxo");

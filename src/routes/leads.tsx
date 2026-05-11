@@ -4,6 +4,7 @@ import { Search, Filter, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useOperation } from "@/contexts/OperationContext";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/leads")({
@@ -35,11 +36,15 @@ function LeadsPage() {
   const [search, setSearch] = useState("");
   const [activatingLead, setActivatingLead] = useState<Lead | null>(null);
 
+  const { currentOperationId } = useOperation();
+
   const { data: leads = [], isLoading } = useQuery({
-    queryKey: ["leads"],
+    queryKey: ["leads", currentOperationId],
+    enabled: !!currentOperationId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("leads").select("*")
+        .eq("operation_id", currentOperationId!)
         .order("last_interaction_at", { ascending: false }).limit(200);
       if (error) throw error;
       return data as Lead[];
@@ -135,10 +140,16 @@ function ActivateFunnelModal({ lead, onClose }: { lead: Lead; onClose: () => voi
   const [funnelId, setFunnelId] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
 
+  const { currentOperationId } = useOperation();
+
   const { data: funnels = [] } = useQuery({
-    queryKey: ["funnels-list"],
+    queryKey: ["funnels-list", currentOperationId],
+    enabled: !!currentOperationId,
     queryFn: async () => {
-      const { data, error } = await supabase.from("funnels").select("id, name").order("name");
+      const { data, error } = await supabase
+        .from("funnels").select("id, name")
+        .eq("operation_id", currentOperationId!)
+        .order("name");
       if (error) throw error;
       return data as { id: string; name: string }[];
     },

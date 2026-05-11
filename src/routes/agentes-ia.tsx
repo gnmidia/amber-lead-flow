@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { Plus, Bot, Pencil, Trash2, X, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useOperation } from "@/contexts/OperationContext";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/agentes-ia")({ component: AgentesPage });
@@ -21,18 +22,20 @@ type Agent = {
 };
 
 function AgentesPage() {
+  const { currentOperationId } = useOperation();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [tags, setTags] = useState<TagItem[]>([]);
   const [editing, setEditing] = useState<Agent | null>(null);
   const [creating, setCreating] = useState(false);
 
   const load = async () => {
-    const { data } = await supabase.from("agents").select("*").order("created_at", { ascending: false });
+    if (!currentOperationId) return;
+    const { data } = await supabase.from("agents").select("*").eq("operation_id", currentOperationId).order("created_at", { ascending: false });
     setAgents((data || []) as Agent[]);
-    const { data: t } = await supabase.from("tags").select("id,name,color").eq("is_active", true).order("name");
+    const { data: t } = await supabase.from("tags").select("id,name,color").eq("operation_id", currentOperationId).eq("is_active", true).order("name");
     setTags((t || []) as TagItem[]);
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [currentOperationId]);
 
   const onDelete = async (a: Agent) => {
     if (!confirm(`Excluir o agente ${a.name}?`)) return;
@@ -129,6 +132,7 @@ function Row({ k, v }: { k: string; v: string }) {
 }
 
 function AgentModal({ agent, tags, onClose, onSaved }: { agent: Agent | null; tags: TagItem[]; onClose: () => void; onSaved: () => void }) {
+  const { currentOperationId } = useOperation();
   const [name, setName] = useState(agent?.name || "");
   const [objective, setObjective] = useState(agent?.objective || "");
   const [product, setProduct] = useState(agent?.product || "");
@@ -147,6 +151,7 @@ function AgentModal({ agent, tags, onClose, onSaved }: { agent: Agent | null; ta
 
   const save = async () => {
     if (!name.trim()) { toast.error("Nome obrigatório"); return; }
+    if (!agent && !currentOperationId) { toast.error("Operação não selecionada"); return; }
     setSaving(true);
     const payload = {
       name, objective: objective || null, product: product || null, tone,
@@ -155,7 +160,7 @@ function AgentModal({ agent, tags, onClose, onSaved }: { agent: Agent | null; ta
     };
     const { error } = agent
       ? await supabase.from("agents").update(payload).eq("id", agent.id)
-      : await supabase.from("agents").insert(payload);
+      : await supabase.from("agents").insert({ ...payload, operation_id: currentOperationId! } as any);
     setSaving(false);
     if (error) toast.error(error.message);
     else { toast.success(agent ? "Agente atualizado" : "Agente criado"); onSaved(); }
