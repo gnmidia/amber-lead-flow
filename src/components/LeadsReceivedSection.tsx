@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ymdSP, ymdSPDaysAgo, dayMonthFromYmd } from "@/lib/datetime";
+import { useOperation } from "@/contexts/OperationContext";
 import {
   BarChart,
   Bar,
