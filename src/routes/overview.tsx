@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { PageHeader } from "../components/PageHeader";
 import { MetricCard } from "../components/MetricCard";
 import { CalendarRange, Clock } from "lucide-react";
@@ -10,6 +12,8 @@ import { startOfDay, endOfDay, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { dayMonthYearSP } from "@/lib/datetime";
 import type { DateRange } from "react-day-picker";
+import { supabase } from "@/integrations/supabase/client";
+import { useOperation } from "@/contexts/OperationContext";
 
 export const Route = createFileRoute("/overview")({
   head: () => ({
