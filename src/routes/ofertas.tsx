@@ -23,15 +23,19 @@ const fmt = (n: number) =>
   Number(n).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 function OfertasPage() {
+  const { currentOperationId } = useOperation();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [editing, setEditing] = useState<Offer | null>(null);
   const [creating, setCreating] = useState(false);
 
   const load = async () => {
-    const { data } = await supabase.from("offers").select("*").order("price", { ascending: true });
+    if (!currentOperationId) return;
+    const { data } = await supabase.from("offers").select("*")
+      .eq("operation_id", currentOperationId)
+      .order("price", { ascending: true });
     setOffers((data || []) as Offer[]);
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [currentOperationId]);
 
   const onDelete = async (o: Offer) => {
     if (!confirm(`Excluir a oferta ${o.name}?`)) return;
