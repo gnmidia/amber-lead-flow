@@ -58,6 +58,28 @@ function OverviewPage() {
   const periodStart = range?.from ? startOfDay(range.from) : subDays(new Date(), 29);
   const periodEnd = range?.to ? endOfDay(range.to) : endOfDay(new Date());
 
+  const { currentOperationId } = useOperation();
+  const dateFrom = format(periodStart, "yyyy-MM-dd");
+  const dateTo = format(periodEnd, "yyyy-MM-dd");
+
+  const { data: salesSummary } = useQuery({
+    queryKey: ["sales-summary", currentOperationId, dateFrom, dateTo],
+    enabled: !!currentOperationId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("sales_summary" as any, {
+        op_id: currentOperationId!,
+        date_from: dateFrom,
+        date_to: dateTo,
+      });
+      if (error) throw error;
+      return (data ?? {}) as { total_sales?: number; total_revenue?: number; avg_ticket?: number };
+    },
+  });
+
+  const totalSales = Number(salesSummary?.total_sales ?? 0);
+  const totalRevenue = Number(salesSummary?.total_revenue ?? 0);
+  const avgTicket = Number(salesSummary?.avg_ticket ?? 0);
+
   const labelCustom =
     range?.from && range?.to
       ? `${dayMonthYearSP(range.from)} – ${dayMonthYearSP(range.to)}`
