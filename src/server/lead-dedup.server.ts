@@ -143,7 +143,7 @@ export async function findOrUpsertLead(input: DedupInput): Promise<DedupResult> 
 
   const { data: created, error } = await supabaseAdmin
     .from("leads")
-    .insert(insertPayload)
+    .insert(insertPayload as any)
     .select("id")
     .single();
 
