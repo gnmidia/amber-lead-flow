@@ -88,8 +88,15 @@ const sections: NavSection[] = [
   },
 ];
 
+const ADMIN_SECTION: NavSection = {
+  title: "Admin",
+  items: [{ label: "Usuários", to: "/usuarios", icon: ShieldCheck }],
+};
+
 export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { profile, signOut } = useAuth();
+  const visibleSections = profile?.role === "admin" ? [...sections, ADMIN_SECTION] : sections;
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 flex h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
