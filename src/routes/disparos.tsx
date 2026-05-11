@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { PageHeader } from "../components/PageHeader";
 import { Send, Plus, X, Tag as TagIcon, Workflow as WorkflowIcon, RefreshCw, Pause, Play, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useOperation } from "@/contexts/OperationContext";
 import { toast } from "sonner";
 import { fullDateTimeSP } from "@/lib/datetime";
 
