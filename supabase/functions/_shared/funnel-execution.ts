@@ -170,7 +170,7 @@ export async function executeFlowForLead(
       const resumeAt = new Date(now.getTime() + block.wait_minutes * 60_000);
       const { error } = await supabase.from("scheduled_messages").insert({
         lead_id,
-        instance_name: (lead as any).instance_name || Deno.env.get("EVOLUTION_INSTANCE_NAME") || "",
+        instance_name: opInstance || (lead as any).instance_name || Deno.env.get("EVOLUTION_INSTANCE_NAME") || "",
         whatsapp_number: (lead as any).remote_jid || (lead as any).whatsapp_number,
         message_type: "flow_resume",
         content: JSON.stringify({ flow_id, resume_block_index: i + 1 }),
