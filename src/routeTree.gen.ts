@@ -30,6 +30,7 @@ import { Route as DisparosRouteImport } from './routes/disparos'
 import { Route as ComprovantesIaRouteImport } from './routes/comprovantes-ia'
 import { Route as ChatOficialRouteImport } from './routes/chat-oficial'
 import { Route as ChatBaileysRouteImport } from './routes/chat-baileys'
+import { Route as AguardandoRouteImport } from './routes/aguardando'
 import { Route as AgentesIaRouteImport } from './routes/agentes-ia'
 import { Route as AgendamentosRouteImport } from './routes/agendamentos'
 import { Route as IndexRouteImport } from './routes/index'
@@ -149,6 +150,11 @@ const ChatBaileysRoute = ChatBaileysRouteImport.update({
   path: '/chat-baileys',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AguardandoRoute = AguardandoRouteImport.update({
+  id: '/aguardando',
+  path: '/aguardando',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AgentesIaRoute = AgentesIaRouteImport.update({
   id: '/agentes-ia',
   path: '/agentes-ia',
@@ -223,6 +229,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agendamentos': typeof AgendamentosRoute
   '/agentes-ia': typeof AgentesIaRoute
+  '/aguardando': typeof AguardandoRoute
   '/chat-baileys': typeof ChatBaileysRoute
   '/chat-oficial': typeof ChatOficialRoute
   '/comprovantes-ia': typeof ComprovantesIaRoute
@@ -259,6 +266,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agendamentos': typeof AgendamentosRoute
   '/agentes-ia': typeof AgentesIaRoute
+  '/aguardando': typeof AguardandoRoute
   '/chat-baileys': typeof ChatBaileysRoute
   '/chat-oficial': typeof ChatOficialRoute
   '/comprovantes-ia': typeof ComprovantesIaRoute
@@ -296,6 +304,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/agendamentos': typeof AgendamentosRoute
   '/agentes-ia': typeof AgentesIaRoute
+  '/aguardando': typeof AguardandoRoute
   '/chat-baileys': typeof ChatBaileysRoute
   '/chat-oficial': typeof ChatOficialRoute
   '/comprovantes-ia': typeof ComprovantesIaRoute
@@ -334,6 +343,7 @@ export interface FileRouteTypes {
     | '/'
     | '/agendamentos'
     | '/agentes-ia'
+    | '/aguardando'
     | '/chat-baileys'
     | '/chat-oficial'
     | '/comprovantes-ia'
@@ -370,6 +380,7 @@ export interface FileRouteTypes {
     | '/'
     | '/agendamentos'
     | '/agentes-ia'
+    | '/aguardando'
     | '/chat-baileys'
     | '/chat-oficial'
     | '/comprovantes-ia'
@@ -406,6 +417,7 @@ export interface FileRouteTypes {
     | '/'
     | '/agendamentos'
     | '/agentes-ia'
+    | '/aguardando'
     | '/chat-baileys'
     | '/chat-oficial'
     | '/comprovantes-ia'
@@ -443,6 +455,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgendamentosRoute: typeof AgendamentosRoute
   AgentesIaRoute: typeof AgentesIaRoute
+  AguardandoRoute: typeof AguardandoRoute
   ChatBaileysRoute: typeof ChatBaileysRoute
   ChatOficialRoute: typeof ChatOficialRoute
   ComprovantesIaRoute: typeof ComprovantesIaRoute
@@ -625,6 +638,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatBaileysRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/aguardando': {
+      id: '/aguardando'
+      path: '/aguardando'
+      fullPath: '/aguardando'
+      preLoaderRoute: typeof AguardandoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/agentes-ia': {
       id: '/agentes-ia'
       path: '/agentes-ia'
@@ -723,6 +743,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgendamentosRoute: AgendamentosRoute,
   AgentesIaRoute: AgentesIaRoute,
+  AguardandoRoute: AguardandoRoute,
   ChatBaileysRoute: ChatBaileysRoute,
   ChatOficialRoute: ChatOficialRoute,
   ComprovantesIaRoute: ComprovantesIaRoute,
