@@ -22,18 +22,20 @@ type Agent = {
 };
 
 function AgentesPage() {
+  const { currentOperationId } = useOperation();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [tags, setTags] = useState<TagItem[]>([]);
   const [editing, setEditing] = useState<Agent | null>(null);
   const [creating, setCreating] = useState(false);
 
   const load = async () => {
-    const { data } = await supabase.from("agents").select("*").order("created_at", { ascending: false });
+    if (!currentOperationId) return;
+    const { data } = await supabase.from("agents").select("*").eq("operation_id", currentOperationId).order("created_at", { ascending: false });
     setAgents((data || []) as Agent[]);
-    const { data: t } = await supabase.from("tags").select("id,name,color").eq("is_active", true).order("name");
+    const { data: t } = await supabase.from("tags").select("id,name,color").eq("operation_id", currentOperationId).eq("is_active", true).order("name");
     setTags((t || []) as TagItem[]);
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [currentOperationId]);
 
   const onDelete = async (a: Agent) => {
     if (!confirm(`Excluir o agente ${a.name}?`)) return;
