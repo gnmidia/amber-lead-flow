@@ -5,6 +5,7 @@ import { Search, Archive, Send, Paperclip, Mic, Pause, Play, RefreshCw, FileText
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { timeSP, dayMonthSP, dayMonthYearSP, ymdSP } from "@/lib/datetime";
+import { useOperation } from "@/contexts/OperationContext";
 
 export const Route = createFileRoute("/chat-oficial")({
   component: ChatOficialPage,
