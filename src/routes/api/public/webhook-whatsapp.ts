@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { executeFlowForLead } from "@/server/funnel-execution.server";
 import { getOperationByInstance } from "@/server/operations.server";
+import { findOrUpsertLead } from "@/server/lead-dedup.server";
 
 export const Route = createFileRoute("/api/public/webhook-whatsapp")({
   server: {
