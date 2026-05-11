@@ -240,9 +240,17 @@ function ChatOficialPage() {
   }, [leads, filter, scheduledIds, search, tagFilter]);
 
   const handleSync = async () => {
+    if (!currentOperationId) {
+      toast.error("Selecione uma operação antes de sincronizar");
+      return;
+    }
     setSyncing(true);
     try {
-      const res = await fetch("/api/public/sync-chats", { method: "POST" });
+      const res = await fetch("/api/public/sync-chats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ operation_id: currentOperationId }),
+      });
       const json = await res.json();
       if (res.ok) {
         toast.success(`Sincronizados ${json.synced} chats`);
