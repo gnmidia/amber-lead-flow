@@ -445,11 +445,15 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
   const needsMedia = !isTag && !isDelay && form.type !== "Texto";
   const requiresContent = form.type === "Texto";
 
+  const { currentOperationId } = useOperation();
   const tagsQ = useQuery({
-    queryKey: ["tags-active"],
+    queryKey: ["tags-active", currentOperationId],
+    enabled: !!currentOperationId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("tags").select("id,name,color").eq("is_active", true).order("name");
+        .from("tags").select("id,name,color")
+        .eq("operation_id", currentOperationId!)
+        .eq("is_active", true).order("name");
       if (error) throw error;
       return data as { id: string; name: string; color: string }[];
     },
