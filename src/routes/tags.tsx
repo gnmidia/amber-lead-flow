@@ -26,13 +26,15 @@ const formatTagName = (v: string) =>
   v.toUpperCase().replace(/\s+/g, "_").replace(/[^A-Z0-9_]/g, "");
 
 function TagsPage() {
+  const { currentOperationId } = useOperation();
   const [tags, setTags] = useState<Tag[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [editing, setEditing] = useState<Tag | null>(null);
   const [creating, setCreating] = useState(false);
 
   const load = async () => {
-    const { data } = await supabase.from("tags").select("*").order("name");
+    if (!currentOperationId) return;
+    const { data } = await supabase.from("tags").select("*").eq("operation_id", currentOperationId).order("name");
     setTags((data || []) as Tag[]);
     const { data: lt } = await supabase.from("lead_tags").select("tag_id");
     const c: Record<string, number> = {};
@@ -42,7 +44,7 @@ function TagsPage() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [currentOperationId]);
 
   const onDelete = async (t: Tag) => {
     if (!confirm(`Excluir a tag ${t.name}?`)) return;
