@@ -65,31 +65,21 @@ export const Route = createFileRoute("/api/public/sync-chats")({
           const number = (realPhone || fallback).replace(/\D/g, "") || fallback;
           const displayName = chat.pushName || chat.name || number;
 
-          // Upsert pelo remote_jid (chave estável), com fallback pelo número.
-          let { data: existing } = await supabaseAdmin
-            .from("leads").select("id, whatsapp_number").eq("remote_jid", remoteJid).maybeSingle();
-          if (!existing) {
-            const { data: byNumber } = await supabaseAdmin
-              .from("leads").select("id, whatsapp_number").eq("whatsapp_number", number).maybeSingle();
-            existing = byNumber;
+          if (!operationId) {
+            console.warn("[sync-chats] missing operation_id; skipping chat");
+            continue;
           }
-          let leadId = existing?.id;
-          let isNewLead = false;
-          if (!leadId) {
-            const insertPayload: any = {
-              whatsapp_number: number, remote_jid: remoteJid,
-              name: displayName, push_name: chat.pushName || chat.name || null,
-              is_new_lead: false, instance_name: instance, tags: [],
-            };
-            if (operationId) insertPayload.operation_id = operationId;
-            const { data: newLead } = await supabaseAdmin.from("leads").insert(insertPayload).select("id").single();
-            leadId = newLead?.id;
-            isNewLead = true;
-          } else if (realPhone && existing?.whatsapp_number !== number) {
-            await supabaseAdmin.from("leads")
-              .update({ whatsapp_number: number, remote_jid: remoteJid })
-              .eq("id", leadId);
-          }
+
+          const { leadId, isNew } = await findOrUpsertLead({
+            remoteJid,
+            senderPn: realPhone,
+            pushName: chat.pushName || chat.name || null,
+            instance,
+            operationId,
+            isNewLeadDefault: false,
+            defaultTags: [],
+          });
+          const isNewLead = isNew;
           if (!leadId) continue;
 
           const msgsRes = await fetch(`${baseUrl}/chat/findMessages/${instance}`, {
