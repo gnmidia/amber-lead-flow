@@ -1,77 +1,50 @@
-## Diagnóstico
+## Adaptar projeto para Node.js (VPS / EasyPanel)
 
-A sincronização "termina com sucesso" mas as mensagens continuam antigas porque **o frontend não envia o `operation_id` para o endpoint `/api/public/sync-chats`**.
+**Aviso crítico:** Estas mudanças vão quebrar o preview do Lovable. O wrapper `@lovable.dev/vite-tanstack-config` injeta automaticamente o plugin Cloudflare e é o que faz o preview/sandbox do Lovable funcionar. Ao substituir o `vite.config.ts` por um config Node-target puro, o ambiente Lovable deixa de buildar. Você confirmou que aceita.
 
-### Fluxo atual (bugado)
+### Arquivos a alterar/criar
 
-1. `src/routes/chat-oficial.tsx` (linha 245) faz:
-   ```ts
-   fetch("/api/public/sync-chats", { method: "POST" })
-   ```
-   — sem body, sem `operation_id`.
+1. **`vite.config.ts`** — substituir por config com `tanstackStart({ target: "node-server" })`, `viteReact`, `tailwindcss`, `tsConfigPaths`. Remove a dependência do wrapper Lovable + plugin Cloudflare.
 
-2. `src/routes/api/public/sync-chats.ts` lê `body?.operation_id` → `null`.
+2. **`package.json`** — adicionar:
+   - `"start": "node .output/server/index.mjs"`
+   - remover deps: `@cloudflare/vite-plugin`, `@lovable.dev/vite-tanstack-config` (este injeta o Cloudflare plugin; precisa sair também). `wrangler` não está nas deps hoje, então nada a remover dele.
 
-3. O endpoint até resolve a instância via fallback `EVOLUTION_INSTANCE_NAME=DashWhats` e busca os chats na Evolution normalmente.
+3. **`Dockerfile`** (raiz) — multi-stage Node 20 alpine, build → runtime, expõe `3000`, `CMD ["node", ".output/server/index.mjs"]`.
 
-4. **Mas dentro do loop de chats existe esta verificação (linhas 67-70):**
-   ```ts
-   if (!operationId) {
-     console.warn("[sync-chats] missing operation_id; skipping chat");
-     continue;
-   }
-   ```
-   → **todos os chats são pulados**, nenhum lead/mensagem é inserido.
+4. **`.dockerignore`** (raiz) — ignora `node_modules`, `.git`, `dist`, `.output`, `*.log`, `.env*`.
 
-5. O loop finaliza com `synced` contando apenas chats processados (também 0, mas o toast mostra "Sincronizados 0 chats" como sucesso, dando a falsa impressão de conclusão).
+5. **`wrangler.jsonc`** — deletar (config exclusiva de Cloudflare Workers, sem uso em Node).
 
-Isso explica perfeitamente o sintoma: status "concluído" + nenhuma mensagem nova.
+### Sobre o output path
 
-### Causa raiz
+O preset `node-server` do TanStack Start v1 emite o servidor em `.output/server/index.mjs` por padrão (Nitro). O `CMD` do Dockerfile e o `start` script já apontam pra lá. Como estou em plan mode não posso rodar `npm run build` para confirmar — se na primeira execução o caminho diferir (ex.: `.output/server/index.js`), basta ajustar o CMD.
 
-Na etapa de isolamento multi-operação, o backend passou a exigir `operation_id` no payload, mas o frontend (`chat-oficial.tsx`) não foi atualizado para enviá-lo.
+### Variáveis de ambiente em produção (configurar no EasyPanel)
 
----
+Runtime (server):
+- `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- `EVOLUTION_BASE_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE_NAME`
+- `LOVABLE_API_KEY` (se mantiver uso do Lovable AI Gateway)
+- `PORT=3000`, `NODE_ENV=production`
 
-## Correção proposta
+Build-time (precisam estar disponíveis durante `npm run build` no Docker):
+- `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID`
 
-### 1. Enviar `operation_id` no `handleSync`
+→ No EasyPanel, passe os `VITE_*` como build args (ou fixe via `.env` copiado no estágio de build). Hoje seu `.env` aponta pro Supabase do Lovable Cloud (`uzuxxgvpgsqmkolmmqcv`). Para o DashWhats você precisará trocar essas URLs/keys no ambiente da VPS.
 
-Em `src/routes/chat-oficial.tsx`:
+### Pós-deploy — passos manuais (fora do escopo desta etapa)
 
-- Importar `useOperation` de `@/contexts/OperationContext` (verificar se já está importado em outro ponto do arquivo).
-- Pegar `currentOperationId` no componente.
-- Atualizar o `fetch`:
-  ```ts
-  const res = await fetch("/api/public/sync-chats", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ operation_id: currentOperationId }),
-  });
-  ```
-- Bloquear o clique (ou exibir toast de erro) se `currentOperationId` estiver vazio, evitando reincidência silenciosa.
+- Apontar para o Supabase DashWhats via env vars no EasyPanel.
+- Rodar `schema.sql` + `data.sql` no DashWhats (já gerados).
+- Recriar usuário admin no DashWhats e atualizar `user_profiles`.
+- Configurar domínio + Traefik no EasyPanel apontando para porta 3000 do container.
 
-### 2. Tornar o endpoint mais defensivo
+### Resumo da entrega
 
-Em `src/routes/api/public/sync-chats.ts`:
-
-- Se `operation_id` não vier no body, retornar **HTTP 400** com mensagem clara (`"operation_id é obrigatório"`) em vez de retornar 200 com `synced: 0`. Isso previne falsos "sucessos" silenciosos no futuro (ex.: outras telas que venham a chamar o endpoint).
-
-### 3. Auditar outros chamadores
-
-Verificar se há outras chamadas para `/api/public/sync-chats` no projeto (por ex. botões em outras rotas) e garantir que todas enviam `operation_id`. Pelo grep inicial, só `chat-oficial.tsx` chama esse endpoint.
-
----
-
-## Critérios de validação
-
-- Após a correção, clicar em "Sincronizar conversas" deve:
-  - Enviar `operation_id` no body (verificável na aba Network).
-  - Retornar `synced > 0` quando houver chats novos/atualizados.
-  - Trazer mensagens recentes para a UI.
-- Chamar o endpoint sem `operation_id` deve retornar 400, não 200.
-
-## Arquivos a modificar
-
-- `src/routes/chat-oficial.tsx` — incluir `operation_id` no POST.
-- `src/routes/api/public/sync-chats.ts` — retornar 400 se faltar `operation_id`.
+Após aprovação, vou:
+1. Reescrever `vite.config.ts`.
+2. Atualizar `package.json` (script `start` + remover deps Cloudflare/Lovable wrapper).
+3. Criar `Dockerfile` e `.dockerignore` na raiz.
+4. Deletar `wrangler.jsonc`.
+5. Listar todos os arquivos alterados ao final.
