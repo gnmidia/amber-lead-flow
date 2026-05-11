@@ -33,13 +33,17 @@ async function triggerFlowsForInboundMessage(leadId: string, content: string | n
 export const Route = createFileRoute("/api/public/sync-chats")({
   server: {
     handlers: {
-      POST: async () => {
+      POST: async ({ request }) => {
         const baseUrl = process.env.EVOLUTION_BASE_URL;
         const apiKey = process.env.EVOLUTION_API_KEY;
-        const instance = process.env.EVOLUTION_INSTANCE_NAME;
+        const body = await request.json().catch(() => ({} as any));
+        const operationId: string | null = body?.operation_id || null;
+        // Resolve instance from operation; fall back to env (single-instance legacy).
+        const instance = (await getOperationInstance(operationId)) || null;
         if (!baseUrl || !apiKey || !instance) {
-          return Response.json({ error: "Evolution env not configured" }, { status: 500 });
+          return Response.json({ error: "Evolution env/instance not configured" }, { status: 500 });
         }
+        console.log(`[sync-chats] op=${operationId} instance=${instance}`);
         const headers = { "Content-Type": "application/json", apikey: apiKey };
 
         const chatsRes = await fetch(`${baseUrl}/chat/findChats/${instance}`, {
