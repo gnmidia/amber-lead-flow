@@ -18,6 +18,23 @@ function assertNoError(error: any, context: string) {
   if (error) throw new Error(`${context}: ${error.message || "erro desconhecido"}`);
 }
 
+export async function getOperationInstance(
+  supabase: ReturnType<typeof getAdmin>,
+  operationId: string | null | undefined,
+): Promise<string | null> {
+  const fallback = Deno.env.get("EVOLUTION_INSTANCE_NAME") || null;
+  if (!operationId) return fallback;
+  const { data, error } = await supabase
+    .from("operations").select("instance_name").eq("id", operationId).maybeSingle();
+  if (error) {
+    console.warn(`[ops] instance lookup failed for op=${operationId}:`, error.message);
+    return fallback;
+  }
+  const inst = (data as any)?.instance_name || fallback;
+  console.log(`[ops] resolved op=${operationId} -> instance=${inst}`);
+  return inst;
+}
+
 export async function scheduleFunnelForLead(
   supabase: ReturnType<typeof getAdmin>,
   { lead_id, funnel_id, trigger_time }: { lead_id: string; funnel_id: string; trigger_time?: string },
