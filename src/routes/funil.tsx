@@ -700,6 +700,7 @@ function StepDrawer({ step, onClose }: { step: Step; onClose: () => void }) {
 
 function FunnelDrawer({ funnel, onClose }: { funnel: Funnel | null; onClose: () => void }) {
   const qc = useQueryClient();
+  const { currentOperationId } = useOperation();
   const isNew = !funnel;
   const [form, setForm] = useState<Omit<Funnel, "id">>(() => ({
     name: funnel?.name ?? "",
@@ -721,7 +722,8 @@ function FunnelDrawer({ funnel, onClose }: { funnel: Funnel | null; onClose: () 
         throw new Error("Nome e ID interno são obrigatórios");
       }
       if (isNew) {
-        const { error } = await supabase.from("funnels").insert(form);
+        if (!currentOperationId) throw new Error("Operação não selecionada");
+        const { error } = await supabase.from("funnels").insert({ ...form, operation_id: currentOperationId } as any);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("funnels").update(form).eq("id", funnel!.id);
