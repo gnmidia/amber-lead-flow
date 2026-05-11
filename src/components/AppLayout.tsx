@@ -1,5 +1,6 @@
 import { Outlet, useRouterState } from "@tanstack/react-router";
 import { AppSidebar } from "./AppSidebar";
+import { OperationProvider } from "@/contexts/OperationContext";
 
 const NO_CHROME_ROUTES = new Set([
   "/",
@@ -22,11 +23,13 @@ export function AppLayout() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-background text-foreground">
-      <AppSidebar />
-      <main className="ml-64 min-h-screen overflow-x-hidden">
-        <Outlet />
-      </main>
-    </div>
+    <OperationProvider>
+      <div className="min-h-screen w-full bg-background text-foreground">
+        <AppSidebar />
+        <main className="ml-64 min-h-screen overflow-x-hidden">
+          <Outlet />
+        </main>
+      </div>
+    </OperationProvider>
   );
 }
