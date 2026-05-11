@@ -97,7 +97,7 @@ export async function scheduleFunnelForLead(
       lead_id,
       funnel_id,
       step_id: step.id,
-      instance_name: (lead as any).instance_name || Deno.env.get("EVOLUTION_INSTANCE_NAME") || "cland-main",
+      instance_name: opInstance || (lead as any).instance_name || Deno.env.get("EVOLUTION_INSTANCE_NAME") || "cland-main",
       whatsapp_number: (lead as any).remote_jid || (lead as any).whatsapp_number,
       message_type: step.type,
       content: step.content,
