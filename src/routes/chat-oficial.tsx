@@ -251,12 +251,16 @@ function ChatOficialPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ operation_id: currentOperationId }),
       });
-      const json = await res.json();
-      if (res.ok) {
+      const text = await res.text();
+      let json: any = null;
+      try { json = JSON.parse(text); } catch { /* not json */ }
+      if (res.ok && json) {
         toast.success(`Sincronizados ${json.synced} chats`);
         fetchLeads();
+      } else if (res.status === 504) {
+        toast.error("Sincronização demorou demais. Tente novamente em alguns segundos.");
       } else {
-        toast.error(json.error || "Erro ao sincronizar");
+        toast.error((json && json.error) || text || `Erro ${res.status}`);
       }
     } catch (e: any) {
       toast.error(e.message);
