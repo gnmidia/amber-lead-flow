@@ -78,6 +78,7 @@ function previewOf(l: Lead) {
 }
 
 function ChatOficialPage() {
+  const { currentOperationId } = useOperation();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -96,7 +97,13 @@ function ChatOficialPage() {
   useEffect(() => { activeIdRef.current = activeId; }, [activeId]);
 
   const fetchAllTags = async () => {
-    const { data } = await supabase.from("tags").select("id,name,color").eq("is_active", true).order("name");
+    if (!currentOperationId) return;
+    const { data } = await supabase
+      .from("tags")
+      .select("id,name,color")
+      .eq("is_active", true)
+      .eq("operation_id", currentOperationId)
+      .order("name");
     setAllTags((data || []) as TagItem[]);
   };
 
