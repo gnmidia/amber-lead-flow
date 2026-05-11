@@ -27,6 +27,7 @@ const TRIGGER_LABELS: Record<string, string> = {
 };
 
 function FluxosPage() {
+  const { currentOperationId } = useOperation();
   const [flows, setFlows] = useState<Flow[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
@@ -35,9 +36,10 @@ function FluxosPage() {
   const navigate = useNavigate();
 
   const load = async () => {
+    if (!currentOperationId) return;
     const [{ data: f }, { data: t }] = await Promise.all([
-      supabase.from("flows").select("*").order("created_at", { ascending: false }),
-      supabase.from("tags").select("id,name,color").eq("is_active", true).order("name"),
+      supabase.from("flows").select("*").eq("operation_id", currentOperationId).order("created_at", { ascending: false }),
+      supabase.from("tags").select("id,name,color").eq("operation_id", currentOperationId).eq("is_active", true).order("name"),
     ]);
     setFlows((f || []) as Flow[]);
     setTags((t || []) as Tag[]);
@@ -53,7 +55,7 @@ function FluxosPage() {
       setCounts(c);
     }
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [currentOperationId]);
 
   const onDelete = async (f: Flow) => {
     if (!confirm(`Excluir o fluxo ${f.name}?`)) return;
