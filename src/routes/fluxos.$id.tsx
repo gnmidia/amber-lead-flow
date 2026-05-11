@@ -37,7 +37,8 @@ const TRIGGER_LABELS: Record<string, string> = {
 
 function FlowCanvas() {
   const { id } = Route.useParams();
-  
+  const { currentOperationId } = useOperation();
+
   const [flow, setFlow] = useState<Flow | null>(null);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [funnels, setFunnels] = useState<Funnel[]>([]);
@@ -47,12 +48,13 @@ function FlowCanvas() {
   const [editing, setEditing] = useState<Block | null>(null);
 
   const load = async () => {
+    if (!currentOperationId) return;
     const [{ data: f }, { data: b }, { data: fn }, { data: ag }, { data: tg }] = await Promise.all([
-      supabase.from("flows").select("*").eq("id", id).maybeSingle(),
+      supabase.from("flows").select("*").eq("id", id).eq("operation_id", currentOperationId).maybeSingle(),
       supabase.from("flow_blocks").select("*").eq("flow_id", id).order("order_index"),
-      supabase.from("funnels").select("id,name,start_min,start_max,window_start,window_end"),
-      supabase.from("agents").select("id,name,objective").eq("is_active", true),
-      supabase.from("tags").select("id,name,color").eq("is_active", true),
+      supabase.from("funnels").select("id,name,start_min,start_max,window_start,window_end").eq("operation_id", currentOperationId),
+      supabase.from("agents").select("id,name,objective").eq("operation_id", currentOperationId).eq("is_active", true),
+      supabase.from("tags").select("id,name,color").eq("operation_id", currentOperationId).eq("is_active", true),
     ]);
     setFlow(f as Flow);
     setBlocks((b || []) as Block[]);
@@ -60,7 +62,7 @@ function FlowCanvas() {
     setAgents((ag || []) as Agent[]);
     setTags((tg || []) as Tag[]);
   };
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [id, currentOperationId]);
 
   const toggleActive = async (v: boolean) => {
     await supabase.from("flows").update({ is_active: v }).eq("id", id);
