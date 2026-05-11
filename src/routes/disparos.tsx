@@ -38,6 +38,7 @@ function statusBadge(status: string) {
 }
 
 function DisparosPage() {
+  const { currentOperationId } = useOperation();
   const [flows, setFlows] = useState<Flow[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
@@ -45,10 +46,11 @@ function DisparosPage() {
   const [creating, setCreating] = useState(false);
 
   const load = async () => {
+    if (!currentOperationId) return;
     const [{ data: f }, { data: t }, { data: b }] = await Promise.all([
-      supabase.from("flows").select("id,name").eq("is_active", true).order("name"),
-      supabase.from("tags").select("id,name,color").eq("is_active", true).order("name"),
-      supabase.from("broadcasts").select("*").order("created_at", { ascending: false }).limit(50),
+      supabase.from("flows").select("id,name").eq("operation_id", currentOperationId).eq("is_active", true).order("name"),
+      supabase.from("tags").select("id,name,color").eq("operation_id", currentOperationId).eq("is_active", true).order("name"),
+      supabase.from("broadcasts").select("*").eq("operation_id", currentOperationId).order("created_at", { ascending: false }).limit(50),
     ]);
     setFlows((f || []) as Flow[]);
     setTags((t || []) as Tag[]);
@@ -80,7 +82,7 @@ function DisparosPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "broadcast_targets" }, () => load())
       .subscribe();
     return () => { clearInterval(t); supabase.removeChannel(channel); };
-  }, []);
+  }, [currentOperationId]);
 
   const pause = async (id: string) => {
     const { error } = await supabase.from("broadcasts").update({ status: "paused" }).eq("id", id);
