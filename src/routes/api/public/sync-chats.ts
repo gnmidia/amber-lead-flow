@@ -75,11 +75,13 @@ export const Route = createFileRoute("/api/public/sync-chats")({
           let leadId = existing?.id;
           let isNewLead = false;
           if (!leadId) {
-            const { data: newLead } = await supabaseAdmin.from("leads").insert({
+            const insertPayload: any = {
               whatsapp_number: number, remote_jid: remoteJid,
               name: displayName, push_name: chat.pushName || chat.name || null,
               is_new_lead: false, instance_name: instance, tags: [],
-            }).select("id").single();
+            };
+            if (operationId) insertPayload.operation_id = operationId;
+            const { data: newLead } = await supabaseAdmin.from("leads").insert(insertPayload).select("id").single();
             leadId = newLead?.id;
             isNewLead = true;
           } else if (realPhone && existing?.whatsapp_number !== number) {
