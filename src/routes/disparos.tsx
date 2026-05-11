@@ -184,6 +184,7 @@ function DisparosPage() {
 function BroadcastModal({ flows, tags, onClose, onCreated }: {
   flows: Flow[]; tags: Tag[]; onClose: () => void; onCreated: () => void;
 }) {
+  const { currentOperationId } = useOperation();
   const [name, setName] = useState("Disparo");
   const [flowId, setFlowId] = useState("");
   const [tagId, setTagId] = useState("");
@@ -193,17 +194,18 @@ function BroadcastModal({ flows, tags, onClose, onCreated }: {
   const [count, setCount] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!tagId) { setCount(null); return; }
+    if (!tagId || !currentOperationId) { setCount(null); return; }
     (async () => {
       const { data } = await supabase.from("lead_tags").select("lead_id").eq("tag_id", tagId);
       const ids = Array.from(new Set((data || []).map((r: any) => r.lead_id)));
       if (ids.length === 0) { setCount(0); return; }
       const { count: c } = await supabase
         .from("leads").select("id", { count: "exact", head: true })
+        .eq("operation_id", currentOperationId)
         .in("id", ids).eq("status", "active");
       setCount(c || 0);
     })();
-  }, [tagId]);
+  }, [tagId, currentOperationId]);
 
   const submit = async () => {
     if (!flowId) return toast.error("Selecione um fluxo");
