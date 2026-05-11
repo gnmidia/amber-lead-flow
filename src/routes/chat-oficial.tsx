@@ -143,10 +143,12 @@ function ChatOficialPage() {
 
   // Initial load
   useEffect(() => {
+    if (!currentOperationId) return;
     fetchLeads();
     fetchScheduled();
     fetchAllTags();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentOperationId]);
 
   // Realtime: messages → refresh leads list & scheduled count
   useEffect(() => {
