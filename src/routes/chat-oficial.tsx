@@ -5,6 +5,7 @@ import { Search, Archive, Send, Paperclip, Mic, Pause, Play, RefreshCw, FileText
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { timeSP, dayMonthSP, dayMonthYearSP, ymdSP } from "@/lib/datetime";
+import { useOperation } from "@/contexts/OperationContext";
 
 export const Route = createFileRoute("/chat-oficial")({
   component: ChatOficialPage,
@@ -77,6 +78,7 @@ function previewOf(l: Lead) {
 }
 
 function ChatOficialPage() {
+  const { currentOperationId } = useOperation();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -95,7 +97,13 @@ function ChatOficialPage() {
   useEffect(() => { activeIdRef.current = activeId; }, [activeId]);
 
   const fetchAllTags = async () => {
-    const { data } = await supabase.from("tags").select("id,name,color").eq("is_active", true).order("name");
+    if (!currentOperationId) return;
+    const { data } = await supabase
+      .from("tags")
+      .select("id,name,color")
+      .eq("is_active", true)
+      .eq("operation_id", currentOperationId)
+      .order("name");
     setAllTags((data || []) as TagItem[]);
   };
 
@@ -135,10 +143,12 @@ function ChatOficialPage() {
 
   // Initial load
   useEffect(() => {
+    if (!currentOperationId) return;
     fetchLeads();
     fetchScheduled();
     fetchAllTags();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentOperationId]);
 
   // Realtime: messages → refresh leads list & scheduled count
   useEffect(() => {
@@ -550,17 +560,20 @@ function MessageBody({ m }: { m: Message }) {
 }
 
 function ActivateFunnelButton({ leadId }: { leadId: string }) {
+  const { currentOperationId } = useOperation();
   const [funnels, setFunnels] = useState<{ id: string; name: string }[]>([]);
   const [selected, setSelected] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (!currentOperationId) return;
     supabase
       .from("funnels")
       .select("id, name")
+      .eq("operation_id", currentOperationId)
       .order("position")
       .then(({ data }) => setFunnels(data ?? []));
-  }, []);
+  }, [currentOperationId]);
 
   const activate = async () => {
     if (!selected) return;
