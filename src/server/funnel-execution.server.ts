@@ -188,7 +188,7 @@ export async function executeFlowForLead({
       const resumeAt = new Date(now.getTime() + block.wait_minutes * 60_000);
       const { error } = await supabaseAdmin.from("scheduled_messages").insert({
         lead_id,
-        instance_name: lead.instance_name || process.env.EVOLUTION_INSTANCE_NAME || "",
+        instance_name: opInstance || lead.instance_name || process.env.EVOLUTION_INSTANCE_NAME || "",
         whatsapp_number: lead.remote_jid || lead.whatsapp_number,
         message_type: "flow_resume",
         content: JSON.stringify({ flow_id, resume_block_index: i + 1 }),
