@@ -88,15 +88,19 @@ function delayLabel(s: Step) {
 
 function FunilPage() {
   const qc = useQueryClient();
+  const { currentOperationId } = useOperation();
   const [expanded, setExpanded] = useState<string[]>([]);
   const [editingStep, setEditingStep] = useState<Step | null>(null);
   const [editingFunnel, setEditingFunnel] = useState<Funnel | "new" | null>(null);
 
   const funnelsQ = useQuery({
-    queryKey: ["funnels"],
+    queryKey: ["funnels", currentOperationId],
+    enabled: !!currentOperationId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("funnels").select("*").order("position");
+        .from("funnels").select("*")
+        .eq("operation_id", currentOperationId!)
+        .order("position");
       if (error) throw error;
       return data as Funnel[];
     },
