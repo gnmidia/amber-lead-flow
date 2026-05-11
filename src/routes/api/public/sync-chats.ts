@@ -39,6 +39,9 @@ export const Route = createFileRoute("/api/public/sync-chats")({
         const apiKey = process.env.EVOLUTION_API_KEY;
         const body = await request.json().catch(() => ({} as any));
         const operationId: string | null = body?.operation_id || null;
+        if (!operationId) {
+          return Response.json({ error: "operation_id é obrigatório" }, { status: 400 });
+        }
         // Resolve instance from operation; fall back to env (single-instance legacy).
         const instance = (await getOperationInstance(operationId)) || null;
         if (!baseUrl || !apiKey || !instance) {
