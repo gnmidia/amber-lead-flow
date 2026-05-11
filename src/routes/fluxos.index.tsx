@@ -134,6 +134,7 @@ function FluxosPage() {
 }
 
 function FlowModal({ flow, tags, onClose, onSaved }: { flow: Flow | null; tags: Tag[]; onClose: () => void; onSaved: () => void }) {
+  const { currentOperationId } = useOperation();
   const [name, setName] = useState(flow?.name || "");
   const [description, setDescription] = useState(flow?.description || "");
   const [triggerType, setTriggerType] = useState(flow?.trigger_type || "new_lead");
@@ -143,6 +144,7 @@ function FlowModal({ flow, tags, onClose, onSaved }: { flow: Flow | null; tags: 
 
   const save = async () => {
     if (!name.trim()) { toast.error("Nome obrigatório"); return; }
+    if (!flow && !currentOperationId) { toast.error("Operação não selecionada"); return; }
     setSaving(true);
     const payload = {
       name,
@@ -153,7 +155,7 @@ function FlowModal({ flow, tags, onClose, onSaved }: { flow: Flow | null; tags: 
     };
     const { error } = flow
       ? await supabase.from("flows").update(payload).eq("id", flow.id)
-      : await supabase.from("flows").insert(payload);
+      : await supabase.from("flows").insert({ ...payload, operation_id: currentOperationId! } as any);
     setSaving(false);
     if (error) toast.error(error.message);
     else { toast.success(flow ? "Fluxo atualizado" : "Fluxo criado"); onSaved(); }
