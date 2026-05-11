@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { getOperationInstance } from "@/server/operations.server";
 
 export const Route = createFileRoute("/api/public/send-message")({
   server: {
@@ -7,25 +8,30 @@ export const Route = createFileRoute("/api/public/send-message")({
       POST: async ({ request }) => {
         const baseUrl = process.env.EVOLUTION_BASE_URL;
         const apiKey = process.env.EVOLUTION_API_KEY;
-        const defaultInstance = process.env.EVOLUTION_INSTANCE_NAME;
         if (!baseUrl || !apiKey) {
           return Response.json({ error: "Evolution env not configured" }, { status: 500 });
         }
         const body = await request.json().catch(() => ({}));
-        const { number, lead_id, type, content, media_url, file_name, mimetype, instance } = body || {};
-        const inst = instance || defaultInstance;
-        if ((!number && !lead_id) || !type || !inst) {
-          return Response.json({ error: "Missing number/lead_id/type/instance" }, { status: 400 });
-        }
+        const { number, lead_id, type, content, media_url, file_name, mimetype, instance, operation_id } = body || {};
         let target = number;
+        let leadOperationId: string | null = operation_id || null;
         if (lead_id) {
           const { data: lead } = await supabaseAdmin
             .from("leads")
-            .select("whatsapp_number, remote_jid")
+            .select("whatsapp_number, remote_jid, operation_id, instance_name")
             .eq("id", lead_id)
             .maybeSingle();
           target = (lead as any)?.remote_jid || (lead as any)?.whatsapp_number || number;
+          if (!leadOperationId) leadOperationId = (lead as any)?.operation_id || null;
         }
+        // Resolution order: explicit instance → operation's instance → env fallback.
+        const inst = instance
+          || (await getOperationInstance(leadOperationId))
+          || process.env.EVOLUTION_INSTANCE_NAME;
+        if ((!number && !lead_id) || !type || !inst) {
+          return Response.json({ error: "Missing number/lead_id/type/instance" }, { status: 400 });
+        }
+        console.log(`[send-message] op=${leadOperationId} instance=${inst}`);
         const headers = { "Content-Type": "application/json", apikey: apiKey };
         let endpoint = "";
         let payload: any = {};
