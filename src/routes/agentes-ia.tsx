@@ -120,6 +120,7 @@ function AgentesPage() {
         <AgentModal
           agent={editing}
           tags={tags}
+          llms={llms}
           onClose={() => { setCreating(false); setEditing(null); }}
           onSaved={() => { setCreating(false); setEditing(null); load(); }}
         />
