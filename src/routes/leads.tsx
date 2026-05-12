@@ -3,7 +3,7 @@ import { PageHeader } from "../components/PageHeader";
 import { Search, Plus, X, DollarSign, Tag as TagIcon } from "lucide-react";
 import { SaleModal } from "@/components/SaleModal";
 import { useState, useMemo } from "react";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOperation } from "@/contexts/OperationContext";
 import { toast } from "sonner";
@@ -111,11 +111,41 @@ function LeadsPage() {
   const total = result?.total ?? 0;
   const hasMore = (page + 1) * PAGE_SIZE < total;
 
+  const queryClient = useQueryClient();
+  const leadIds = useMemo(() => leads.map((l) => l.id), [leads]);
+
+  // Vendas (com oferta) dos leads atualmente exibidos
+  const { data: salesByLead = {} } = useQuery({
+    queryKey: ["lead-sales", leadIds],
+    enabled: leadIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sales")
+        .select("lead_id, sale_date, offer:offers(id, name)")
+        .in("lead_id", leadIds)
+        .order("sale_date", { ascending: false });
+      if (error) throw error;
+      const map: Record<string, { id: string; name: string }[]> = {};
+      for (const row of (data ?? []) as any[]) {
+        const off = row.offer;
+        if (!off) continue;
+        const arr = map[row.lead_id] ?? (map[row.lead_id] = []);
+        if (!arr.some((o) => o.id === off.id)) arr.push({ id: off.id, name: off.name });
+      }
+      return map;
+    },
+  });
+
   const toggleTag = (id: string) => {
     setPage(0);
     setSelectedTagIds((prev) => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
   };
   const clearFilters = () => { setSelectedTagIds([]); setSearch(""); setPage(0); };
+
+  const handleSaleClose = () => {
+    setSellingLead(null);
+    queryClient.invalidateQueries({ queryKey: ["lead-sales"] });
+  };
 
   return (
     <>
@@ -170,6 +200,7 @@ function LeadsPage() {
               <tr>
                 <th className="px-4 py-3 text-left">Lead</th>
                 <th className="px-4 py-3 text-left">Tags</th>
+                <th className="px-4 py-3 text-left">Ofertas</th>
                 <th className="px-4 py-3 text-left">Status</th>
                 <th className="px-4 py-3 text-left">Última interação</th>
                 <th className="px-4 py-3 text-right">Ações</th>
@@ -177,10 +208,10 @@ function LeadsPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {isLoading && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Carregando…</td></tr>
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">Carregando…</td></tr>
               )}
               {!isLoading && leads.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Nenhum lead encontrado.</td></tr>
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">Nenhum lead encontrado.</td></tr>
               )}
               {leads.map((l) => (
                 <tr key={l.id} className="hover:bg-muted/20">
@@ -194,6 +225,22 @@ function LeadsPage() {
                         <span key={t} className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-primary">{t}</span>
                       ))}
                     </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    {(salesByLead[l.id] ?? []).length === 0 ? (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {(salesByLead[l.id] ?? []).map((o) => (
+                          <span
+                            key={o.id}
+                            title={o.name}
+                            className="inline-flex max-w-[160px] items-center gap-1 truncate rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-success">
+                            <DollarSign className="h-2.5 w-2.5 shrink-0" /> {o.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <span className="rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-success">{l.status}</span>
@@ -236,7 +283,7 @@ function LeadsPage() {
         <ActivateFunnelModal lead={activatingLead} onClose={() => setActivatingLead(null)} />
       )}
       {sellingLead && (
-        <SaleModal lead={sellingLead} onClose={() => setSellingLead(null)} />
+        <SaleModal lead={sellingLead} onClose={handleSaleClose} />
       )}
     </>
   );
