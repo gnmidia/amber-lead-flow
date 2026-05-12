@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
-import { Search, Filter, Plus, X, DollarSign } from "lucide-react";
+import { Search, Plus, X, DollarSign, Tag as TagIcon } from "lucide-react";
 import { SaleModal } from "@/components/SaleModal";
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOperation } from "@/contexts/OperationContext";
 import { toast } from "sonner";
+
+const PAGE_SIZE = 100;
 
 export const Route = createFileRoute("/leads")({
   component: LeadsPage,
@@ -35,52 +37,132 @@ function timeAgo(iso: string | null) {
 
 function LeadsPage() {
   const [search, setSearch] = useState("");
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [page, setPage] = useState(0);
   const [activatingLead, setActivatingLead] = useState<Lead | null>(null);
   const [sellingLead, setSellingLead] = useState<Lead | null>(null);
 
   const { currentOperationId } = useOperation();
 
-  const { data: leads = [], isLoading } = useQuery({
-    queryKey: ["leads", currentOperationId],
+  // Tags da operação
+  const { data: tags = [] } = useQuery({
+    queryKey: ["tags-list", currentOperationId],
     enabled: !!currentOperationId,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("leads").select("*")
+        .from("tags")
+        .select("id, name, color")
         .eq("operation_id", currentOperationId!)
-        .order("last_interaction_at", { ascending: false }).limit(200);
+        .eq("is_active", true)
+        .order("name");
       if (error) throw error;
-      return data as Lead[];
+      return data as { id: string; name: string; color: string }[];
     },
   });
 
-  const filtered = leads.filter((l) =>
-    !search ||
-    (l.name ?? l.push_name ?? "").toLowerCase().includes(search.toLowerCase()) ||
-    l.whatsapp_number.includes(search)
-  );
+  // IDs de leads que possuem alguma das tags selecionadas
+  const { data: taggedLeadIds } = useQuery({
+    queryKey: ["lead-tags-filter", selectedTagIds],
+    enabled: selectedTagIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("lead_tags")
+        .select("lead_id")
+        .in("tag_id", selectedTagIds);
+      if (error) throw error;
+      return Array.from(new Set((data ?? []).map((r: any) => r.lead_id as string)));
+    },
+  });
+
+  const tagFilterActive = selectedTagIds.length > 0;
+  const tagFilterReady = !tagFilterActive || !!taggedLeadIds;
+
+  const { data: result, isLoading, isFetching } = useQuery({
+    queryKey: ["leads", currentOperationId, page, search, taggedLeadIds ?? null],
+    enabled: !!currentOperationId && tagFilterReady,
+    placeholderData: keepPreviousData,
+    queryFn: async () => {
+      // Se filtro de tag ativo mas nenhum lead corresponde, retorne vazio
+      if (tagFilterActive && (taggedLeadIds?.length ?? 0) === 0) {
+        return { rows: [] as Lead[], total: 0 };
+      }
+      let q = supabase
+        .from("leads")
+        .select("*", { count: "exact" })
+        .eq("operation_id", currentOperationId!)
+        .order("last_interaction_at", { ascending: false });
+
+      if (tagFilterActive && taggedLeadIds) {
+        q = q.in("id", taggedLeadIds);
+      }
+      if (search.trim()) {
+        const s = search.trim().replace(/[%,]/g, "");
+        q = q.or(`name.ilike.%${s}%,push_name.ilike.%${s}%,whatsapp_number.ilike.%${s}%`);
+      }
+
+      const to = (page + 1) * PAGE_SIZE - 1;
+      const { data, error, count } = await q.range(0, to);
+      if (error) throw error;
+      return { rows: (data ?? []) as Lead[], total: count ?? 0 };
+    },
+  });
+
+  const leads = result?.rows ?? [];
+  const total = result?.total ?? 0;
+  const hasMore = (page + 1) * PAGE_SIZE < total;
+
+  const toggleTag = (id: string) => {
+    setPage(0);
+    setSelectedTagIds((prev) => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
+  };
+  const clearFilters = () => { setSelectedTagIds([]); setSearch(""); setPage(0); };
 
   return (
     <>
       <PageHeader
         title="Leads"
-        subtitle="CRM de leads do WhatsApp"
-        actions={
-          <button className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold hover:border-primary/40">
-            <Filter className="h-3.5 w-3.5" /> Filtros
-          </button>
-        }
+        subtitle={`CRM de leads do WhatsApp${total ? ` · ${total} no total` : ""}`}
       />
 
       <div className="space-y-4 p-8">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar lead por nome ou telefone..."
-            className="w-full rounded-md border border-border bg-card py-2 pl-9 pr-3 text-sm"
-          />
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[260px] max-w-md">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => { setPage(0); setSearch(e.target.value); }}
+              placeholder="Buscar lead por nome ou telefone..."
+              className="w-full rounded-md border border-border bg-card py-2 pl-9 pr-3 text-sm"
+            />
+          </div>
+          {(selectedTagIds.length > 0 || search) && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs font-semibold hover:border-destructive/40 hover:text-destructive">
+              <X className="h-3 w-3" /> Limpar filtros
+            </button>
+          )}
         </div>
+
+        {tags.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+              <TagIcon className="h-3 w-3" /> Tags:
+            </span>
+            {tags.map((t) => {
+              const active = selectedTagIds.includes(t.id);
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => toggleTag(t.id)}
+                  style={active ? { backgroundColor: t.color, borderColor: t.color, color: "#fff" } : { borderColor: t.color, color: t.color }}
+                  className="rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase transition-colors">
+                  {t.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
@@ -97,10 +179,10 @@ function LeadsPage() {
               {isLoading && (
                 <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Carregando…</td></tr>
               )}
-              {!isLoading && filtered.length === 0 && (
+              {!isLoading && leads.length === 0 && (
                 <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Nenhum lead encontrado.</td></tr>
               )}
-              {filtered.map((l) => (
+              {leads.map((l) => (
                 <tr key={l.id} className="hover:bg-muted/20">
                   <td className="px-4 py-3">
                     <p className="font-medium">{l.name ?? l.push_name ?? "Sem nome"}</p>
@@ -135,6 +217,18 @@ function LeadsPage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>Exibindo {leads.length} de {total} leads</span>
+          {hasMore && (
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={isFetching}
+              className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-semibold hover:border-primary/40 disabled:opacity-60">
+              {isFetching ? "Carregando…" : "Carregar mais"}
+            </button>
+          )}
         </div>
       </div>
 
