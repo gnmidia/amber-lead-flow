@@ -100,9 +100,8 @@ function LeadsPage() {
         q = q.or(`name.ilike.%${s}%,push_name.ilike.%${s}%,whatsapp_number.ilike.%${s}%`);
       }
 
-      const from = page * PAGE_SIZE;
-      const to = from + PAGE_SIZE - 1;
-      const { data, error, count } = await q.range(from, to);
+      const to = (page + 1) * PAGE_SIZE - 1;
+      const { data, error, count } = await q.range(0, to);
       if (error) throw error;
       return { rows: (data ?? []) as Lead[], total: count ?? 0 };
     },
