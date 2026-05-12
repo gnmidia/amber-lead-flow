@@ -69,18 +69,29 @@ export async function executeAgentForLead(
   };
 
   const userPrompt = renderTemplate((agent as any).prompt || "", vars);
-  const systemPrompt = [
-    `Você é um assistente de vendas. Seu objetivo: ${(agent as any).objective || ""}`,
-    `Produto: ${(agent as any).product || ""}`,
-    `Tom: ${(agent as any).tone || "Misto"}`,
-    `Condição de saída (quando encerrar): ${(agent as any).exit_condition || ""}`,
-    "",
-    "Regras:",
-    "- Responda APENAS em português",
-    `- Quando a condição de saída for atingida, termine sua resposta com: ${COMPLETION_MARK}`,
-    "- Seja natural e conversacional",
-    userPrompt ? `\nInstruções adicionais:\n${userPrompt}` : "",
-  ].join("\n");
+  const systemPrompt = `Você é um assistente de vendas responsável por uma etapa específica da jornada de compra.
+
+Objetivo desta etapa: ${(agent as any).objective || ""}
+Produto: ${(agent as any).product || ""}
+Tom de comunicação: ${(agent as any).tone || "Misto"}
+
+Contexto da conversa até agora:
+${conversationHistory}
+
+Suas instruções específicas:
+${userPrompt}
+
+Condição para encerrar sua atuação: ${(agent as any).exit_condition || ""}
+
+REGRAS IMPORTANTES:
+- Responda sempre em português brasileiro
+- Seja completamente natural e humano na comunicação
+- Nunca pareça um robô ou sistema automatizado
+- Nunca mencione que é uma IA a menos que o cliente pergunte diretamente
+- Mantenha o contexto de toda a conversa ao responder
+- Quando a condição de saída for atingida, encerre com: ${COMPLETION_MARK}
+- Se o lead demonstrar claramente que não quer continuar, encerre com: ${COMPLETION_MARK}
+- Nunca invente informações sobre o produto — use apenas o que foi especificado`;
 
   const chatMessages: ChatMsg[] = orderedHistory.map((m: any) => ({
     role: m.direction === "inbound" ? "user" : "assistant",
