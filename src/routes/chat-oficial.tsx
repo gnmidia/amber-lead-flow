@@ -357,7 +357,7 @@ function ChatOficialPage() {
               </button>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="flex flex-1 gap-1.5 overflow-x-auto">
+              <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto">
                 <Chip active={filter === "window34"} onClick={() => setFilter(filter === "window34" ? "all" : "window34")}>
                   Janela 34h
                 </Chip>
@@ -368,7 +368,9 @@ function ChatOficialPage() {
                   <Archive className="h-3 w-3" /> Arquivo
                 </Chip>
               </div>
-              <TagFilterDropdown allTags={allTags} selected={tagFilter} onChange={setTagFilter} />
+              <div className="shrink-0">
+                <TagFilterDropdown allTags={allTags} selected={tagFilter} onChange={setTagFilter} />
+              </div>
             </div>
           </div>
 
