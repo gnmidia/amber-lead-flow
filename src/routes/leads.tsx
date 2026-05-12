@@ -133,9 +133,37 @@ function LeadsPage() {
               value={search}
               onChange={(e) => { setPage(0); setSearch(e.target.value); }}
               placeholder="Buscar lead por nome ou telefone..."
-            className="w-full rounded-md border border-border bg-card py-2 pl-9 pr-3 text-sm"
-          />
+              className="w-full rounded-md border border-border bg-card py-2 pl-9 pr-3 text-sm"
+            />
+          </div>
+          {(selectedTagIds.length > 0 || search) && (
+            <button
+              onClick={clearFilters}
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs font-semibold hover:border-destructive/40 hover:text-destructive">
+              <X className="h-3 w-3" /> Limpar filtros
+            </button>
+          )}
         </div>
+
+        {tags.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+              <TagIcon className="h-3 w-3" /> Tags:
+            </span>
+            {tags.map((t) => {
+              const active = selectedTagIds.includes(t.id);
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => toggleTag(t.id)}
+                  style={active ? { backgroundColor: t.color, borderColor: t.color, color: "#fff" } : { borderColor: t.color, color: t.color }}
+                  className="rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase transition-colors">
+                  {t.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
@@ -152,10 +180,10 @@ function LeadsPage() {
               {isLoading && (
                 <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Carregando…</td></tr>
               )}
-              {!isLoading && filtered.length === 0 && (
+              {!isLoading && leads.length === 0 && (
                 <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Nenhum lead encontrado.</td></tr>
               )}
-              {filtered.map((l) => (
+              {leads.map((l) => (
                 <tr key={l.id} className="hover:bg-muted/20">
                   <td className="px-4 py-3">
                     <p className="font-medium">{l.name ?? l.push_name ?? "Sem nome"}</p>
@@ -190,6 +218,18 @@ function LeadsPage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>Exibindo {leads.length} de {total} leads</span>
+          {hasMore && (
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={isFetching}
+              className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-semibold hover:border-primary/40 disabled:opacity-60">
+              {isFetching ? "Carregando…" : "Carregar mais"}
+            </button>
+          )}
         </div>
       </div>
 
