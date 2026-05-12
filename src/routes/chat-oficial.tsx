@@ -576,43 +576,77 @@ function MessageBody({ m }: { m: Message }) {
   return <p className="whitespace-pre-wrap">{m.content || ""}</p>;
 }
 
-function ActivateFunnelButton({ leadId }: { leadId: string }) {
+function ActivateFlowButton({ leadId }: { leadId: string }) {
   const { currentOperationId } = useOperation();
-  const [funnels, setFunnels] = useState<{ id: string; name: string }[]>([]);
+  const [flows, setFlows] = useState<{ id: string; name: string }[]>([]);
   const [selected, setSelected] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pausing, setPausing] = useState(false);
+  const [hasPending, setHasPending] = useState(false);
 
   useEffect(() => {
     if (!currentOperationId) return;
     supabase
-      .from("funnels")
+      .from("flows")
       .select("id, name")
       .eq("operation_id", currentOperationId)
-      .order("position")
-      .then(({ data }) => setFunnels(data ?? []));
+      .eq("is_active", true)
+      .order("name")
+      .then(({ data }) => setFlows(data ?? []));
   }, [currentOperationId]);
+
+  const refreshPending = async () => {
+    const { data } = await supabase
+      .from("scheduled_messages")
+      .select("id")
+      .eq("lead_id", leadId)
+      .eq("message_type", "flow_resume")
+      .eq("status", "pending")
+      .limit(1);
+    setHasPending((data?.length ?? 0) > 0);
+  };
+
+  useEffect(() => {
+    refreshPending();
+  }, [leadId]);
 
   const activate = async () => {
     if (!selected) return;
     setLoading(true);
     try {
-      const res = await fetch("/api/public/funnel-scheduler", {
+      const res = await fetch("/api/public/flow-executor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lead_id: leadId,
-          funnel_id: selected,
-          trigger_time: new Date().toISOString(),
-        }),
+        body: JSON.stringify({ lead_id: leadId, flow_id: selected }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json?.error || "Erro ao ativar funil");
-      toast.success(`Funil ativado — ${json.scheduled ?? 0} mensagens agendadas`);
+      if (!res.ok) throw new Error(json?.error || "Erro ao ativar fluxo");
+      toast.success("Fluxo ativado");
       setSelected("");
+      refreshPending();
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const pause = async () => {
+    setPausing(true);
+    try {
+      const { error } = await supabase
+        .from("scheduled_messages")
+        .delete()
+        .eq("lead_id", leadId)
+        .eq("message_type", "flow_resume")
+        .eq("status", "pending");
+      if (error) throw error;
+      toast.success("Fluxo pausado");
+      refreshPending();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setPausing(false);
     }
   };
 
@@ -623,8 +657,8 @@ function ActivateFunnelButton({ leadId }: { leadId: string }) {
         onChange={(e) => setSelected(e.target.value)}
         className="rounded-md border border-border bg-background px-2 py-1 text-xs"
       >
-        <option value="">Ativar funil…</option>
-        {funnels.map((f) => (
+        <option value="">Ativar fluxo…</option>
+        {flows.map((f) => (
           <option key={f.id} value={f.id}>
             {f.name}
           </option>
@@ -638,6 +672,16 @@ function ActivateFunnelButton({ leadId }: { leadId: string }) {
         <Play className="h-3 w-3" />
         {loading ? "..." : "Ativar"}
       </button>
+      {hasPending && (
+        <button
+          onClick={pause}
+          disabled={pausing}
+          className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs font-semibold hover:border-destructive/40 hover:text-destructive disabled:opacity-50"
+        >
+          <Pause className="h-3 w-3" />
+          {pausing ? "..." : "Pausar fluxo"}
+        </button>
+      )}
     </div>
   );
 }
