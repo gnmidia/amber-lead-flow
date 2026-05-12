@@ -21,6 +21,8 @@ export type Database = {
           exit_tags: string[]
           id: string
           is_active: boolean
+          llm_connection_id: string | null
+          max_turns: number
           name: string
           objective: string | null
           operation_id: string
@@ -35,6 +37,8 @@ export type Database = {
           exit_tags?: string[]
           id?: string
           is_active?: boolean
+          llm_connection_id?: string | null
+          max_turns?: number
           name: string
           objective?: string | null
           operation_id?: string
@@ -49,6 +53,8 @@ export type Database = {
           exit_tags?: string[]
           id?: string
           is_active?: boolean
+          llm_connection_id?: string | null
+          max_turns?: number
           name?: string
           objective?: string | null
           operation_id?: string
@@ -58,6 +64,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "agents_llm_connection_id_fkey"
+            columns: ["llm_connection_id"]
+            isOneToOne: false
+            referencedRelation: "llm_connections"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "agents_operation_id_fkey"
             columns: ["operation_id"]
@@ -598,6 +611,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      llm_connections: {
+        Row: {
+          api_key: string
+          created_at: string
+          id: string
+          is_active: boolean
+          max_tokens: number
+          model: string
+          name: string
+          operation_id: string
+          provider: string
+          temperature: number
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_tokens?: number
+          model: string
+          name: string
+          operation_id: string
+          provider: string
+          temperature?: number
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_tokens?: number
+          model?: string
+          name?: string
+          operation_id?: string
+          provider?: string
+          temperature?: number
+        }
+        Relationships: []
       }
       messages: {
         Row: {
