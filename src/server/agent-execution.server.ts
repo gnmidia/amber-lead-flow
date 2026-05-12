@@ -307,26 +307,26 @@ export async function handleInboundForActiveAgent(
   if (!active) return false;
   const effectiveLeadId = ((active as any).lead_id as string) || leadId;
 
-  console.log(`[agent] inbound recebido com agente ativo | lead=${leadId} | agendando timer 30s`);
+  console.log(`[agent] inbound recebido com agente ativo | lead=${effectiveLeadId} | agendando timer 30s`);
 
   const { data: lead } = await supabaseAdmin
     .from("leads")
     .select("whatsapp_number, remote_jid, instance_name")
-    .eq("id", leadId)
+    .eq("id", effectiveLeadId)
     .maybeSingle();
 
   // Cancela timer pendente anterior (se houver) para "reiniciar" os 30s.
   const { error: cancelErr } = await supabaseAdmin
     .from("scheduled_messages")
     .update({ status: "cancelled" })
-    .eq("lead_id", leadId)
+    .eq("lead_id", effectiveLeadId)
     .eq("message_type", "agent_process")
     .eq("status", "pending");
   if (cancelErr) console.warn("[agent] cancel pending agent_process failed:", cancelErr);
 
   const sendAt = new Date(Date.now() + AGENT_DEBOUNCE_MS).toISOString();
   const { error: insErr } = await supabaseAdmin.from("scheduled_messages").insert({
-    lead_id: leadId,
+    lead_id: effectiveLeadId,
     message_type: "agent_process",
     content: JSON.stringify({
       agent_id: (active as any).agent_id,
