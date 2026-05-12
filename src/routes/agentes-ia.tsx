@@ -197,7 +197,25 @@ function AgentModal({ agent, tags, llms, onClose, onSaved }: { agent: Agent | nu
             </Field>
           </div>
           <Field label="Condição de saída"><input value={exitCondition} onChange={(e) => setExitCondition(e.target.value)} placeholder="Ex: comprovante enviado" className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" /></Field>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Conexão LLM">
+              <select value={llmConnectionId} onChange={(e) => setLlmConnectionId(e.target.value)} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm">
+                <option value="">— Selecione —</option>
+                {llms.map((l) => (
+                  <option key={l.id} value={l.id}>{l.name} · {l.provider} · {l.model}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Max turnos">
+              <input type="number" min={1} value={maxTurns} onChange={(e) => setMaxTurns(parseInt(e.target.value || "0"))} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
+            </Field>
+          </div>
+
           <Field label="Prompt"><textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={4} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono text-xs" /></Field>
+          <p className="text-[10px] text-muted-foreground -mt-2">
+            Variáveis disponíveis: <code className="font-mono text-foreground/80">{"{{lead_name}}"}</code>, <code className="font-mono text-foreground/80">{"{{product}}"}</code>, <code className="font-mono text-foreground/80">{"{{objective}}"}</code>, <code className="font-mono text-foreground/80">{"{{conversation_history}}"}</code>
+          </p>
 
           <Field label="Atribuir tags ao concluir">
             <div className="flex flex-wrap gap-1.5 rounded-md border border-border bg-background p-2">
