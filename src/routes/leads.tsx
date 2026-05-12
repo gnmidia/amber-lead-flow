@@ -111,11 +111,41 @@ function LeadsPage() {
   const total = result?.total ?? 0;
   const hasMore = (page + 1) * PAGE_SIZE < total;
 
+  const queryClient = useQueryClient();
+  const leadIds = useMemo(() => leads.map((l) => l.id), [leads]);
+
+  // Vendas (com oferta) dos leads atualmente exibidos
+  const { data: salesByLead = {} } = useQuery({
+    queryKey: ["lead-sales", leadIds],
+    enabled: leadIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sales")
+        .select("lead_id, sale_date, offer:offers(id, name)")
+        .in("lead_id", leadIds)
+        .order("sale_date", { ascending: false });
+      if (error) throw error;
+      const map: Record<string, { id: string; name: string }[]> = {};
+      for (const row of (data ?? []) as any[]) {
+        const off = row.offer;
+        if (!off) continue;
+        const arr = map[row.lead_id] ?? (map[row.lead_id] = []);
+        if (!arr.some((o) => o.id === off.id)) arr.push({ id: off.id, name: off.name });
+      }
+      return map;
+    },
+  });
+
   const toggleTag = (id: string) => {
     setPage(0);
     setSelectedTagIds((prev) => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
   };
   const clearFilters = () => { setSelectedTagIds([]); setSearch(""); setPage(0); };
+
+  const handleSaleClose = () => {
+    setSellingLead(null);
+    queryClient.invalidateQueries({ queryKey: ["lead-sales"] });
+  };
 
   return (
     <>
