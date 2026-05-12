@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
-import { Search, Plus, X, DollarSign, Tag as TagIcon } from "lucide-react";
+import { Search, Plus, X, DollarSign, Tag as TagIcon, Check, ChevronDown } from "lucide-react";
 import { SaleModal } from "@/components/SaleModal";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
@@ -174,25 +174,35 @@ function LeadsPage() {
           )}
         </div>
 
-        {tags.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider text-muted-foreground">
-              <TagIcon className="h-3 w-3" /> Tags:
-            </span>
-            {tags.map((t) => {
-              const active = selectedTagIds.includes(t.id);
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => toggleTag(t.id)}
-                  style={active ? { backgroundColor: t.color, borderColor: t.color, color: "#fff" } : { borderColor: t.color, color: t.color }}
-                  className="rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase transition-colors">
-                  {t.name}
-                </button>
-              );
-            })}
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <TagSelector
+            tags={tags}
+            selectedIds={selectedTagIds}
+            onChange={setSelectedTagIds}
+          />
+          {selectedTagIds.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {tags
+                .filter((t) => selectedTagIds.includes(t.id))
+                .map((t) => (
+                  <span
+                    key={t.id}
+                    style={{ backgroundColor: t.color, borderColor: t.color }}
+                    className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase text-white"
+                  >
+                    {t.name}
+                    <button
+                      onClick={() => toggleTag(t.id)}
+                      className="rounded-full hover:bg-black/20"
+                      aria-label={`Remover ${t.name}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+            </div>
+          )}
+        </div>
 
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
@@ -362,6 +372,73 @@ function ActivateFunnelModal({ lead, onClose }: { lead: Lead; onClose: () => voi
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function TagSelector({
+  tags,
+  selectedIds,
+  onChange,
+}: {
+  tags: { id: string; name: string; color: string }[];
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const toggle = (id: string) => {
+    if (selectedIds.includes(id)) onChange(selectedIds.filter((x) => x !== id));
+    else onChange([...selectedIds, id]);
+  };
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium ${
+          selectedIds.length > 0
+            ? "border-primary/40 bg-primary/15 text-primary"
+            : "border-border bg-card text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        <TagIcon className="h-3.5 w-3.5" />
+        {selectedIds.length > 0 ? `${selectedIds.length} tag(s) selecionada(s)` : "Filtrar por tag"}
+        <ChevronDown className="h-3 w-3 opacity-70" />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 z-50 mt-1 max-h-72 w-64 overflow-y-auto rounded-md border border-border bg-popover p-1 shadow-lg">
+            {tags.length === 0 && (
+              <p className="p-2 text-xs text-muted-foreground">Nenhuma tag disponível.</p>
+            )}
+            {tags.map((t) => {
+              const sel = selectedIds.includes(t.id);
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => toggle(t.id)}
+                  className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-muted"
+                >
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: t.color }} />
+                  <span className="flex-1 font-medium">{t.name}</span>
+                  {sel && <Check className="h-3.5 w-3.5 text-primary" />}
+                </button>
+              );
+            })}
+            {selectedIds.length > 0 && (
+              <button
+                onClick={() => {
+                  onChange([]);
+                  setOpen(false);
+                }}
+                className="mt-1 w-full rounded px-2 py-1.5 text-left text-xs text-muted-foreground hover:bg-muted"
+              >
+                Limpar seleção
+              </button>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
