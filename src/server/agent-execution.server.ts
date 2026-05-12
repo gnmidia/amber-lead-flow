@@ -269,13 +269,43 @@ const AGENT_DEBOUNCE_MS = 30_000;
 export async function handleInboundForActiveAgent(
   leadId: string,
   _incomingMessage: string | null,
+  whatsappNumber?: string,
 ): Promise<boolean> {
-  const { data: active } = await supabaseAdmin
+  let { data: active } = await supabaseAdmin
     .from("lead_active_agents" as any)
-    .select("agent_id, flow_id, resume_block_index")
+    .select("agent_id, flow_id, resume_block_index, lead_id")
     .eq("lead_id", leadId)
     .maybeSingle();
+
+  // Fallback: o mesmo contato pode existir em múltiplos lead_ids (duplicatas
+  // por @lid vs @s.whatsapp.net). Procura agente ativo em qualquer lead que
+  // compartilhe o whatsapp_number / remote_jid.
+  if (!active && whatsappNumber) {
+    const { data: leadsByNumber } = await supabaseAdmin
+      .from("leads")
+      .select("id")
+      .or(`whatsapp_number.eq.${whatsappNumber},remote_jid.eq.${whatsappNumber}`)
+      .limit(5);
+
+    for (const l of (leadsByNumber || []) as any[]) {
+      if (l.id === leadId) continue;
+      const { data: found } = await supabaseAdmin
+        .from("lead_active_agents" as any)
+        .select("agent_id, flow_id, resume_block_index, lead_id")
+        .eq("lead_id", l.id)
+        .maybeSingle();
+      if (found) {
+        active = found;
+        console.log(
+          `[agent] agente encontrado via fallback whatsapp_number | lead original=${leadId} | lead com agente=${l.id}`,
+        );
+        break;
+      }
+    }
+  }
+
   if (!active) return false;
+  const effectiveLeadId = ((active as any).lead_id as string) || leadId;
 
   console.log(`[agent] inbound recebido com agente ativo | lead=${leadId} | agendando timer 30s`);
 
