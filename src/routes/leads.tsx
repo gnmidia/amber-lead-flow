@@ -283,7 +283,7 @@ function LeadsPage() {
         <ActivateFunnelModal lead={activatingLead} onClose={() => setActivatingLead(null)} />
       )}
       {sellingLead && (
-        <SaleModal lead={sellingLead} onClose={() => setSellingLead(null)} />
+        <SaleModal lead={sellingLead} onClose={handleSaleClose} />
       )}
     </>
   );
