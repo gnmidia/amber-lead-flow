@@ -42,6 +42,7 @@ import { Route as FluxosIdRouteImport } from './routes/fluxos.$id'
 import { Route as ApiPublicWebhookWhatsappRouteImport } from './routes/api/public/webhook-whatsapp'
 import { Route as ApiPublicSyncChatsRouteImport } from './routes/api/public/sync-chats'
 import { Route as ApiPublicSendMessageRouteImport } from './routes/api/public/send-message'
+import { Route as ApiPublicProcessAgentRouteImport } from './routes/api/public/process-agent'
 import { Route as ApiPublicMessageDispatcherRouteImport } from './routes/api/public/message-dispatcher'
 import { Route as ApiPublicLlmTestRouteImport } from './routes/api/public/llm-test'
 import { Route as ApiPublicFunnelSchedulerRouteImport } from './routes/api/public/funnel-scheduler'
@@ -216,6 +217,11 @@ const ApiPublicSendMessageRoute = ApiPublicSendMessageRouteImport.update({
   path: '/api/public/send-message',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicProcessAgentRoute = ApiPublicProcessAgentRouteImport.update({
+  id: '/api/public/process-agent',
+  path: '/api/public/process-agent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicMessageDispatcherRoute =
   ApiPublicMessageDispatcherRouteImport.update({
     id: '/api/public/message-dispatcher',
@@ -293,6 +299,7 @@ export interface FileRoutesByFullPath {
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
   '/api/public/llm-test': typeof ApiPublicLlmTestRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
+  '/api/public/process-agent': typeof ApiPublicProcessAgentRoute
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
   '/api/public/sync-chats': typeof ApiPublicSyncChatsRoute
   '/api/public/webhook-whatsapp': typeof ApiPublicWebhookWhatsappRoute
@@ -335,6 +342,7 @@ export interface FileRoutesByTo {
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
   '/api/public/llm-test': typeof ApiPublicLlmTestRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
+  '/api/public/process-agent': typeof ApiPublicProcessAgentRoute
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
   '/api/public/sync-chats': typeof ApiPublicSyncChatsRoute
   '/api/public/webhook-whatsapp': typeof ApiPublicWebhookWhatsappRoute
@@ -378,6 +386,7 @@ export interface FileRoutesById {
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
   '/api/public/llm-test': typeof ApiPublicLlmTestRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
+  '/api/public/process-agent': typeof ApiPublicProcessAgentRoute
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
   '/api/public/sync-chats': typeof ApiPublicSyncChatsRoute
   '/api/public/webhook-whatsapp': typeof ApiPublicWebhookWhatsappRoute
@@ -422,6 +431,7 @@ export interface FileRouteTypes {
     | '/api/public/funnel-scheduler'
     | '/api/public/llm-test'
     | '/api/public/message-dispatcher'
+    | '/api/public/process-agent'
     | '/api/public/send-message'
     | '/api/public/sync-chats'
     | '/api/public/webhook-whatsapp'
@@ -464,6 +474,7 @@ export interface FileRouteTypes {
     | '/api/public/funnel-scheduler'
     | '/api/public/llm-test'
     | '/api/public/message-dispatcher'
+    | '/api/public/process-agent'
     | '/api/public/send-message'
     | '/api/public/sync-chats'
     | '/api/public/webhook-whatsapp'
@@ -506,6 +517,7 @@ export interface FileRouteTypes {
     | '/api/public/funnel-scheduler'
     | '/api/public/llm-test'
     | '/api/public/message-dispatcher'
+    | '/api/public/process-agent'
     | '/api/public/send-message'
     | '/api/public/sync-chats'
     | '/api/public/webhook-whatsapp'
@@ -549,6 +561,7 @@ export interface RootRouteChildren {
   ApiPublicFunnelSchedulerRoute: typeof ApiPublicFunnelSchedulerRoute
   ApiPublicLlmTestRoute: typeof ApiPublicLlmTestRoute
   ApiPublicMessageDispatcherRoute: typeof ApiPublicMessageDispatcherRoute
+  ApiPublicProcessAgentRoute: typeof ApiPublicProcessAgentRoute
   ApiPublicSendMessageRoute: typeof ApiPublicSendMessageRoute
   ApiPublicSyncChatsRoute: typeof ApiPublicSyncChatsRoute
   ApiPublicWebhookWhatsappRoute: typeof ApiPublicWebhookWhatsappRoute
@@ -787,6 +800,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSendMessageRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/process-agent': {
+      id: '/api/public/process-agent'
+      path: '/api/public/process-agent'
+      fullPath: '/api/public/process-agent'
+      preLoaderRoute: typeof ApiPublicProcessAgentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/message-dispatcher': {
       id: '/api/public/message-dispatcher'
       path: '/api/public/message-dispatcher'
@@ -877,6 +897,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicFunnelSchedulerRoute: ApiPublicFunnelSchedulerRoute,
   ApiPublicLlmTestRoute: ApiPublicLlmTestRoute,
   ApiPublicMessageDispatcherRoute: ApiPublicMessageDispatcherRoute,
+  ApiPublicProcessAgentRoute: ApiPublicProcessAgentRoute,
   ApiPublicSendMessageRoute: ApiPublicSendMessageRoute,
   ApiPublicSyncChatsRoute: ApiPublicSyncChatsRoute,
   ApiPublicWebhookWhatsappRoute: ApiPublicWebhookWhatsappRoute,

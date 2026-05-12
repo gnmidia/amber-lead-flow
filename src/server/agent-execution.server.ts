@@ -255,31 +255,23 @@ async function sendOutgoing(lead: any, text: string) {
   }
 }
 
-const AGENT_DEBOUNCE_MS = 30_000;
-
 /**
- * Verifica se há um agente ativo para o lead. Se sim, agenda (ou
- * reagenda) um processamento de agente em 30 segundos. Não chama o
- * LLM imediatamente — isso permite acumular várias mensagens rápidas
- * do lead em uma única resposta.
- *
- * Retorna true se há um agente ativo (e o caller deve pular os fluxos
- * normais), false caso contrário.
+ * Verifica se há um agente ativo para o lead. Se sim, acumula a mensagem
+ * em `lead_active_agents.pending_messages` e atualiza `last_message_at`.
+ * O processamento real é feito por `process_pending_agents()` via pg_cron
+ * após 30s de silêncio.
  */
 export async function handleInboundForActiveAgent(
   leadId: string,
-  _incomingMessage: string | null,
+  incomingMessage: string | null,
   whatsappNumber?: string,
 ): Promise<boolean> {
   let { data: active } = await supabaseAdmin
     .from("lead_active_agents" as any)
-    .select("agent_id, flow_id, resume_block_index, lead_id")
+    .select("agent_id, flow_id, resume_block_index, lead_id, pending_messages")
     .eq("lead_id", leadId)
     .maybeSingle();
 
-  // Fallback: o mesmo contato pode existir em múltiplos lead_ids (duplicatas
-  // por @lid vs @s.whatsapp.net). Procura agente ativo em qualquer lead que
-  // compartilhe o whatsapp_number / remote_jid.
   if (!active && whatsappNumber) {
     const { data: leadsByNumber } = await supabaseAdmin
       .from("leads")
@@ -291,7 +283,7 @@ export async function handleInboundForActiveAgent(
       if (l.id === leadId) continue;
       const { data: found } = await supabaseAdmin
         .from("lead_active_agents" as any)
-        .select("agent_id, flow_id, resume_block_index, lead_id")
+        .select("agent_id, flow_id, resume_block_index, lead_id, pending_messages")
         .eq("lead_id", l.id)
         .maybeSingle();
       if (found) {
@@ -306,45 +298,24 @@ export async function handleInboundForActiveAgent(
 
   if (!active) return false;
   const effectiveLeadId = ((active as any).lead_id as string) || leadId;
+  const existing = ((active as any).pending_messages as string) || "";
+  const incoming = incomingMessage || "";
+  const accumulated = existing
+    ? (incoming ? `${existing}\n${incoming}` : existing)
+    : incoming;
 
-  console.log(`[agent] inbound recebido com agente ativo | lead=${effectiveLeadId} | agendando timer 30s`);
+  const { error: updErr } = await supabaseAdmin
+    .from("lead_active_agents" as any)
+    .update({
+      last_message_at: new Date().toISOString(),
+      pending_messages: accumulated,
+    })
+    .eq("lead_id", effectiveLeadId);
+  if (updErr) console.warn("[buffer] update pending_messages failed:", updErr);
 
-  const { data: lead } = await supabaseAdmin
-    .from("leads")
-    .select("whatsapp_number, remote_jid, instance_name")
-    .eq("id", effectiveLeadId)
-    .maybeSingle();
-
-  // Cancela timer pendente anterior (se houver) para "reiniciar" os 30s.
-  const { error: cancelErr } = await supabaseAdmin
-    .from("scheduled_messages")
-    .update({ status: "cancelled" })
-    .eq("lead_id", effectiveLeadId)
-    .eq("message_type", "agent_process")
-    .eq("status", "pending");
-  if (cancelErr) console.warn("[agent] cancel pending agent_process failed:", cancelErr);
-
-  const sendAt = new Date(Date.now() + AGENT_DEBOUNCE_MS).toISOString();
-  const { error: insErr } = await supabaseAdmin.from("scheduled_messages").insert({
-    lead_id: effectiveLeadId,
-    message_type: "agent_process",
-    content: JSON.stringify({
-      agent_id: (active as any).agent_id,
-      flow_id: (active as any).flow_id,
-      resume_block_index: (active as any).resume_block_index,
-    }),
-    instance_name:
-      (lead as any)?.instance_name || process.env.EVOLUTION_INSTANCE_NAME || "",
-    whatsapp_number: (lead as any)?.remote_jid || (lead as any)?.whatsapp_number || "",
-    send_at: sendAt,
-    status: "pending",
-  });
-  if (insErr) {
-    console.error("[agent] failed to schedule agent_process:", insErr);
-    return true; // ainda é "tratado pelo agente" — não dispare fluxos
-  }
-
-  console.log(`[agent] timer agendado para ${sendAt}`);
+  console.log(
+    `[buffer] mensagem acumulada | lead=${effectiveLeadId} | total="${accumulated.substring(0, 100)}"`,
+  );
   return true;
 }
 
