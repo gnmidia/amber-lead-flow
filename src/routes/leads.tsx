@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
-import { Search, Filter, Plus, X, DollarSign } from "lucide-react";
+import { Search, Plus, X, DollarSign, Tag as TagIcon } from "lucide-react";
 import { SaleModal } from "@/components/SaleModal";
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOperation } from "@/contexts/OperationContext";
 import { toast } from "sonner";
+
+const PAGE_SIZE = 100;
 
 export const Route = createFileRoute("/leads")({
   component: LeadsPage,
