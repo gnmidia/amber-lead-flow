@@ -19,7 +19,7 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
             const op = await getOperationByInstance(instance);
             if (!op) {
               console.warn(`[webhook] no operation found for instance=${instance}`);
-              return new Response(`No operation for instance ${instance}`, { status: 400 });
+              return new Response("ok");
             }
             const operationId = op.id;
             console.log(`[webhook] instance=${instance} -> operation=${operationId}`);
