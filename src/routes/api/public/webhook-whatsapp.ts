@@ -241,8 +241,8 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
 
           return new Response("ok");
         } catch (err) {
-          console.error("[webhook] error", err);
-          return new Response("error", { status: 500 });
+          console.error("[webhook] error (silenced, returning 200):", err);
+          return new Response("ok");
         }
       },
     },
