@@ -28,15 +28,18 @@ function AgentesPage() {
   const { currentOperationId } = useOperation();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [tags, setTags] = useState<TagItem[]>([]);
+  const [llms, setLlms] = useState<LlmConn[]>([]);
   const [editing, setEditing] = useState<Agent | null>(null);
   const [creating, setCreating] = useState(false);
 
   const load = async () => {
     if (!currentOperationId) return;
     const { data } = await supabase.from("agents").select("*").eq("operation_id", currentOperationId).order("created_at", { ascending: false });
-    setAgents((data || []) as Agent[]);
+    setAgents(((data || []) as unknown) as Agent[]);
     const { data: t } = await supabase.from("tags").select("id,name,color").eq("operation_id", currentOperationId).eq("is_active", true).order("name");
     setTags((t || []) as TagItem[]);
+    const { data: l } = await supabase.from("llm_connections" as any).select("id,name,provider,model,is_active").eq("operation_id", currentOperationId).eq("is_active", true).order("name");
+    setLlms(((l || []) as unknown) as LlmConn[]);
   };
   useEffect(() => { load(); }, [currentOperationId]);
 
