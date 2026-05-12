@@ -134,6 +134,21 @@ export async function executeFlowForLead({
 }): Promise<Record<string, unknown>> {
   if (!lead_id || !flow_id) throw new Error("missing lead_id/flow_id");
 
+  // Se já existe um agente ativo para este lead, não reativar o fluxo
+  // (apenas permite quando estamos retomando explicitamente em um bloco > 0,
+  // o que indica que o agente já finalizou).
+  if (!start_block_index) {
+    const { data: existingAgent } = await supabaseAdmin
+      .from("lead_active_agents" as any)
+      .select("id")
+      .eq("lead_id", lead_id)
+      .maybeSingle();
+    if (existingAgent) {
+      console.log(`[flow-executor] agente já ativo para lead=${lead_id}, ignorando ativação de fluxo ${flow_id}`);
+      return { ok: true, status: "agent_active" };
+    }
+  }
+
   const { data: blocks, error: blocksError } = await supabaseAdmin
     .from("flow_blocks")
     .select("*")

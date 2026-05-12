@@ -255,26 +255,124 @@ async function sendOutgoing(lead: any, text: string) {
   }
 }
 
+const AGENT_DEBOUNCE_MS = 30_000;
+
 /**
- * Verifica se há um agente ativo para o lead. Se sim, executa o agente
- * com a mensagem recebida e retorna true (sinalizando ao caller para
- * pular os triggers de fluxo normais).
+ * Verifica se há um agente ativo para o lead. Se sim, agenda (ou
+ * reagenda) um processamento de agente em 30 segundos. Não chama o
+ * LLM imediatamente — isso permite acumular várias mensagens rápidas
+ * do lead em uma única resposta.
+ *
+ * Retorna true se há um agente ativo (e o caller deve pular os fluxos
+ * normais), false caso contrário.
  */
 export async function handleInboundForActiveAgent(
   leadId: string,
-  incomingMessage: string | null,
+  _incomingMessage: string | null,
 ): Promise<boolean> {
   const { data: active } = await supabaseAdmin
     .from("lead_active_agents" as any)
-    .select("agent_id")
+    .select("agent_id, flow_id, resume_block_index")
     .eq("lead_id", leadId)
     .maybeSingle();
   if (!active) return false;
 
-  try {
-    await executeAgentForLead((active as any).agent_id, leadId, incomingMessage || "");
-  } catch (e) {
-    console.error("[agent] inbound handling failed:", e);
+  console.log(`[agent] inbound recebido com agente ativo | lead=${leadId} | agendando timer 30s`);
+
+  const { data: lead } = await supabaseAdmin
+    .from("leads")
+    .select("whatsapp_number, remote_jid, instance_name")
+    .eq("id", leadId)
+    .maybeSingle();
+
+  // Cancela timer pendente anterior (se houver) para "reiniciar" os 30s.
+  const { error: cancelErr } = await supabaseAdmin
+    .from("scheduled_messages")
+    .update({ status: "cancelled" })
+    .eq("lead_id", leadId)
+    .eq("message_type", "agent_process")
+    .eq("status", "pending");
+  if (cancelErr) console.warn("[agent] cancel pending agent_process failed:", cancelErr);
+
+  const sendAt = new Date(Date.now() + AGENT_DEBOUNCE_MS).toISOString();
+  const { error: insErr } = await supabaseAdmin.from("scheduled_messages").insert({
+    lead_id: leadId,
+    message_type: "agent_process",
+    content: JSON.stringify({
+      agent_id: (active as any).agent_id,
+      flow_id: (active as any).flow_id,
+      resume_block_index: (active as any).resume_block_index,
+    }),
+    instance_name:
+      (lead as any)?.instance_name || process.env.EVOLUTION_INSTANCE_NAME || "",
+    whatsapp_number: (lead as any)?.remote_jid || (lead as any)?.whatsapp_number || "",
+    send_at: sendAt,
+    status: "pending",
+  });
+  if (insErr) {
+    console.error("[agent] failed to schedule agent_process:", insErr);
+    return true; // ainda é "tratado pelo agente" — não dispare fluxos
   }
+
+  console.log(`[agent] timer agendado para ${sendAt}`);
   return true;
+}
+
+/**
+ * Executado pelo message-dispatcher quando um scheduled_messages do tipo
+ * "agent_process" amadurece. Concatena todas as mensagens inbound desde
+ * a última resposta do agente e envia ao LLM como uma única entrada.
+ */
+export async function processAgentTimer(payload: {
+  agent_id: string;
+  lead_id: string;
+}): Promise<void> {
+  const { agent_id, lead_id } = payload;
+  console.log(`[agent] processAgentTimer | agent=${agent_id} | lead=${lead_id}`);
+
+  // Confirma que o agente ainda está ativo (pode ter sido finalizado).
+  const { data: active } = await supabaseAdmin
+    .from("lead_active_agents" as any)
+    .select("agent_id")
+    .eq("lead_id", lead_id)
+    .maybeSingle();
+  if (!active) {
+    console.log(`[agent] timer expirou mas agente não está mais ativo — ignorando`);
+    return;
+  }
+
+  // Última resposta do agente para esse lead — corte temporal.
+  const { data: lastOutbound } = await supabaseAdmin
+    .from("messages")
+    .select("sent_at")
+    .eq("lead_id", lead_id)
+    .eq("direction", "outbound")
+    .eq("sent_by", "agent")
+    .order("sent_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const since = (lastOutbound as any)?.sent_at || new Date(0).toISOString();
+
+  const { data: pending } = await supabaseAdmin
+    .from("messages")
+    .select("content, sent_at")
+    .eq("lead_id", lead_id)
+    .eq("direction", "inbound")
+    .gt("sent_at", since)
+    .order("sent_at", { ascending: true });
+
+  const accumulated = (pending || [])
+    .map((m: any) => m.content)
+    .filter((c: any) => !!c)
+    .join("\n");
+
+  console.log(`[agent] mensagens acumuladas: ${(pending || []).length} | tamanho=${accumulated.length}`);
+
+  if (!accumulated) {
+    console.log(`[agent] nada para processar`);
+    return;
+  }
+
+  await executeAgentForLead(agent_id, lead_id, accumulated);
 }

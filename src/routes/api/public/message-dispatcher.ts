@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { executeFlowForLead } from "@/server/funnel-execution.server";
+import { processAgentTimer } from "@/server/agent-execution.server";
 
 function evoHeaders(apiKey: string) {
   return { "Content-Type": "application/json", apikey: apiKey };
@@ -128,6 +129,17 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
               });
             } catch (error) {
               console.error("[message-dispatcher] flow resume error", error);
+            }
+            await supabaseAdmin.from("scheduled_messages").update({ status: "sent", dispatch_started_at: null }).eq("id", msg.id);
+            return "sent";
+          }
+
+          if (stepType === "agent_process") {
+            try {
+              const payload = JSON.parse(msg.content || "{}");
+              await processAgentTimer({ agent_id: payload.agent_id, lead_id: msg.lead_id });
+            } catch (error) {
+              console.error("[message-dispatcher] agent_process error", error);
             }
             await supabaseAdmin.from("scheduled_messages").update({ status: "sent", dispatch_started_at: null }).eq("id", msg.id);
             return "sent";
