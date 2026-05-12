@@ -163,7 +163,7 @@ export const Route = createFileRoute("/api/public/sync-chats")({
             newMessages += rowsToInsert.length;
             for (const content of inboundContents) {
               try {
-                const handled = await handleInboundForActiveAgent(leadId, content);
+                const handled = await handleInboundForActiveAgent(leadId, content, identity.realPhone || identity.remoteJid);
                 if (!handled) {
                   await triggerFlowsForInboundMessage(leadId, content, isNewLead);
                 }
