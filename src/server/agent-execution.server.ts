@@ -190,31 +190,29 @@ Responda APENAS com: SIM ou NAO`;
 }
 
 async function finishAgent(agentId: string, leadId: string, activeRow: any) {
+  console.log(`[agent] finalizando agente | agent=${agentId} | lead=${leadId}`);
   const { data: agent } = await supabaseAdmin
     .from("agents").select("exit_tags").eq("id", agentId).maybeSingle();
   await applyExitTags(leadId, ((agent as any)?.exit_tags || []) as string[]);
+  console.log(`[agent] exit_tags aplicadas (${((agent as any)?.exit_tags || []).length})`);
 
-  // Limpa estado ativo
-  await supabaseAdmin
-    .from("lead_active_agents" as any)
-    .delete()
-    .eq("lead_id", leadId);
+  await supabaseAdmin.from("lead_active_agents" as any).delete().eq("lead_id", leadId);
+  await supabaseAdmin.from("leads").update({ current_agent_id: null }).eq("id", leadId);
+  console.log(`[agent] estado limpo`);
 
-  await supabaseAdmin
-    .from("leads")
-    .update({ current_agent_id: null })
-    .eq("id", leadId);
-
-  // Retoma fluxo a partir do próximo bloco, se houver contexto
   const flowId = activeRow?.flow_id as string | undefined;
   const resumeIdx = activeRow?.resume_block_index as number | undefined;
   if (flowId && typeof resumeIdx === "number") {
+    console.log(`[agent] retomando fluxo=${flowId} no bloco=${resumeIdx}`);
     try {
       const { executeFlowForLead } = await import("./funnel-execution.server");
-      await executeFlowForLead({ lead_id: leadId, flow_id: flowId, start_block_index: resumeIdx });
+      const result = await executeFlowForLead({ lead_id: leadId, flow_id: flowId, start_block_index: resumeIdx });
+      console.log(`[agent] fluxo retomado | resultado:`, result);
     } catch (e) {
       console.warn("[agent] flow resume failed:", e);
     }
+  } else {
+    console.log(`[agent] nenhum próximo bloco — fluxo encerrado`);
   }
 }
 
