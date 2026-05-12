@@ -27,6 +27,7 @@ import {
   Send,
   ChevronsUpDown,
   Check,
+  Cpu,
   Building2,
 } from "lucide-react";
 
