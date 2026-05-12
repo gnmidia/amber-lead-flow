@@ -356,16 +356,18 @@ function ChatOficialPage() {
                 <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
               </button>
             </div>
-            <div className="flex gap-1.5 overflow-x-auto">
-              <Chip active={filter === "window34"} onClick={() => setFilter(filter === "window34" ? "all" : "window34")}>
-                Janela 34h
-              </Chip>
-              <Chip active={filter === "scheduled"} onClick={() => setFilter(filter === "scheduled" ? "all" : "scheduled")}>
-                Agendados <span className="ml-1 text-primary">{scheduledCount}</span>
-              </Chip>
-              <Chip active={filter === "archived"} onClick={() => setFilter(filter === "archived" ? "all" : "archived")}>
-                <Archive className="h-3 w-3" /> Arquivo
-              </Chip>
+            <div className="flex items-center gap-1.5">
+              <div className="flex flex-1 gap-1.5 overflow-x-auto">
+                <Chip active={filter === "window34"} onClick={() => setFilter(filter === "window34" ? "all" : "window34")}>
+                  Janela 34h
+                </Chip>
+                <Chip active={filter === "scheduled"} onClick={() => setFilter(filter === "scheduled" ? "all" : "scheduled")}>
+                  Agendados <span className="ml-1 text-primary">{scheduledCount}</span>
+                </Chip>
+                <Chip active={filter === "archived"} onClick={() => setFilter(filter === "archived" ? "all" : "archived")}>
+                  <Archive className="h-3 w-3" /> Arquivo
+                </Chip>
+              </div>
               <TagFilterDropdown allTags={allTags} selected={tagFilter} onChange={setTagFilter} />
             </div>
           </div>
