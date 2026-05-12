@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { executeFlowForLead } from "@/server/funnel-execution.server";
+import { processAgentTimer } from "@/server/agent-execution.server";
 
 function evoHeaders(apiKey: string) {
   return { "Content-Type": "application/json", apikey: apiKey };
