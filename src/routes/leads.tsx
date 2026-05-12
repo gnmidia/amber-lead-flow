@@ -227,6 +227,22 @@ function LeadsPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
+                    {(salesByLead[l.id] ?? []).length === 0 ? (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {(salesByLead[l.id] ?? []).map((o) => (
+                          <span
+                            key={o.id}
+                            title={o.name}
+                            className="inline-flex max-w-[160px] items-center gap-1 truncate rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-success">
+                            <DollarSign className="h-2.5 w-2.5 shrink-0" /> {o.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
                     <span className="rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-success">{l.status}</span>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{timeAgo(l.last_interaction_at)}</td>
