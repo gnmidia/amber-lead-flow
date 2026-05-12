@@ -687,6 +687,151 @@ function ActivateFlowButton({ leadId }: { leadId: string }) {
   );
 }
 
+type AgentItem = { id: string; name: string; objective: string | null };
+
+function ActivateAgentButton({ leadId }: { leadId: string }) {
+  const { currentOperationId } = useOperation();
+  const [agents, setAgents] = useState<AgentItem[]>([]);
+  const [activeAgent, setActiveAgent] = useState<{ agent_id: string; name: string } | null>(null);
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const refreshActive = async () => {
+    const { data } = await supabase
+      .from("lead_active_agents")
+      .select("agent_id, agents(name)")
+      .eq("lead_id", leadId)
+      .maybeSingle();
+    if (data) {
+      setActiveAgent({ agent_id: (data as any).agent_id, name: (data as any).agents?.name || "Agente" });
+    } else {
+      setActiveAgent(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!currentOperationId) return;
+    supabase
+      .from("agents")
+      .select("id, name, objective")
+      .eq("operation_id", currentOperationId)
+      .eq("is_active", true)
+      .order("name")
+      .then(({ data }) => setAgents((data ?? []) as AgentItem[]));
+  }, [currentOperationId]);
+
+  useEffect(() => {
+    refreshActive();
+    const ch = supabase
+      .channel(`lead-active-agent-${leadId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "lead_active_agents", filter: `lead_id=eq.${leadId}` },
+        () => refreshActive()
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leadId]);
+
+  const activate = async (agent: AgentItem) => {
+    setBusy(true);
+    try {
+      await supabase.from("lead_active_agents").delete().eq("lead_id", leadId);
+      const { error } = await supabase.from("lead_active_agents").insert({
+        lead_id: leadId,
+        agent_id: agent.id,
+        flow_id: null,
+        resume_block_index: 0,
+        turn_count: 0,
+      });
+      if (error) throw error;
+      toast.success(`Agente ${agent.name} ativado`);
+      setOpen(false);
+      refreshActive();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const deactivate = async () => {
+    setBusy(true);
+    try {
+      const { error } = await supabase.from("lead_active_agents").delete().eq("lead_id", leadId);
+      if (error) throw error;
+      toast.success("Agente desativado");
+      refreshActive();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="relative flex items-center gap-1.5">
+      {activeAgent && (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/15 px-2.5 py-1 text-[10px] font-semibold uppercase text-primary">
+          <Bot className="h-3 w-3" />
+          IA Ativa: {activeAgent.name}
+        </span>
+      )}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        disabled={busy}
+        className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs font-semibold hover:border-primary/40 disabled:opacity-50"
+      >
+        <Bot className="h-3 w-3" />
+        {activeAgent ? "Trocar agente" : "Ativar Agente"}
+      </button>
+      {activeAgent && (
+        <button
+          onClick={deactivate}
+          disabled={busy}
+          className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs font-semibold hover:border-destructive/40 hover:text-destructive disabled:opacity-50"
+        >
+          <Pause className="h-3 w-3" />
+          Desativar
+        </button>
+      )}
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full z-50 mt-1 max-h-80 w-72 overflow-y-auto rounded-md border border-border bg-popover p-2 shadow-lg">
+            {agents.length === 0 && (
+              <p className="p-2 text-xs text-muted-foreground">Nenhum agente ativo na operação.</p>
+            )}
+            {agents.map((a) => (
+              <div
+                key={a.id}
+                className="flex items-start gap-2 rounded p-2 hover:bg-muted"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-semibold">{a.name}</p>
+                  {a.objective && (
+                    <p className="line-clamp-2 text-[10px] text-muted-foreground">{a.objective}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => activate(a)}
+                  disabled={busy || activeAgent?.agent_id === a.id}
+                  className="shrink-0 rounded bg-primary px-2 py-1 text-[10px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {activeAgent?.agent_id === a.id ? "Ativo" : "Ativar"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function Chip({
   children,
   active,
