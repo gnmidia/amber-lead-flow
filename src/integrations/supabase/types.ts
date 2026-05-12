@@ -452,6 +452,75 @@ export type Database = {
           },
         ]
       }
+      lead_active_agents: {
+        Row: {
+          agent_id: string
+          flow_block_id: string | null
+          flow_id: string | null
+          id: string
+          lead_id: string
+          resume_block_index: number | null
+          started_at: string
+          turn_count: number
+        }
+        Insert: {
+          agent_id: string
+          flow_block_id?: string | null
+          flow_id?: string | null
+          id?: string
+          lead_id: string
+          resume_block_index?: number | null
+          started_at?: string
+          turn_count?: number
+        }
+        Update: {
+          agent_id?: string
+          flow_block_id?: string | null
+          flow_id?: string | null
+          id?: string
+          lead_id?: string
+          resume_block_index?: number | null
+          started_at?: string
+          turn_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_active_agents_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_active_agents_flow_block_id_fkey"
+            columns: ["flow_block_id"]
+            isOneToOne: false
+            referencedRelation: "flow_blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_active_agents_flow_id_fkey"
+            columns: ["flow_id"]
+            isOneToOne: false
+            referencedRelation: "flows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_active_agents_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_active_agents_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "leads_with_last_message"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_funnel_states: {
         Row: {
           completed_at: string | null
