@@ -3,7 +3,7 @@ import { PageHeader } from "../components/PageHeader";
 import { Search, Plus, X, DollarSign, Tag as TagIcon } from "lucide-react";
 import { SaleModal } from "@/components/SaleModal";
 import { useState, useMemo } from "react";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOperation } from "@/contexts/OperationContext";
 import { toast } from "sonner";
