@@ -148,7 +148,7 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
             console.log(`[webhook] verificando agente ativo para lead=${lead!.id}`);
             let handledByAgent = false;
             try {
-              handledByAgent = await handleInboundForActiveAgent(lead!.id, content);
+              handledByAgent = await handleInboundForActiveAgent(lead!.id, content, number);
             } catch (e) {
               console.error(`[webhook] handleInboundForActiveAgent error (silenced):`, e);
               handledByAgent = false;
