@@ -155,7 +155,15 @@ export async function executeFlowForLead(
       const { error } = await supabase.from("leads")
         .update({ current_agent_id: block.reference_id }).eq("id", lead_id);
       assertNoError(error, "agent assignment failed");
-      break;
+      try {
+        const { runAgentDeno } = await import("./agent-execution.ts");
+        const result = await runAgentDeno(supabase, block.reference_id, lead_id, "");
+        if (!result.shouldContinue) break;
+        continue;
+      } catch (e) {
+        console.warn("[flow-executor] agent execution failed:", e);
+        break;
+      }
     } else if (block.block_type === "tag_assign" && block.reference_id) {
       const { error } = await supabase.from("lead_tags").upsert(
         { lead_id, tag_id: block.reference_id, assigned_by: "flow" },
