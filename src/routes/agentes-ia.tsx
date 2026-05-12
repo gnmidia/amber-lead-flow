@@ -138,7 +138,7 @@ function Row({ k, v }: { k: string; v: string }) {
   );
 }
 
-function AgentModal({ agent, tags, onClose, onSaved }: { agent: Agent | null; tags: TagItem[]; onClose: () => void; onSaved: () => void }) {
+function AgentModal({ agent, tags, llms, onClose, onSaved }: { agent: Agent | null; tags: TagItem[]; llms: LlmConn[]; onClose: () => void; onSaved: () => void }) {
   const { currentOperationId } = useOperation();
   const [name, setName] = useState(agent?.name || "");
   const [objective, setObjective] = useState(agent?.objective || "");
@@ -148,6 +148,8 @@ function AgentModal({ agent, tags, onClose, onSaved }: { agent: Agent | null; ta
   const [prompt, setPrompt] = useState(agent?.prompt || "");
   const [isActive, setIsActive] = useState(agent?.is_active ?? true);
   const [exitTags, setExitTags] = useState<Set<string>>(new Set(agent?.exit_tags || []));
+  const [llmConnectionId, setLlmConnectionId] = useState<string>(agent?.llm_connection_id || "");
+  const [maxTurns, setMaxTurns] = useState<number>(agent?.max_turns ?? 20);
   const [saving, setSaving] = useState(false);
 
   const toggleTag = (id: string) => {
@@ -164,9 +166,11 @@ function AgentModal({ agent, tags, onClose, onSaved }: { agent: Agent | null; ta
       name, objective: objective || null, product: product || null, tone,
       exit_condition: exitCondition || null, prompt: prompt || null,
       is_active: isActive, exit_tags: Array.from(exitTags),
+      llm_connection_id: llmConnectionId || null,
+      max_turns: maxTurns,
     };
     const { error } = agent
-      ? await supabase.from("agents").update(payload).eq("id", agent.id)
+      ? await supabase.from("agents").update(payload as any).eq("id", agent.id)
       : await supabase.from("agents").insert({ ...payload, operation_id: currentOperationId! } as any);
     setSaving(false);
     if (error) toast.error(error.message);
