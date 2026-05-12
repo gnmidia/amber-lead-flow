@@ -452,6 +452,7 @@ function ChatOficialPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <ActivateFlowButton leadId={active.id} />
+                  <ActivateAgentButton leadId={active.id} />
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase ${
                       active.ia_paused
