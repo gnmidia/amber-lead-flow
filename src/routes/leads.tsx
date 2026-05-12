@@ -174,25 +174,35 @@ function LeadsPage() {
           )}
         </div>
 
-        {tags.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wider text-muted-foreground">
-              <TagIcon className="h-3 w-3" /> Tags:
-            </span>
-            {tags.map((t) => {
-              const active = selectedTagIds.includes(t.id);
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => toggleTag(t.id)}
-                  style={active ? { backgroundColor: t.color, borderColor: t.color, color: "#fff" } : { borderColor: t.color, color: t.color }}
-                  className="rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase transition-colors">
-                  {t.name}
-                </button>
-              );
-            })}
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <TagSelector
+            tags={tags}
+            selectedIds={selectedTagIds}
+            onChange={setSelectedTagIds}
+          />
+          {selectedTagIds.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {tags
+                .filter((t) => selectedTagIds.includes(t.id))
+                .map((t) => (
+                  <span
+                    key={t.id}
+                    style={{ backgroundColor: t.color, borderColor: t.color }}
+                    className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase text-white"
+                  >
+                    {t.name}
+                    <button
+                      onClick={() => toggleTag(t.id)}
+                      className="rounded-full hover:bg-black/20"
+                      aria-label={`Remover ${t.name}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+            </div>
+          )}
+        </div>
 
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
