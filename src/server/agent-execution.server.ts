@@ -18,6 +18,8 @@ export async function executeAgentForLead(
   leadId: string,
   incomingMessage: string,
 ): Promise<{ shouldContinue: boolean; response: string | null; reason?: string }> {
+  console.log(`[agent] iniciando execução | agent=${agentId} | lead=${leadId} | incoming="${(incomingMessage || "").substring(0, 200)}"`);
+  try {
   const { data: agent, error: agentErr } = await supabaseAdmin
     .from("agents").select("*").eq("id", agentId).maybeSingle();
   if (agentErr) throw new Error(`agent lookup: ${agentErr.message}`);
@@ -30,6 +32,7 @@ export async function executeAgentForLead(
     .from("llm_connections" as any).select("*").eq("id", llmId).maybeSingle();
   if (connErr) throw new Error(`llm conn lookup: ${connErr.message}`);
   if (!conn) throw new Error("conexão LLM não encontrada");
+  console.log(`[agent] conexão LLM carregada | provider=${(conn as any).provider} | model=${(conn as any).model}`);
 
   const { data: lead, error: leadErr } = await supabaseAdmin
     .from("leads").select("id, name, push_name, whatsapp_number, remote_jid, instance_name")
@@ -37,7 +40,6 @@ export async function executeAgentForLead(
   if (leadErr) throw new Error(`lead lookup: ${leadErr.message}`);
   if (!lead) throw new Error("lead not found");
 
-  // Estado ativo (pode não existir caso o agente tenha sido ativado direto)
   const { data: activeRow } = await supabaseAdmin
     .from("lead_active_agents" as any)
     .select("*")
@@ -47,7 +49,6 @@ export async function executeAgentForLead(
   const currentTurn = ((activeRow as any)?.turn_count ?? 0) as number;
   const maxTurns = ((agent as any).max_turns ?? 20) as number;
 
-  // Histórico (últimas 20)
   const { data: history } = await supabaseAdmin
     .from("messages")
     .select("direction, content, sent_at")
@@ -55,6 +56,7 @@ export async function executeAgentForLead(
     .order("sent_at", { ascending: false })
     .limit(20);
   const orderedHistory = (history || []).slice().reverse();
+  console.log(`[agent] histórico carregado | ${orderedHistory.length} mensagens | turn=${currentTurn}/${maxTurns}`);
 
   const leadName = lead.name || lead.push_name || "Cliente";
   const conversationHistory = orderedHistory
@@ -107,21 +109,42 @@ REGRAS IMPORTANTES:
     temperature: Number((conn as any).temperature ?? 0.7),
   };
 
+  console.log(`[agent] chamando LLM...`);
   const raw = await callLLM(cfg, systemPrompt, chatMessages);
   let completed = raw.includes(COMPLETION_MARK);
   const text = raw.replace(COMPLETION_MARK, "").trim();
+  console.log(`[agent] resposta LLM recebida | completed=${completed} | text="${text.substring(0, 100)}"`);
 
-  // Envia a resposta ANTES de avaliar conclusão
+  // Avaliação explícita da condição de saída via segunda chamada leve ao LLM
+  if (!completed && (agent as any).exit_condition) {
+    try {
+      const recentInbound = orderedHistory
+        .filter((m: any) => m.direction === "inbound")
+        .slice(-3)
+        .map((m: any) => m.content || "");
+      const exitMet = await evaluateExitCondition(
+        (agent as any).exit_condition,
+        [...recentInbound, incomingMessage].filter(Boolean),
+        cfg,
+      );
+      if (exitMet) {
+        completed = true;
+        console.log(`[agent] condição de saída atingida via avaliação explícita`);
+      }
+    } catch (e) {
+      console.warn(`[agent] avaliação de condição de saída falhou:`, e);
+    }
+  }
+
   if (text) {
+    console.log(`[agent] enviando resposta via Evolution...`);
     await sendOutgoing(lead, text);
+    console.log(`[agent] resposta enviada com sucesso`);
   }
 
   const newTurn = currentTurn + 1;
   const reachedMax = newTurn >= maxTurns;
-
-  if (!completed && reachedMax) {
-    completed = true;
-  }
+  if (!completed && reachedMax) completed = true;
 
   if (completed) {
     await finishAgent(agentId, leadId, activeRow);
@@ -132,7 +155,6 @@ REGRAS IMPORTANTES:
     };
   }
 
-  // Não concluído: incrementa turn_count
   if (activeRow) {
     await supabaseAdmin
       .from("lead_active_agents" as any)
@@ -141,34 +163,56 @@ REGRAS IMPORTANTES:
   }
 
   return { shouldContinue: false, response: text };
+  } catch (error) {
+    console.error(`[agent] ERRO em executeAgentForLead:`, error);
+    throw error;
+  }
+}
+
+async function evaluateExitCondition(
+  exitCondition: string,
+  lastLeadMessages: string[],
+  cfg: LLMConfig,
+): Promise<boolean> {
+  if (!exitCondition || lastLeadMessages.length === 0) return false;
+  const evalPrompt = `Analise as últimas mensagens do cliente e determine se a seguinte condição foi atingida.
+
+Condição de saída: "${exitCondition}"
+
+Últimas mensagens do cliente:
+${lastLeadMessages.map((m, i) => `${i + 1}. "${m}"`).join("\n")}
+
+Responda APENAS com: SIM ou NAO`;
+  const result = await callLLM(cfg, evalPrompt, [
+    { role: "user", content: "Avalie a condição." },
+  ]);
+  return result.trim().toUpperCase().startsWith("SIM");
 }
 
 async function finishAgent(agentId: string, leadId: string, activeRow: any) {
+  console.log(`[agent] finalizando agente | agent=${agentId} | lead=${leadId}`);
   const { data: agent } = await supabaseAdmin
     .from("agents").select("exit_tags").eq("id", agentId).maybeSingle();
   await applyExitTags(leadId, ((agent as any)?.exit_tags || []) as string[]);
+  console.log(`[agent] exit_tags aplicadas (${((agent as any)?.exit_tags || []).length})`);
 
-  // Limpa estado ativo
-  await supabaseAdmin
-    .from("lead_active_agents" as any)
-    .delete()
-    .eq("lead_id", leadId);
+  await supabaseAdmin.from("lead_active_agents" as any).delete().eq("lead_id", leadId);
+  await supabaseAdmin.from("leads").update({ current_agent_id: null }).eq("id", leadId);
+  console.log(`[agent] estado limpo`);
 
-  await supabaseAdmin
-    .from("leads")
-    .update({ current_agent_id: null })
-    .eq("id", leadId);
-
-  // Retoma fluxo a partir do próximo bloco, se houver contexto
   const flowId = activeRow?.flow_id as string | undefined;
   const resumeIdx = activeRow?.resume_block_index as number | undefined;
   if (flowId && typeof resumeIdx === "number") {
+    console.log(`[agent] retomando fluxo=${flowId} no bloco=${resumeIdx}`);
     try {
       const { executeFlowForLead } = await import("./funnel-execution.server");
-      await executeFlowForLead({ lead_id: leadId, flow_id: flowId, start_block_index: resumeIdx });
+      const result = await executeFlowForLead({ lead_id: leadId, flow_id: flowId, start_block_index: resumeIdx });
+      console.log(`[agent] fluxo retomado | resultado:`, result);
     } catch (e) {
       console.warn("[agent] flow resume failed:", e);
     }
+  } else {
+    console.log(`[agent] nenhum próximo bloco — fluxo encerrado`);
   }
 }
 

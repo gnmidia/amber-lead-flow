@@ -144,7 +144,10 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
               .eq("id", lead!.id);
 
             // ───── Agente IA ativo? Se sim, ele responde e pulamos os fluxos ─────
+            console.log(`[webhook] inbound recebido | lead=${lead!.id} | content="${(content || "").substring(0, 200)}"`);
+            console.log(`[webhook] verificando agente ativo para lead=${lead!.id}`);
             const handledByAgent = await handleInboundForActiveAgent(lead!.id, content);
+            console.log(`[webhook] handledByAgent=${handledByAgent}`);
 
             // ───── Disparar fluxos automáticos (apenas se nenhum agente está ativo) ─────
             if (!handledByAgent) {
