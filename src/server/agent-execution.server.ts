@@ -7,12 +7,17 @@ function renderTemplate(tpl: string, vars: Record<string, string>) {
   return tpl.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, k) => vars[k] ?? "");
 }
 
+/**
+ * Executa o agente para um lead.
+ * SEMPRE chamado em resposta a uma mensagem inbound do lead — nunca
+ * proativamente a partir do flow-executor (que apenas registra o agente
+ * como ativo e para o fluxo).
+ */
 export async function executeAgentForLead(
   agentId: string,
   leadId: string,
   incomingMessage: string,
 ): Promise<{ shouldContinue: boolean; response: string | null; reason?: string }> {
-  // Load agent + connection + lead
   const { data: agent, error: agentErr } = await supabaseAdmin
     .from("agents").select("*").eq("id", agentId).maybeSingle();
   if (agentErr) throw new Error(`agent lookup: ${agentErr.message}`);
@@ -32,7 +37,17 @@ export async function executeAgentForLead(
   if (leadErr) throw new Error(`lead lookup: ${leadErr.message}`);
   if (!lead) throw new Error("lead not found");
 
-  // Last 20 messages
+  // Estado ativo (pode não existir caso o agente tenha sido ativado direto)
+  const { data: activeRow } = await supabaseAdmin
+    .from("lead_active_agents" as any)
+    .select("*")
+    .eq("lead_id", leadId)
+    .maybeSingle();
+
+  const currentTurn = ((activeRow as any)?.turn_count ?? 0) as number;
+  const maxTurns = ((agent as any).max_turns ?? 20) as number;
+
+  // Histórico (últimas 20)
   const { data: history } = await supabaseAdmin
     .from("messages")
     .select("direction, content, sent_at")
@@ -40,10 +55,6 @@ export async function executeAgentForLead(
     .order("sent_at", { ascending: false })
     .limit(20);
   const orderedHistory = (history || []).slice().reverse();
-
-  // Max turns check (counting outbound IA messages so far)
-  const maxTurns = (agent as any).max_turns ?? 20;
-  const aiTurns = orderedHistory.filter((m: any) => m.direction === "outbound").length;
 
   const leadName = lead.name || lead.push_name || "Cliente";
   const conversationHistory = orderedHistory
@@ -77,12 +88,6 @@ export async function executeAgentForLead(
   }));
   if (incomingMessage) chatMessages.push({ role: "user", content: incomingMessage });
 
-  // Force exit if reached max turns
-  if (aiTurns >= maxTurns) {
-    await applyExitTags(leadId, (agent as any).exit_tags || []);
-    return { shouldContinue: true, response: null, reason: "max_turns" };
-  }
-
   const cfg: LLMConfig = {
     provider: (conn as any).provider as Provider,
     api_key: (conn as any).api_key,
@@ -91,21 +96,69 @@ export async function executeAgentForLead(
     temperature: Number((conn as any).temperature ?? 0.7),
   };
 
-  let raw = await callLLM(cfg, systemPrompt, chatMessages);
-  const completed = raw.includes(COMPLETION_MARK);
+  const raw = await callLLM(cfg, systemPrompt, chatMessages);
+  let completed = raw.includes(COMPLETION_MARK);
   const text = raw.replace(COMPLETION_MARK, "").trim();
 
-  // Send the outgoing message via Evolution / send-message route
+  // Envia a resposta ANTES de avaliar conclusão
   if (text) {
     await sendOutgoing(lead, text);
   }
 
+  const newTurn = currentTurn + 1;
+  const reachedMax = newTurn >= maxTurns;
+
+  if (!completed && reachedMax) {
+    completed = true;
+  }
+
   if (completed) {
-    await applyExitTags(leadId, (agent as any).exit_tags || []);
-    return { shouldContinue: true, response: text, reason: "completed" };
+    await finishAgent(agentId, leadId, activeRow);
+    return {
+      shouldContinue: true,
+      response: text,
+      reason: reachedMax ? "max_turns" : "completed",
+    };
+  }
+
+  // Não concluído: incrementa turn_count
+  if (activeRow) {
+    await supabaseAdmin
+      .from("lead_active_agents" as any)
+      .update({ turn_count: newTurn })
+      .eq("lead_id", leadId);
   }
 
   return { shouldContinue: false, response: text };
+}
+
+async function finishAgent(agentId: string, leadId: string, activeRow: any) {
+  const { data: agent } = await supabaseAdmin
+    .from("agents").select("exit_tags").eq("id", agentId).maybeSingle();
+  await applyExitTags(leadId, ((agent as any)?.exit_tags || []) as string[]);
+
+  // Limpa estado ativo
+  await supabaseAdmin
+    .from("lead_active_agents" as any)
+    .delete()
+    .eq("lead_id", leadId);
+
+  await supabaseAdmin
+    .from("leads")
+    .update({ current_agent_id: null })
+    .eq("id", leadId);
+
+  // Retoma fluxo a partir do próximo bloco, se houver contexto
+  const flowId = activeRow?.flow_id as string | undefined;
+  const resumeIdx = activeRow?.resume_block_index as number | undefined;
+  if (flowId && typeof resumeIdx === "number") {
+    try {
+      const { executeFlowForLead } = await import("./funnel-execution.server");
+      await executeFlowForLead({ lead_id: leadId, flow_id: flowId, start_block_index: resumeIdx });
+    } catch (e) {
+      console.warn("[agent] flow resume failed:", e);
+    }
+  }
 }
 
 async function applyExitTags(leadId: string, tagIds: string[]) {
@@ -115,7 +168,6 @@ async function applyExitTags(leadId: string, tagIds: string[]) {
 }
 
 async function sendOutgoing(lead: any, text: string) {
-  // Persist as outbound message and dispatch via Evolution if configured
   await supabaseAdmin.from("messages").insert({
     lead_id: lead.id,
     direction: "outbound",
@@ -140,4 +192,28 @@ async function sendOutgoing(lead: any, text: string) {
   } catch (e) {
     console.warn("[agent] evolution send failed:", e);
   }
+}
+
+/**
+ * Verifica se há um agente ativo para o lead. Se sim, executa o agente
+ * com a mensagem recebida e retorna true (sinalizando ao caller para
+ * pular os triggers de fluxo normais).
+ */
+export async function handleInboundForActiveAgent(
+  leadId: string,
+  incomingMessage: string | null,
+): Promise<boolean> {
+  const { data: active } = await supabaseAdmin
+    .from("lead_active_agents" as any)
+    .select("agent_id")
+    .eq("lead_id", leadId)
+    .maybeSingle();
+  if (!active) return false;
+
+  try {
+    await executeAgentForLead((active as any).agent_id, leadId, incomingMessage || "");
+  } catch (e) {
+    console.error("[agent] inbound handling failed:", e);
+  }
+  return true;
 }
