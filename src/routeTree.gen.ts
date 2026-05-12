@@ -28,6 +28,7 @@ import { Route as FunilRouteImport } from './routes/funil'
 import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as FilaRouteImport } from './routes/fila'
 import { Route as DisparosRouteImport } from './routes/disparos'
+import { Route as ConexoesIaRouteImport } from './routes/conexoes-ia'
 import { Route as ComprovantesIaRouteImport } from './routes/comprovantes-ia'
 import { Route as ChatOficialRouteImport } from './routes/chat-oficial'
 import { Route as ChatBaileysRouteImport } from './routes/chat-baileys'
@@ -142,6 +143,11 @@ const DisparosRoute = DisparosRouteImport.update({
   path: '/disparos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConexoesIaRoute = ConexoesIaRouteImport.update({
+  id: '/conexoes-ia',
+  path: '/conexoes-ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ComprovantesIaRoute = ComprovantesIaRouteImport.update({
   id: '/comprovantes-ia',
   path: '/comprovantes-ia',
@@ -246,6 +252,7 @@ export interface FileRoutesByFullPath {
   '/chat-baileys': typeof ChatBaileysRoute
   '/chat-oficial': typeof ChatOficialRoute
   '/comprovantes-ia': typeof ComprovantesIaRoute
+  '/conexoes-ia': typeof ConexoesIaRoute
   '/disparos': typeof DisparosRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
@@ -285,6 +292,7 @@ export interface FileRoutesByTo {
   '/chat-baileys': typeof ChatBaileysRoute
   '/chat-oficial': typeof ChatOficialRoute
   '/comprovantes-ia': typeof ComprovantesIaRoute
+  '/conexoes-ia': typeof ConexoesIaRoute
   '/disparos': typeof DisparosRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
@@ -325,6 +333,7 @@ export interface FileRoutesById {
   '/chat-baileys': typeof ChatBaileysRoute
   '/chat-oficial': typeof ChatOficialRoute
   '/comprovantes-ia': typeof ComprovantesIaRoute
+  '/conexoes-ia': typeof ConexoesIaRoute
   '/disparos': typeof DisparosRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
@@ -366,6 +375,7 @@ export interface FileRouteTypes {
     | '/chat-baileys'
     | '/chat-oficial'
     | '/comprovantes-ia'
+    | '/conexoes-ia'
     | '/disparos'
     | '/fila'
     | '/financeiro'
@@ -405,6 +415,7 @@ export interface FileRouteTypes {
     | '/chat-baileys'
     | '/chat-oficial'
     | '/comprovantes-ia'
+    | '/conexoes-ia'
     | '/disparos'
     | '/fila'
     | '/financeiro'
@@ -444,6 +455,7 @@ export interface FileRouteTypes {
     | '/chat-baileys'
     | '/chat-oficial'
     | '/comprovantes-ia'
+    | '/conexoes-ia'
     | '/disparos'
     | '/fila'
     | '/financeiro'
@@ -484,6 +496,7 @@ export interface RootRouteChildren {
   ChatBaileysRoute: typeof ChatBaileysRoute
   ChatOficialRoute: typeof ChatOficialRoute
   ComprovantesIaRoute: typeof ComprovantesIaRoute
+  ConexoesIaRoute: typeof ConexoesIaRoute
   DisparosRoute: typeof DisparosRoute
   FilaRoute: typeof FilaRoute
   FinanceiroRoute: typeof FinanceiroRoute
@@ -650,6 +663,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DisparosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/conexoes-ia': {
+      id: '/conexoes-ia'
+      path: '/conexoes-ia'
+      fullPath: '/conexoes-ia'
+      preLoaderRoute: typeof ConexoesIaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/comprovantes-ia': {
       id: '/comprovantes-ia'
       path: '/comprovantes-ia'
@@ -788,6 +808,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChatBaileysRoute: ChatBaileysRoute,
   ChatOficialRoute: ChatOficialRoute,
   ComprovantesIaRoute: ComprovantesIaRoute,
+  ConexoesIaRoute: ConexoesIaRoute,
   DisparosRoute: DisparosRoute,
   FilaRoute: FilaRoute,
   FinanceiroRoute: FinanceiroRoute,

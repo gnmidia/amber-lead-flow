@@ -51,7 +51,7 @@ function Page() {
       .select("*")
       .eq("operation_id", currentOperationId)
       .order("created_at", { ascending: false });
-    setItems((data || []) as Conn[]);
+    setItems(((data || []) as unknown) as Conn[]);
   };
   useEffect(() => { load(); }, [currentOperationId]);
 
