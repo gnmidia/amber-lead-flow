@@ -27,6 +27,7 @@ import {
   Send,
   ChevronsUpDown,
   Check,
+  Cpu,
   Building2,
 } from "lucide-react";
 
@@ -56,6 +57,7 @@ const sections: NavSection[] = [
       { label: "Fluxos", to: "/fluxos", icon: Workflow },
       { label: "Disparos", to: "/disparos", icon: Send },
       { label: "Agentes IA", to: "/agentes-ia", icon: Bot },
+      { label: "Conexões IA", to: "/conexoes-ia", icon: Cpu },
     ],
   },
   {

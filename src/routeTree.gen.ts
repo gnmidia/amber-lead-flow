@@ -28,6 +28,7 @@ import { Route as FunilRouteImport } from './routes/funil'
 import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as FilaRouteImport } from './routes/fila'
 import { Route as DisparosRouteImport } from './routes/disparos'
+import { Route as ConexoesIaRouteImport } from './routes/conexoes-ia'
 import { Route as ComprovantesIaRouteImport } from './routes/comprovantes-ia'
 import { Route as ChatOficialRouteImport } from './routes/chat-oficial'
 import { Route as ChatBaileysRouteImport } from './routes/chat-baileys'
@@ -42,10 +43,12 @@ import { Route as ApiPublicWebhookWhatsappRouteImport } from './routes/api/publi
 import { Route as ApiPublicSyncChatsRouteImport } from './routes/api/public/sync-chats'
 import { Route as ApiPublicSendMessageRouteImport } from './routes/api/public/send-message'
 import { Route as ApiPublicMessageDispatcherRouteImport } from './routes/api/public/message-dispatcher'
+import { Route as ApiPublicLlmTestRouteImport } from './routes/api/public/llm-test'
 import { Route as ApiPublicFunnelSchedulerRouteImport } from './routes/api/public/funnel-scheduler'
 import { Route as ApiPublicFlowExecutorRouteImport } from './routes/api/public/flow-executor'
 import { Route as ApiPublicEvolutionStatusRouteImport } from './routes/api/public/evolution-status'
 import { Route as ApiPublicEvolutionDiagRouteImport } from './routes/api/public/evolution-diag'
+import { Route as ApiPublicAgentRunRouteImport } from './routes/api/public/agent-run'
 
 const UsuariosRoute = UsuariosRouteImport.update({
   id: '/usuarios',
@@ -142,6 +145,11 @@ const DisparosRoute = DisparosRouteImport.update({
   path: '/disparos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConexoesIaRoute = ConexoesIaRouteImport.update({
+  id: '/conexoes-ia',
+  path: '/conexoes-ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ComprovantesIaRoute = ComprovantesIaRouteImport.update({
   id: '/comprovantes-ia',
   path: '/comprovantes-ia',
@@ -214,6 +222,11 @@ const ApiPublicMessageDispatcherRoute =
     path: '/api/public/message-dispatcher',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicLlmTestRoute = ApiPublicLlmTestRouteImport.update({
+  id: '/api/public/llm-test',
+  path: '/api/public/llm-test',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicFunnelSchedulerRoute =
   ApiPublicFunnelSchedulerRouteImport.update({
     id: '/api/public/funnel-scheduler',
@@ -236,6 +249,11 @@ const ApiPublicEvolutionDiagRoute = ApiPublicEvolutionDiagRouteImport.update({
   path: '/api/public/evolution-diag',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAgentRunRoute = ApiPublicAgentRunRouteImport.update({
+  id: '/api/public/agent-run',
+  path: '/api/public/agent-run',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -246,6 +264,7 @@ export interface FileRoutesByFullPath {
   '/chat-baileys': typeof ChatBaileysRoute
   '/chat-oficial': typeof ChatOficialRoute
   '/comprovantes-ia': typeof ComprovantesIaRoute
+  '/conexoes-ia': typeof ConexoesIaRoute
   '/disparos': typeof DisparosRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
@@ -267,10 +286,12 @@ export interface FileRoutesByFullPath {
   '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos/': typeof FluxosIndexRoute
+  '/api/public/agent-run': typeof ApiPublicAgentRunRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
+  '/api/public/llm-test': typeof ApiPublicLlmTestRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
   '/api/public/sync-chats': typeof ApiPublicSyncChatsRoute
@@ -285,6 +306,7 @@ export interface FileRoutesByTo {
   '/chat-baileys': typeof ChatBaileysRoute
   '/chat-oficial': typeof ChatOficialRoute
   '/comprovantes-ia': typeof ComprovantesIaRoute
+  '/conexoes-ia': typeof ConexoesIaRoute
   '/disparos': typeof DisparosRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
@@ -306,10 +328,12 @@ export interface FileRoutesByTo {
   '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos': typeof FluxosIndexRoute
+  '/api/public/agent-run': typeof ApiPublicAgentRunRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
+  '/api/public/llm-test': typeof ApiPublicLlmTestRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
   '/api/public/sync-chats': typeof ApiPublicSyncChatsRoute
@@ -325,6 +349,7 @@ export interface FileRoutesById {
   '/chat-baileys': typeof ChatBaileysRoute
   '/chat-oficial': typeof ChatOficialRoute
   '/comprovantes-ia': typeof ComprovantesIaRoute
+  '/conexoes-ia': typeof ConexoesIaRoute
   '/disparos': typeof DisparosRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
@@ -346,10 +371,12 @@ export interface FileRoutesById {
   '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos/': typeof FluxosIndexRoute
+  '/api/public/agent-run': typeof ApiPublicAgentRunRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
+  '/api/public/llm-test': typeof ApiPublicLlmTestRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
   '/api/public/sync-chats': typeof ApiPublicSyncChatsRoute
@@ -366,6 +393,7 @@ export interface FileRouteTypes {
     | '/chat-baileys'
     | '/chat-oficial'
     | '/comprovantes-ia'
+    | '/conexoes-ia'
     | '/disparos'
     | '/fila'
     | '/financeiro'
@@ -387,10 +415,12 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos/'
+    | '/api/public/agent-run'
     | '/api/public/evolution-diag'
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
+    | '/api/public/llm-test'
     | '/api/public/message-dispatcher'
     | '/api/public/send-message'
     | '/api/public/sync-chats'
@@ -405,6 +435,7 @@ export interface FileRouteTypes {
     | '/chat-baileys'
     | '/chat-oficial'
     | '/comprovantes-ia'
+    | '/conexoes-ia'
     | '/disparos'
     | '/fila'
     | '/financeiro'
@@ -426,10 +457,12 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos'
+    | '/api/public/agent-run'
     | '/api/public/evolution-diag'
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
+    | '/api/public/llm-test'
     | '/api/public/message-dispatcher'
     | '/api/public/send-message'
     | '/api/public/sync-chats'
@@ -444,6 +477,7 @@ export interface FileRouteTypes {
     | '/chat-baileys'
     | '/chat-oficial'
     | '/comprovantes-ia'
+    | '/conexoes-ia'
     | '/disparos'
     | '/fila'
     | '/financeiro'
@@ -465,10 +499,12 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos/'
+    | '/api/public/agent-run'
     | '/api/public/evolution-diag'
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
+    | '/api/public/llm-test'
     | '/api/public/message-dispatcher'
     | '/api/public/send-message'
     | '/api/public/sync-chats'
@@ -484,6 +520,7 @@ export interface RootRouteChildren {
   ChatBaileysRoute: typeof ChatBaileysRoute
   ChatOficialRoute: typeof ChatOficialRoute
   ComprovantesIaRoute: typeof ComprovantesIaRoute
+  ConexoesIaRoute: typeof ConexoesIaRoute
   DisparosRoute: typeof DisparosRoute
   FilaRoute: typeof FilaRoute
   FinanceiroRoute: typeof FinanceiroRoute
@@ -505,10 +542,12 @@ export interface RootRouteChildren {
   UsuariosRoute: typeof UsuariosRoute
   FluxosIdRoute: typeof FluxosIdRoute
   FluxosIndexRoute: typeof FluxosIndexRoute
+  ApiPublicAgentRunRoute: typeof ApiPublicAgentRunRoute
   ApiPublicEvolutionDiagRoute: typeof ApiPublicEvolutionDiagRoute
   ApiPublicEvolutionStatusRoute: typeof ApiPublicEvolutionStatusRoute
   ApiPublicFlowExecutorRoute: typeof ApiPublicFlowExecutorRoute
   ApiPublicFunnelSchedulerRoute: typeof ApiPublicFunnelSchedulerRoute
+  ApiPublicLlmTestRoute: typeof ApiPublicLlmTestRoute
   ApiPublicMessageDispatcherRoute: typeof ApiPublicMessageDispatcherRoute
   ApiPublicSendMessageRoute: typeof ApiPublicSendMessageRoute
   ApiPublicSyncChatsRoute: typeof ApiPublicSyncChatsRoute
@@ -650,6 +689,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DisparosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/conexoes-ia': {
+      id: '/conexoes-ia'
+      path: '/conexoes-ia'
+      fullPath: '/conexoes-ia'
+      preLoaderRoute: typeof ConexoesIaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/comprovantes-ia': {
       id: '/comprovantes-ia'
       path: '/comprovantes-ia'
@@ -748,6 +794,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMessageDispatcherRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/llm-test': {
+      id: '/api/public/llm-test'
+      path: '/api/public/llm-test'
+      fullPath: '/api/public/llm-test'
+      preLoaderRoute: typeof ApiPublicLlmTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/funnel-scheduler': {
       id: '/api/public/funnel-scheduler'
       path: '/api/public/funnel-scheduler'
@@ -776,6 +829,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicEvolutionDiagRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/agent-run': {
+      id: '/api/public/agent-run'
+      path: '/api/public/agent-run'
+      fullPath: '/api/public/agent-run'
+      preLoaderRoute: typeof ApiPublicAgentRunRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -788,6 +848,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChatBaileysRoute: ChatBaileysRoute,
   ChatOficialRoute: ChatOficialRoute,
   ComprovantesIaRoute: ComprovantesIaRoute,
+  ConexoesIaRoute: ConexoesIaRoute,
   DisparosRoute: DisparosRoute,
   FilaRoute: FilaRoute,
   FinanceiroRoute: FinanceiroRoute,
@@ -809,10 +870,12 @@ const rootRouteChildren: RootRouteChildren = {
   UsuariosRoute: UsuariosRoute,
   FluxosIdRoute: FluxosIdRoute,
   FluxosIndexRoute: FluxosIndexRoute,
+  ApiPublicAgentRunRoute: ApiPublicAgentRunRoute,
   ApiPublicEvolutionDiagRoute: ApiPublicEvolutionDiagRoute,
   ApiPublicEvolutionStatusRoute: ApiPublicEvolutionStatusRoute,
   ApiPublicFlowExecutorRoute: ApiPublicFlowExecutorRoute,
   ApiPublicFunnelSchedulerRoute: ApiPublicFunnelSchedulerRoute,
+  ApiPublicLlmTestRoute: ApiPublicLlmTestRoute,
   ApiPublicMessageDispatcherRoute: ApiPublicMessageDispatcherRoute,
   ApiPublicSendMessageRoute: ApiPublicSendMessageRoute,
   ApiPublicSyncChatsRoute: ApiPublicSyncChatsRoute,

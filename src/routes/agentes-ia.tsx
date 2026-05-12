@@ -9,6 +9,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/agentes-ia")({ component: AgentesPage });
 
 type TagItem = { id: string; name: string; color: string };
+type LlmConn = { id: string; name: string; provider: string; model: string; is_active: boolean };
 type Agent = {
   id: string;
   name: string;
@@ -19,21 +20,26 @@ type Agent = {
   prompt: string | null;
   is_active: boolean;
   exit_tags: string[];
+  llm_connection_id: string | null;
+  max_turns: number;
 };
 
 function AgentesPage() {
   const { currentOperationId } = useOperation();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [tags, setTags] = useState<TagItem[]>([]);
+  const [llms, setLlms] = useState<LlmConn[]>([]);
   const [editing, setEditing] = useState<Agent | null>(null);
   const [creating, setCreating] = useState(false);
 
   const load = async () => {
     if (!currentOperationId) return;
     const { data } = await supabase.from("agents").select("*").eq("operation_id", currentOperationId).order("created_at", { ascending: false });
-    setAgents((data || []) as Agent[]);
+    setAgents(((data || []) as unknown) as Agent[]);
     const { data: t } = await supabase.from("tags").select("id,name,color").eq("operation_id", currentOperationId).eq("is_active", true).order("name");
     setTags((t || []) as TagItem[]);
+    const { data: l } = await supabase.from("llm_connections" as any).select("id,name,provider,model,is_active").eq("operation_id", currentOperationId).eq("is_active", true).order("name");
+    setLlms(((l || []) as unknown) as LlmConn[]);
   };
   useEffect(() => { load(); }, [currentOperationId]);
 
@@ -114,6 +120,7 @@ function AgentesPage() {
         <AgentModal
           agent={editing}
           tags={tags}
+          llms={llms}
           onClose={() => { setCreating(false); setEditing(null); }}
           onSaved={() => { setCreating(false); setEditing(null); load(); }}
         />
@@ -131,7 +138,7 @@ function Row({ k, v }: { k: string; v: string }) {
   );
 }
 
-function AgentModal({ agent, tags, onClose, onSaved }: { agent: Agent | null; tags: TagItem[]; onClose: () => void; onSaved: () => void }) {
+function AgentModal({ agent, tags, llms, onClose, onSaved }: { agent: Agent | null; tags: TagItem[]; llms: LlmConn[]; onClose: () => void; onSaved: () => void }) {
   const { currentOperationId } = useOperation();
   const [name, setName] = useState(agent?.name || "");
   const [objective, setObjective] = useState(agent?.objective || "");
@@ -141,6 +148,8 @@ function AgentModal({ agent, tags, onClose, onSaved }: { agent: Agent | null; ta
   const [prompt, setPrompt] = useState(agent?.prompt || "");
   const [isActive, setIsActive] = useState(agent?.is_active ?? true);
   const [exitTags, setExitTags] = useState<Set<string>>(new Set(agent?.exit_tags || []));
+  const [llmConnectionId, setLlmConnectionId] = useState<string>(agent?.llm_connection_id || "");
+  const [maxTurns, setMaxTurns] = useState<number>(agent?.max_turns ?? 20);
   const [saving, setSaving] = useState(false);
 
   const toggleTag = (id: string) => {
@@ -157,9 +166,11 @@ function AgentModal({ agent, tags, onClose, onSaved }: { agent: Agent | null; ta
       name, objective: objective || null, product: product || null, tone,
       exit_condition: exitCondition || null, prompt: prompt || null,
       is_active: isActive, exit_tags: Array.from(exitTags),
+      llm_connection_id: llmConnectionId || null,
+      max_turns: maxTurns,
     };
     const { error } = agent
-      ? await supabase.from("agents").update(payload).eq("id", agent.id)
+      ? await supabase.from("agents").update(payload as any).eq("id", agent.id)
       : await supabase.from("agents").insert({ ...payload, operation_id: currentOperationId! } as any);
     setSaving(false);
     if (error) toast.error(error.message);
@@ -186,7 +197,25 @@ function AgentModal({ agent, tags, onClose, onSaved }: { agent: Agent | null; ta
             </Field>
           </div>
           <Field label="Condição de saída"><input value={exitCondition} onChange={(e) => setExitCondition(e.target.value)} placeholder="Ex: comprovante enviado" className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" /></Field>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Conexão LLM">
+              <select value={llmConnectionId} onChange={(e) => setLlmConnectionId(e.target.value)} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm">
+                <option value="">— Selecione —</option>
+                {llms.map((l) => (
+                  <option key={l.id} value={l.id}>{l.name} · {l.provider} · {l.model}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Max turnos">
+              <input type="number" min={1} value={maxTurns} onChange={(e) => setMaxTurns(parseInt(e.target.value || "0"))} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
+            </Field>
+          </div>
+
           <Field label="Prompt"><textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={4} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono text-xs" /></Field>
+          <p className="text-[10px] text-muted-foreground -mt-2">
+            Variáveis disponíveis: <code className="font-mono text-foreground/80">{"{{lead_name}}"}</code>, <code className="font-mono text-foreground/80">{"{{product}}"}</code>, <code className="font-mono text-foreground/80">{"{{objective}}"}</code>, <code className="font-mono text-foreground/80">{"{{conversation_history}}"}</code>
+          </p>
 
           <Field label="Atribuir tags ao concluir">
             <div className="flex flex-wrap gap-1.5 rounded-md border border-border bg-background p-2">
