@@ -451,7 +451,7 @@ function ChatOficialPage() {
                   <p className="text-xs text-muted-foreground">+{active.whatsapp_number}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <ActivateFunnelButton leadId={active.id} />
+                  <ActivateFlowButton leadId={active.id} />
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase ${
                       active.ia_paused
