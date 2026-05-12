@@ -21,7 +21,10 @@ export async function executeAgentForLead(
   console.log(`[agent] iniciando execução | agent=${agentId} | lead=${leadId} | incoming="${(incomingMessage || "").substring(0, 200)}"`);
   try {
   const { data: agent, error: agentErr } = await supabaseAdmin
-    .from("agents").select("*").eq("id", agentId).maybeSingle();
+    .from("agents")
+    .select("id, name, objective, product, tone, exit_condition, prompt, exit_tags, is_active, llm_connection_id, max_turns")
+    .eq("id", agentId)
+    .maybeSingle();
   if (agentErr) throw new Error(`agent lookup: ${agentErr.message}`);
   if (!agent) throw new Error("agent not found");
 
@@ -29,7 +32,10 @@ export async function executeAgentForLead(
   if (!llmId) throw new Error("agente sem conexão LLM configurada");
 
   const { data: conn, error: connErr } = await supabaseAdmin
-    .from("llm_connections" as any).select("*").eq("id", llmId).maybeSingle();
+    .from("llm_connections" as any)
+    .select("id, provider, api_key, model, max_tokens, temperature, is_active")
+    .eq("id", llmId)
+    .maybeSingle();
   if (connErr) throw new Error(`llm conn lookup: ${connErr.message}`);
   if (!conn) throw new Error("conexão LLM não encontrada");
   console.log(`[agent] conexão LLM carregada | provider=${(conn as any).provider} | model=${(conn as any).model}`);
