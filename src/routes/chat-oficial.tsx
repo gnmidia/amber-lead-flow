@@ -231,9 +231,10 @@ function ChatOficialPage() {
     }
     if (tagFilter.size > 0) {
       list = list.filter((l) => {
-        const ids = new Set((l.tags_data || []).map((t) => t.id));
-        for (const id of tagFilter) if (!ids.has(id)) return false;
-        return true;
+        const ids = (l.tags_data || []).map((t) => t.id);
+        // OR: lead aparece se possuir QUALQUER uma das tags selecionadas
+        for (const id of ids) if (tagFilter.has(id)) return true;
+        return false;
       });
     }
     return list;
