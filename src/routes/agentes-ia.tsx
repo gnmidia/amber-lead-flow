@@ -9,6 +9,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/agentes-ia")({ component: AgentesPage });
 
 type TagItem = { id: string; name: string; color: string };
+type LlmConn = { id: string; name: string; provider: string; model: string; is_active: boolean };
 type Agent = {
   id: string;
   name: string;
@@ -19,6 +20,8 @@ type Agent = {
   prompt: string | null;
   is_active: boolean;
   exit_tags: string[];
+  llm_connection_id: string | null;
+  max_turns: number;
 };
 
 function AgentesPage() {
