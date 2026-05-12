@@ -151,6 +151,29 @@ export async function executeFlowForLead(
       await scheduleFunnelForLead(supabase, {
         lead_id, funnel_id: block.reference_id, trigger_time: now.toISOString(),
       });
+      const { data: lastMsg } = await supabase
+        .from("scheduled_messages")
+        .select("send_at")
+        .eq("lead_id", lead_id)
+        .eq("funnel_id", block.reference_id)
+        .neq("message_type", "flow_resume")
+        .order("send_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const baseMs = (lastMsg as any)?.send_at ? new Date((lastMsg as any).send_at).getTime() : now.getTime();
+      const resumeAt = new Date(baseMs + 10_000).toISOString();
+      const { error: resumeErr } = await supabase.from("scheduled_messages").insert({
+        lead_id,
+        funnel_id: block.reference_id,
+        instance_name: opInstance || (lead as any).instance_name || Deno.env.get("EVOLUTION_INSTANCE_NAME") || "",
+        whatsapp_number: (lead as any).remote_jid || (lead as any).whatsapp_number,
+        message_type: "flow_resume",
+        content: JSON.stringify({ flow_id, resume_block_index: i + 1 }),
+        send_at: resumeAt,
+        status: "pending",
+      });
+      assertNoError(resumeErr, "flow resume after funnel scheduling failed");
+      return { ok: true, paused: "funnel_running" };
     } else if (block.block_type === "agent" && block.reference_id) {
       // Modo passivo: registra agente ativo e PARA o fluxo. Nada é enviado.
       const { error: assignErr } = await supabase.from("leads")
