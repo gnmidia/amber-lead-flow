@@ -165,21 +165,33 @@ export async function executeFlowForLead({
       });
       console.log(`[flow-executor] scheduled funnel ${block.reference_id} for lead ${lead_id}: ${result.scheduled}`);
     } else if (block.block_type === "agent" && block.reference_id) {
-      const { error } = await supabaseAdmin
+      // Modo passivo: registra que o agente está ativo para esse lead
+      // e PARA o fluxo. Nada é enviado agora — o agente só vai responder
+      // quando o lead enviar uma mensagem (ver webhook-whatsapp).
+      const { error: assignErr } = await supabaseAdmin
         .from("leads")
         .update({ current_agent_id: block.reference_id })
         .eq("id", lead_id);
-      assertNoError(error, "agent assignment failed");
-      try {
-        const { executeAgentForLead } = await import("./agent-execution.server");
-        const result = await executeAgentForLead(block.reference_id, lead_id, "");
-        if (!result.shouldContinue) break;
-        // shouldContinue: agent is done; advance to next block
-        continue;
-      } catch (e) {
-        console.warn("[flow-executor] agent execution failed:", e);
-        break;
-      }
+      assertNoError(assignErr, "agent assignment failed");
+
+      const { error: activeErr } = await supabaseAdmin
+        .from("lead_active_agents" as any)
+        .upsert(
+          {
+            lead_id,
+            agent_id: block.reference_id,
+            flow_id,
+            flow_block_id: block.id,
+            resume_block_index: i + 1,
+            turn_count: 0,
+            started_at: new Date().toISOString(),
+          },
+          { onConflict: "lead_id" } as any,
+        );
+      assertNoError(activeErr, "lead_active_agents upsert failed");
+
+      console.log(`[flow-executor] agent ${block.reference_id} ativado em modo passivo para lead ${lead_id}`);
+      return { ok: true, paused: "agent_listening" };
     } else if (block.block_type === "tag_assign" && block.reference_id) {
       const { error } = await supabaseAdmin.from("lead_tags").upsert(
         { lead_id, tag_id: block.reference_id, assigned_by: "flow" },

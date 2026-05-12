@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { executeFlowForLead } from "@/server/funnel-execution.server";
+import { handleInboundForActiveAgent } from "@/server/agent-execution.server";
 import { getOperationByInstance } from "@/server/operations.server";
 import { findOrUpsertLead, resolveLeadIdentity } from "@/server/lead-dedup.server";
 
@@ -142,38 +143,43 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
               .update({ last_interaction_at: messageTimestamp })
               .eq("id", lead!.id);
 
-            // ───── Disparar fluxos automáticos ─────
-            try {
-              const triggers: { type: string; valueMatches?: (v: string | null) => boolean }[] = [];
-              if (isNewLead) triggers.push({ type: "new_lead" });
-              if (content) {
-                const c = content.toLowerCase();
-                triggers.push({
-                  type: "keyword",
-                  valueMatches: (v) => !!v && c.includes(v.toLowerCase()),
-                });
-              }
-              const flowCalls: Promise<any>[] = [];
-              for (const trig of triggers) {
-                const { data: flows } = await supabaseAdmin
-                  .from("flows")
-                  .select("id, trigger_value")
-                  .eq("trigger_type", trig.type)
-                  .eq("is_active", true)
-                  .eq("operation_id", operationId);
-                for (const fl of (flows || []) as any[]) {
-                  if (trig.valueMatches && !trig.valueMatches(fl.trigger_value)) continue;
-                  console.log(`[webhook] triggering flow ${fl.id} (${trig.type}) for lead ${lead!.id}`);
-                  flowCalls.push(
-                    executeFlowForLead({ lead_id: lead!.id, flow_id: fl.id })
-                      .then((result) => console.log(`[webhook] flow-executor ok: ${JSON.stringify(result)}`))
-                      .catch((e) => console.error("[webhook] flow-executor error", e)),
-                  );
+            // ───── Agente IA ativo? Se sim, ele responde e pulamos os fluxos ─────
+            const handledByAgent = await handleInboundForActiveAgent(lead!.id, content);
+
+            // ───── Disparar fluxos automáticos (apenas se nenhum agente está ativo) ─────
+            if (!handledByAgent) {
+              try {
+                const triggers: { type: string; valueMatches?: (v: string | null) => boolean }[] = [];
+                if (isNewLead) triggers.push({ type: "new_lead" });
+                if (content) {
+                  const c = content.toLowerCase();
+                  triggers.push({
+                    type: "keyword",
+                    valueMatches: (v) => !!v && c.includes(v.toLowerCase()),
+                  });
                 }
+                const flowCalls: Promise<any>[] = [];
+                for (const trig of triggers) {
+                  const { data: flows } = await supabaseAdmin
+                    .from("flows")
+                    .select("id, trigger_value")
+                    .eq("trigger_type", trig.type)
+                    .eq("is_active", true)
+                    .eq("operation_id", operationId);
+                  for (const fl of (flows || []) as any[]) {
+                    if (trig.valueMatches && !trig.valueMatches(fl.trigger_value)) continue;
+                    console.log(`[webhook] triggering flow ${fl.id} (${trig.type}) for lead ${lead!.id}`);
+                    flowCalls.push(
+                      executeFlowForLead({ lead_id: lead!.id, flow_id: fl.id })
+                        .then((result) => console.log(`[webhook] flow-executor ok: ${JSON.stringify(result)}`))
+                        .catch((e) => console.error("[webhook] flow-executor error", e)),
+                    );
+                  }
+                }
+                await Promise.all(flowCalls);
+              } catch (e) {
+                console.error("[webhook] flow trigger error", e);
               }
-              await Promise.all(flowCalls);
-            } catch (e) {
-              console.error("[webhook] flow trigger error", e);
             }
           }
 

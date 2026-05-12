@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { executeFlowForLead } from "@/server/funnel-execution.server";
+import { handleInboundForActiveAgent } from "@/server/agent-execution.server";
 import { getOperationInstance } from "@/server/operations.server";
 import { findOrUpsertLead, resolveLeadIdentity } from "@/server/lead-dedup.server";
 
@@ -161,8 +162,12 @@ export const Route = createFileRoute("/api/public/sync-chats")({
             }
             newMessages += rowsToInsert.length;
             for (const content of inboundContents) {
-              try { await triggerFlowsForInboundMessage(leadId, content, isNewLead); }
-              catch (e) { console.error("[sync-chats] flow trigger error", e); }
+              try {
+                const handled = await handleInboundForActiveAgent(leadId, content);
+                if (!handled) {
+                  await triggerFlowsForInboundMessage(leadId, content, isNewLead);
+                }
+              } catch (e) { console.error("[sync-chats] flow trigger error", e); }
             }
           }
           synced++;

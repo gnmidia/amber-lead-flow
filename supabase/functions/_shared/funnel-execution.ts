@@ -152,18 +152,24 @@ export async function executeFlowForLead(
         lead_id, funnel_id: block.reference_id, trigger_time: now.toISOString(),
       });
     } else if (block.block_type === "agent" && block.reference_id) {
-      const { error } = await supabase.from("leads")
+      // Modo passivo: registra agente ativo e PARA o fluxo. Nada é enviado.
+      const { error: assignErr } = await supabase.from("leads")
         .update({ current_agent_id: block.reference_id }).eq("id", lead_id);
-      assertNoError(error, "agent assignment failed");
-      try {
-        const { runAgentDeno } = await import("./agent-execution.ts");
-        const result = await runAgentDeno(supabase, block.reference_id, lead_id, "");
-        if (!result.shouldContinue) break;
-        continue;
-      } catch (e) {
-        console.warn("[flow-executor] agent execution failed:", e);
-        break;
-      }
+      assertNoError(assignErr, "agent assignment failed");
+      const { error: activeErr } = await supabase.from("lead_active_agents").upsert(
+        {
+          lead_id,
+          agent_id: block.reference_id,
+          flow_id,
+          flow_block_id: block.id,
+          resume_block_index: i + 1,
+          turn_count: 0,
+          started_at: new Date().toISOString(),
+        },
+        { onConflict: "lead_id" } as any,
+      );
+      assertNoError(activeErr, "lead_active_agents upsert failed");
+      return { ok: true, paused: "agent_listening" };
     } else if (block.block_type === "tag_assign" && block.reference_id) {
       const { error } = await supabase.from("lead_tags").upsert(
         { lead_id, tag_id: block.reference_id, assigned_by: "flow" },
