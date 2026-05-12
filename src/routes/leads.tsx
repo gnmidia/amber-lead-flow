@@ -200,6 +200,7 @@ function LeadsPage() {
               <tr>
                 <th className="px-4 py-3 text-left">Lead</th>
                 <th className="px-4 py-3 text-left">Tags</th>
+                <th className="px-4 py-3 text-left">Ofertas</th>
                 <th className="px-4 py-3 text-left">Status</th>
                 <th className="px-4 py-3 text-left">Última interação</th>
                 <th className="px-4 py-3 text-right">Ações</th>
@@ -207,10 +208,10 @@ function LeadsPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {isLoading && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Carregando…</td></tr>
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">Carregando…</td></tr>
               )}
               {!isLoading && leads.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Nenhum lead encontrado.</td></tr>
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">Nenhum lead encontrado.</td></tr>
               )}
               {leads.map((l) => (
                 <tr key={l.id} className="hover:bg-muted/20">
