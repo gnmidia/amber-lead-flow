@@ -48,6 +48,7 @@ import { Route as ApiPublicFunnelSchedulerRouteImport } from './routes/api/publi
 import { Route as ApiPublicFlowExecutorRouteImport } from './routes/api/public/flow-executor'
 import { Route as ApiPublicEvolutionStatusRouteImport } from './routes/api/public/evolution-status'
 import { Route as ApiPublicEvolutionDiagRouteImport } from './routes/api/public/evolution-diag'
+import { Route as ApiPublicAgentRunRouteImport } from './routes/api/public/agent-run'
 
 const UsuariosRoute = UsuariosRouteImport.update({
   id: '/usuarios',
@@ -248,6 +249,11 @@ const ApiPublicEvolutionDiagRoute = ApiPublicEvolutionDiagRouteImport.update({
   path: '/api/public/evolution-diag',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAgentRunRoute = ApiPublicAgentRunRouteImport.update({
+  id: '/api/public/agent-run',
+  path: '/api/public/agent-run',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -280,6 +286,7 @@ export interface FileRoutesByFullPath {
   '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos/': typeof FluxosIndexRoute
+  '/api/public/agent-run': typeof ApiPublicAgentRunRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
@@ -321,6 +328,7 @@ export interface FileRoutesByTo {
   '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos': typeof FluxosIndexRoute
+  '/api/public/agent-run': typeof ApiPublicAgentRunRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
@@ -363,6 +371,7 @@ export interface FileRoutesById {
   '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos/': typeof FluxosIndexRoute
+  '/api/public/agent-run': typeof ApiPublicAgentRunRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
@@ -406,6 +415,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos/'
+    | '/api/public/agent-run'
     | '/api/public/evolution-diag'
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
@@ -447,6 +457,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos'
+    | '/api/public/agent-run'
     | '/api/public/evolution-diag'
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
@@ -488,6 +499,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos/'
+    | '/api/public/agent-run'
     | '/api/public/evolution-diag'
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
@@ -530,6 +542,7 @@ export interface RootRouteChildren {
   UsuariosRoute: typeof UsuariosRoute
   FluxosIdRoute: typeof FluxosIdRoute
   FluxosIndexRoute: typeof FluxosIndexRoute
+  ApiPublicAgentRunRoute: typeof ApiPublicAgentRunRoute
   ApiPublicEvolutionDiagRoute: typeof ApiPublicEvolutionDiagRoute
   ApiPublicEvolutionStatusRoute: typeof ApiPublicEvolutionStatusRoute
   ApiPublicFlowExecutorRoute: typeof ApiPublicFlowExecutorRoute
@@ -816,6 +829,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicEvolutionDiagRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/agent-run': {
+      id: '/api/public/agent-run'
+      path: '/api/public/agent-run'
+      fullPath: '/api/public/agent-run'
+      preLoaderRoute: typeof ApiPublicAgentRunRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -850,6 +870,7 @@ const rootRouteChildren: RootRouteChildren = {
   UsuariosRoute: UsuariosRoute,
   FluxosIdRoute: FluxosIdRoute,
   FluxosIndexRoute: FluxosIndexRoute,
+  ApiPublicAgentRunRoute: ApiPublicAgentRunRoute,
   ApiPublicEvolutionDiagRoute: ApiPublicEvolutionDiagRoute,
   ApiPublicEvolutionStatusRoute: ApiPublicEvolutionStatusRoute,
   ApiPublicFlowExecutorRoute: ApiPublicFlowExecutorRoute,
