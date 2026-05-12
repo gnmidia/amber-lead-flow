@@ -18,6 +18,8 @@ export async function executeAgentForLead(
   leadId: string,
   incomingMessage: string,
 ): Promise<{ shouldContinue: boolean; response: string | null; reason?: string }> {
+  console.log(`[agent] iniciando execução | agent=${agentId} | lead=${leadId} | incoming="${(incomingMessage || "").substring(0, 200)}"`);
+  try {
   const { data: agent, error: agentErr } = await supabaseAdmin
     .from("agents").select("*").eq("id", agentId).maybeSingle();
   if (agentErr) throw new Error(`agent lookup: ${agentErr.message}`);
