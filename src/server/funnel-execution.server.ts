@@ -164,6 +164,34 @@ export async function executeFlowForLead({
         trigger_time: now.toISOString(),
       });
       console.log(`[flow-executor] scheduled funnel ${block.reference_id} for lead ${lead_id}: ${result.scheduled}`);
+
+      // Pausa o fluxo: agenda flow_resume 10s após a última mensagem do funil
+      // para retomar o fluxo no próximo bloco quando o funil terminar.
+      const { data: lastMsg } = await supabaseAdmin
+        .from("scheduled_messages")
+        .select("send_at")
+        .eq("lead_id", lead_id)
+        .eq("funnel_id", block.reference_id)
+        .neq("message_type", "flow_resume")
+        .order("send_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const baseMs = lastMsg?.send_at ? new Date(lastMsg.send_at).getTime() : now.getTime();
+      const resumeAt = new Date(baseMs + 10_000).toISOString();
+
+      const { error: resumeErr } = await supabaseAdmin.from("scheduled_messages").insert({
+        lead_id,
+        funnel_id: block.reference_id,
+        instance_name: opInstance || lead.instance_name || process.env.EVOLUTION_INSTANCE_NAME || "",
+        whatsapp_number: lead.remote_jid || lead.whatsapp_number,
+        message_type: "flow_resume",
+        content: JSON.stringify({ flow_id, resume_block_index: i + 1 }),
+        send_at: resumeAt,
+        status: "pending",
+      });
+      assertNoError(resumeErr, "flow resume after funnel scheduling failed");
+      return { ok: true, paused: "funnel_running" };
     } else if (block.block_type === "agent" && block.reference_id) {
       // Modo passivo: registra que o agente está ativo para esse lead
       // e PARA o fluxo. Nada é enviado agora — o agente só vai responder
