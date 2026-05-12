@@ -458,7 +458,9 @@ export type Database = {
           flow_block_id: string | null
           flow_id: string | null
           id: string
+          last_message_at: string | null
           lead_id: string
+          pending_messages: string | null
           resume_block_index: number | null
           started_at: string
           turn_count: number
@@ -468,7 +470,9 @@ export type Database = {
           flow_block_id?: string | null
           flow_id?: string | null
           id?: string
+          last_message_at?: string | null
           lead_id: string
+          pending_messages?: string | null
           resume_block_index?: number | null
           started_at?: string
           turn_count?: number
@@ -478,7 +482,9 @@ export type Database = {
           flow_block_id?: string | null
           flow_id?: string | null
           id?: string
+          last_message_at?: string | null
           lead_id?: string
+          pending_messages?: string | null
           resume_block_index?: number | null
           started_at?: string
           turn_count?: number
@@ -1195,6 +1201,7 @@ export type Database = {
           total: number
         }[]
       }
+      process_pending_agents: { Args: never; Returns: undefined }
       requeue_stuck_dispatching: {
         Args: { p_older_than_seconds?: number }
         Returns: number
