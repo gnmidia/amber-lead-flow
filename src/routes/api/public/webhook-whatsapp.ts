@@ -19,7 +19,7 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
             const op = await getOperationByInstance(instance);
             if (!op) {
               console.warn(`[webhook] no operation found for instance=${instance}`);
-              return new Response(`No operation for instance ${instance}`, { status: 400 });
+              return new Response("ok");
             }
             const operationId = op.id;
             console.log(`[webhook] instance=${instance} -> operation=${operationId}`);
@@ -146,7 +146,13 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
             // ───── Agente IA ativo? Se sim, ele responde e pulamos os fluxos ─────
             console.log(`[webhook] inbound recebido | lead=${lead!.id} | content="${(content || "").substring(0, 200)}"`);
             console.log(`[webhook] verificando agente ativo para lead=${lead!.id}`);
-            const handledByAgent = await handleInboundForActiveAgent(lead!.id, content);
+            let handledByAgent = false;
+            try {
+              handledByAgent = await handleInboundForActiveAgent(lead!.id, content);
+            } catch (e) {
+              console.error(`[webhook] handleInboundForActiveAgent error (silenced):`, e);
+              handledByAgent = false;
+            }
             console.log(`[webhook] handledByAgent=${handledByAgent}`);
 
             // ───── Disparar fluxos automáticos (apenas se nenhum agente está ativo) ─────
@@ -235,8 +241,8 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
 
           return new Response("ok");
         } catch (err) {
-          console.error("[webhook] error", err);
-          return new Response("error", { status: 500 });
+          console.error("[webhook] error (silenced, returning 200):", err);
+          return new Response("ok");
         }
       },
     },
