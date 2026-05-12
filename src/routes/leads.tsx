@@ -375,3 +375,70 @@ function ActivateFunnelModal({ lead, onClose }: { lead: Lead; onClose: () => voi
     </div>
   );
 }
+
+function TagSelector({
+  tags,
+  selectedIds,
+  onChange,
+}: {
+  tags: { id: string; name: string; color: string }[];
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const toggle = (id: string) => {
+    if (selectedIds.includes(id)) onChange(selectedIds.filter((x) => x !== id));
+    else onChange([...selectedIds, id]);
+  };
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium ${
+          selectedIds.length > 0
+            ? "border-primary/40 bg-primary/15 text-primary"
+            : "border-border bg-card text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        <TagIcon className="h-3.5 w-3.5" />
+        {selectedIds.length > 0 ? `${selectedIds.length} tag(s) selecionada(s)` : "Filtrar por tag"}
+        <ChevronDown className="h-3 w-3 opacity-70" />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 z-50 mt-1 max-h-72 w-64 overflow-y-auto rounded-md border border-border bg-popover p-1 shadow-lg">
+            {tags.length === 0 && (
+              <p className="p-2 text-xs text-muted-foreground">Nenhuma tag disponível.</p>
+            )}
+            {tags.map((t) => {
+              const sel = selectedIds.includes(t.id);
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => toggle(t.id)}
+                  className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-muted"
+                >
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: t.color }} />
+                  <span className="flex-1 font-medium">{t.name}</span>
+                  {sel && <Check className="h-3.5 w-3.5 text-primary" />}
+                </button>
+              );
+            })}
+            {selectedIds.length > 0 && (
+              <button
+                onClick={() => {
+                  onChange([]);
+                  setOpen(false);
+                }}
+                className="mt-1 w-full rounded px-2 py-1.5 text-left text-xs text-muted-foreground hover:bg-muted"
+              >
+                Limpar seleção
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
