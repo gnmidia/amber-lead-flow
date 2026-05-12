@@ -229,8 +229,8 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
                     offset={-40}
                     wrapperStyle={{ pointerEvents: "none", zIndex: 50 }}
                     contentStyle={{
-                      background: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
+                      background: "#000000", color: "#ffffff",
+                      border: "1px solid #000000",
                       borderRadius: 8,
                       fontSize: 12,
                       boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
@@ -335,8 +335,8 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
                       offset={-40}
                       wrapperStyle={{ pointerEvents: "none", zIndex: 50 }}
                       contentStyle={{
-                        background: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
+                        background: "#000000", color: "#ffffff",
+                        border: "1px solid #000000",
                         borderRadius: 8,
                         fontSize: 12,
                         boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
@@ -362,8 +362,8 @@ export function LeadsReceivedSection({ startDate, endDate }: Props) {
                       offset={-40}
                       wrapperStyle={{ pointerEvents: "none", zIndex: 50 }}
                       contentStyle={{
-                        background: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
+                        background: "#000000", color: "#ffffff",
+                        border: "1px solid #000000",
                         borderRadius: 8,
                         fontSize: 12,
                         boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
