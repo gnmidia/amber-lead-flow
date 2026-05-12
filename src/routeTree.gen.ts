@@ -43,6 +43,7 @@ import { Route as ApiPublicWebhookWhatsappRouteImport } from './routes/api/publi
 import { Route as ApiPublicSyncChatsRouteImport } from './routes/api/public/sync-chats'
 import { Route as ApiPublicSendMessageRouteImport } from './routes/api/public/send-message'
 import { Route as ApiPublicMessageDispatcherRouteImport } from './routes/api/public/message-dispatcher'
+import { Route as ApiPublicLlmTestRouteImport } from './routes/api/public/llm-test'
 import { Route as ApiPublicFunnelSchedulerRouteImport } from './routes/api/public/funnel-scheduler'
 import { Route as ApiPublicFlowExecutorRouteImport } from './routes/api/public/flow-executor'
 import { Route as ApiPublicEvolutionStatusRouteImport } from './routes/api/public/evolution-status'
@@ -220,6 +221,11 @@ const ApiPublicMessageDispatcherRoute =
     path: '/api/public/message-dispatcher',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicLlmTestRoute = ApiPublicLlmTestRouteImport.update({
+  id: '/api/public/llm-test',
+  path: '/api/public/llm-test',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicFunnelSchedulerRoute =
   ApiPublicFunnelSchedulerRouteImport.update({
     id: '/api/public/funnel-scheduler',
@@ -278,6 +284,7 @@ export interface FileRoutesByFullPath {
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
+  '/api/public/llm-test': typeof ApiPublicLlmTestRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
   '/api/public/sync-chats': typeof ApiPublicSyncChatsRoute
@@ -318,6 +325,7 @@ export interface FileRoutesByTo {
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
+  '/api/public/llm-test': typeof ApiPublicLlmTestRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
   '/api/public/sync-chats': typeof ApiPublicSyncChatsRoute
@@ -359,6 +367,7 @@ export interface FileRoutesById {
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
+  '/api/public/llm-test': typeof ApiPublicLlmTestRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
   '/api/public/sync-chats': typeof ApiPublicSyncChatsRoute
@@ -401,6 +410,7 @@ export interface FileRouteTypes {
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
+    | '/api/public/llm-test'
     | '/api/public/message-dispatcher'
     | '/api/public/send-message'
     | '/api/public/sync-chats'
@@ -441,6 +451,7 @@ export interface FileRouteTypes {
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
+    | '/api/public/llm-test'
     | '/api/public/message-dispatcher'
     | '/api/public/send-message'
     | '/api/public/sync-chats'
@@ -481,6 +492,7 @@ export interface FileRouteTypes {
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
+    | '/api/public/llm-test'
     | '/api/public/message-dispatcher'
     | '/api/public/send-message'
     | '/api/public/sync-chats'
@@ -522,6 +534,7 @@ export interface RootRouteChildren {
   ApiPublicEvolutionStatusRoute: typeof ApiPublicEvolutionStatusRoute
   ApiPublicFlowExecutorRoute: typeof ApiPublicFlowExecutorRoute
   ApiPublicFunnelSchedulerRoute: typeof ApiPublicFunnelSchedulerRoute
+  ApiPublicLlmTestRoute: typeof ApiPublicLlmTestRoute
   ApiPublicMessageDispatcherRoute: typeof ApiPublicMessageDispatcherRoute
   ApiPublicSendMessageRoute: typeof ApiPublicSendMessageRoute
   ApiPublicSyncChatsRoute: typeof ApiPublicSyncChatsRoute
@@ -768,6 +781,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMessageDispatcherRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/llm-test': {
+      id: '/api/public/llm-test'
+      path: '/api/public/llm-test'
+      fullPath: '/api/public/llm-test'
+      preLoaderRoute: typeof ApiPublicLlmTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/funnel-scheduler': {
       id: '/api/public/funnel-scheduler'
       path: '/api/public/funnel-scheduler'
@@ -834,6 +854,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicEvolutionStatusRoute: ApiPublicEvolutionStatusRoute,
   ApiPublicFlowExecutorRoute: ApiPublicFlowExecutorRoute,
   ApiPublicFunnelSchedulerRoute: ApiPublicFunnelSchedulerRoute,
+  ApiPublicLlmTestRoute: ApiPublicLlmTestRoute,
   ApiPublicMessageDispatcherRoute: ApiPublicMessageDispatcherRoute,
   ApiPublicSendMessageRoute: ApiPublicSendMessageRoute,
   ApiPublicSyncChatsRoute: ApiPublicSyncChatsRoute,
