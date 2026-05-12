@@ -134,6 +134,17 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
             return "sent";
           }
 
+          if (stepType === "agent_process") {
+            try {
+              const payload = JSON.parse(msg.content || "{}");
+              await processAgentTimer({ agent_id: payload.agent_id, lead_id: msg.lead_id });
+            } catch (error) {
+              console.error("[message-dispatcher] agent_process error", error);
+            }
+            await supabaseAdmin.from("scheduled_messages").update({ status: "sent", dispatch_started_at: null }).eq("id", msg.id);
+            return "sent";
+          }
+
           if (stepType === "tag") {
             const { data: stepRow } = await supabaseAdmin
               .from("funnel_steps").select("tag_id, tag_operation").eq("id", msg.step_id).maybeSingle();
