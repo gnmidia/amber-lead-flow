@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "../components/PageHeader";
-import { Search, Plus, X, DollarSign, Tag as TagIcon } from "lucide-react";
+import { Search, Plus, X, DollarSign, Tag as TagIcon, Check, ChevronDown } from "lucide-react";
 import { SaleModal } from "@/components/SaleModal";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
