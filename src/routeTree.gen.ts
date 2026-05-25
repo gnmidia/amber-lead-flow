@@ -52,6 +52,7 @@ import { Route as ApiPublicEvolutionStatusRouteImport } from './routes/api/publi
 import { Route as ApiPublicEvolutionDiagRouteImport } from './routes/api/public/evolution-diag'
 import { Route as ApiPublicAgentRunRouteImport } from './routes/api/public/agent-run'
 import { Route as ApiPublicGroupsGroupMessagesRouteImport } from './routes/api/public/groups/group-messages'
+import { Route as ApiPublicGroupsGroupEventsRouteImport } from './routes/api/public/groups/group-events'
 import { Route as ApiPublicGroupsFetchGroupsRouteImport } from './routes/api/public/groups/fetch-groups'
 import { Route as ApiPublicGroupsDebugEvoRouteImport } from './routes/api/public/groups/debug-evo'
 
@@ -275,6 +276,12 @@ const ApiPublicGroupsGroupMessagesRoute =
     path: '/api/public/groups/group-messages',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicGroupsGroupEventsRoute =
+  ApiPublicGroupsGroupEventsRouteImport.update({
+    id: '/api/public/groups/group-events',
+    path: '/api/public/groups/group-events',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicGroupsFetchGroupsRoute =
   ApiPublicGroupsFetchGroupsRouteImport.update({
     id: '/api/public/groups/fetch-groups',
@@ -332,6 +339,7 @@ export interface FileRoutesByFullPath {
   '/api/public/webhook-whatsapp': typeof ApiPublicWebhookWhatsappRoute
   '/api/public/groups/debug-evo': typeof ApiPublicGroupsDebugEvoRoute
   '/api/public/groups/fetch-groups': typeof ApiPublicGroupsFetchGroupsRoute
+  '/api/public/groups/group-events': typeof ApiPublicGroupsGroupEventsRoute
   '/api/public/groups/group-messages': typeof ApiPublicGroupsGroupMessagesRoute
 }
 export interface FileRoutesByTo {
@@ -379,6 +387,7 @@ export interface FileRoutesByTo {
   '/api/public/webhook-whatsapp': typeof ApiPublicWebhookWhatsappRoute
   '/api/public/groups/debug-evo': typeof ApiPublicGroupsDebugEvoRoute
   '/api/public/groups/fetch-groups': typeof ApiPublicGroupsFetchGroupsRoute
+  '/api/public/groups/group-events': typeof ApiPublicGroupsGroupEventsRoute
   '/api/public/groups/group-messages': typeof ApiPublicGroupsGroupMessagesRoute
 }
 export interface FileRoutesById {
@@ -427,6 +436,7 @@ export interface FileRoutesById {
   '/api/public/webhook-whatsapp': typeof ApiPublicWebhookWhatsappRoute
   '/api/public/groups/debug-evo': typeof ApiPublicGroupsDebugEvoRoute
   '/api/public/groups/fetch-groups': typeof ApiPublicGroupsFetchGroupsRoute
+  '/api/public/groups/group-events': typeof ApiPublicGroupsGroupEventsRoute
   '/api/public/groups/group-messages': typeof ApiPublicGroupsGroupMessagesRoute
 }
 export interface FileRouteTypes {
@@ -476,6 +486,7 @@ export interface FileRouteTypes {
     | '/api/public/webhook-whatsapp'
     | '/api/public/groups/debug-evo'
     | '/api/public/groups/fetch-groups'
+    | '/api/public/groups/group-events'
     | '/api/public/groups/group-messages'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -523,6 +534,7 @@ export interface FileRouteTypes {
     | '/api/public/webhook-whatsapp'
     | '/api/public/groups/debug-evo'
     | '/api/public/groups/fetch-groups'
+    | '/api/public/groups/group-events'
     | '/api/public/groups/group-messages'
   id:
     | '__root__'
@@ -570,6 +582,7 @@ export interface FileRouteTypes {
     | '/api/public/webhook-whatsapp'
     | '/api/public/groups/debug-evo'
     | '/api/public/groups/fetch-groups'
+    | '/api/public/groups/group-events'
     | '/api/public/groups/group-messages'
   fileRoutesById: FileRoutesById
 }
@@ -618,6 +631,7 @@ export interface RootRouteChildren {
   ApiPublicWebhookWhatsappRoute: typeof ApiPublicWebhookWhatsappRoute
   ApiPublicGroupsDebugEvoRoute: typeof ApiPublicGroupsDebugEvoRoute
   ApiPublicGroupsFetchGroupsRoute: typeof ApiPublicGroupsFetchGroupsRoute
+  ApiPublicGroupsGroupEventsRoute: typeof ApiPublicGroupsGroupEventsRoute
   ApiPublicGroupsGroupMessagesRoute: typeof ApiPublicGroupsGroupMessagesRoute
 }
 
@@ -924,6 +938,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicGroupsGroupMessagesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/groups/group-events': {
+      id: '/api/public/groups/group-events'
+      path: '/api/public/groups/group-events'
+      fullPath: '/api/public/groups/group-events'
+      preLoaderRoute: typeof ApiPublicGroupsGroupEventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/groups/fetch-groups': {
       id: '/api/public/groups/fetch-groups'
       path: '/api/public/groups/fetch-groups'
@@ -986,6 +1007,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicWebhookWhatsappRoute: ApiPublicWebhookWhatsappRoute,
   ApiPublicGroupsDebugEvoRoute: ApiPublicGroupsDebugEvoRoute,
   ApiPublicGroupsFetchGroupsRoute: ApiPublicGroupsFetchGroupsRoute,
+  ApiPublicGroupsGroupEventsRoute: ApiPublicGroupsGroupEventsRoute,
   ApiPublicGroupsGroupMessagesRoute: ApiPublicGroupsGroupMessagesRoute,
 }
 export const routeTree = rootRouteImport

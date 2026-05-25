@@ -405,6 +405,42 @@ export type Database = {
           },
         ]
       }
+      group_events: {
+        Row: {
+          action: string
+          created_at: string
+          group_id: string
+          group_name: string | null
+          id: string
+          instance_name: string | null
+          occurred_at: string
+          participant_jid: string
+          phone_number: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          group_id: string
+          group_name?: string | null
+          id?: string
+          instance_name?: string | null
+          occurred_at?: string
+          participant_jid: string
+          phone_number?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          group_id?: string
+          group_name?: string | null
+          id?: string
+          instance_name?: string | null
+          occurred_at?: string
+          participant_jid?: string
+          phone_number?: string | null
+        }
+        Relationships: []
+      }
       instances: {
         Row: {
           api_key: string

@@ -202,6 +202,48 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
             }
           }
 
+          if (
+            event === "groups.upsert" ||
+            event === "group-participants.update" ||
+            event === "groups-participants.update" ||
+            (typeof event === "string" && event.includes("participant"))
+          ) {
+            try {
+              const participants = (data?.participants ?? []) as any[];
+              const groupId = data?.id ?? data?.groupId ?? data?.remoteJid ?? "";
+              const action = data?.action ?? "add";
+              const instanceName = instance ?? "";
+
+              if (groupId && participants.length > 0) {
+                const rows = participants.map((p: any) => {
+                  const jid = typeof p === "string" ? p : (p?.id ?? p?.jid ?? "");
+                  const phone = jid.includes("@")
+                    ? jid.split("@")[0].replace(/\D/g, "")
+                    : jid.replace(/\D/g, "");
+                  return {
+                    group_id: groupId,
+                    participant_jid: jid,
+                    phone_number: phone || null,
+                    action: ["add", "remove", "promote", "demote"].includes(action) ? action : "add",
+                    instance_name: instanceName,
+                    occurred_at: new Date().toISOString(),
+                  };
+                });
+
+                const { error } = await supabaseAdmin.from("group_events").insert(rows);
+                if (error) {
+                  console.error("[webhook] group_events insert error:", error);
+                } else {
+                  console.log(`[webhook] group_events: ${rows.length} evento(s) registrado(s) | group=${groupId} | action=${action}`);
+                }
+              }
+            } catch (e) {
+              console.error("[webhook] group participants handler error:", e);
+            }
+          }
+
+
+
           // Confirmação tardia da Evolution após o fire-and-forget de áudio.
           if (event === "send.message" && data?.key?.fromMe && data?.key?.id) {
             const key = data.key;

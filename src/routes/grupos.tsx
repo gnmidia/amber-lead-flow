@@ -9,6 +9,8 @@ import {
   AlertCircle,
   MessageSquare,
   Sparkles,
+  TrendingUp,
+  ArrowUpRight,
 } from "lucide-react";
 // PageHeader removido: consumia OperationContext indiretamente e quebrava a página.
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +26,15 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { dayMonthYearSP, timeSP } from "@/lib/datetime";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip as RTooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 
 export const Route = createFileRoute("/grupos")({
   component: GruposPage,
@@ -57,6 +68,12 @@ type MessagesResponse = {
   totalMessages: number;
   todayMessages: number;
   weekMessages: number;
+};
+
+type GroupEventsResponse = {
+  dailyStats: { date: string; adds: number; removes: number; net: number }[];
+  totals: { totalAdds: number; totalRemoves: number; netGrowth: number };
+  period: number;
 };
 
 function formatPhone(p: string): string {
@@ -119,6 +136,22 @@ function GroupsPageInner({
 }) {
   const [open, setOpen] = useState<Group | null>(null);
 
+  const { data: addsToday24h } = useQuery<number>({
+    queryKey: ["group-events-adds-24h"],
+    queryFn: async () => {
+      try {
+        const res = await fetch("/api/public/groups/group-events?groupId=__all__&days=1");
+        if (!res.ok) return 0;
+        const j: GroupEventsResponse = await res.json();
+        return j?.totals?.totalAdds ?? 0;
+      } catch {
+        return 0;
+      }
+    },
+    refetchInterval: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
   const summary = useMemo(() => {
     const groups = data?.groups ?? [];
     const totalGroups = groups.length;
@@ -130,6 +163,8 @@ function GroupsPageInner({
     const communities = groups.filter((g) => g.isCommunity).length;
     return { totalGroups, totalParticipants, biggest, communities };
   }, [data]);
+
+
 
   return (
     <>
@@ -197,6 +232,14 @@ function GroupsPageInner({
             label="Comunidades"
             value={summary.communities}
             icon={<Sparkles className="h-4 w-4 text-primary" />}
+            extra={
+              typeof addsToday24h === "number" && addsToday24h > 0 ? (
+                <div className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-emerald-500">
+                  <ArrowUpRight className="h-3 w-3" />
+                  {addsToday24h} entrada{addsToday24h === 1 ? "" : "s"} hoje
+                </div>
+              ) : null
+            }
           />
         </div>
 
@@ -297,11 +340,13 @@ function SummaryCard({
   label,
   value,
   sub,
+  extra,
   icon,
 }: {
   label: string;
   value: number | string;
   sub?: string;
+  extra?: React.ReactNode;
   icon: React.ReactNode;
 }) {
   return (
@@ -317,10 +362,12 @@ function SummaryCard({
             {sub}
           </div>
         )}
+        {extra}
       </CardContent>
     </Card>
   );
 }
+
 
 function GroupDetailsDialog({
   group,
@@ -369,12 +416,13 @@ function GroupDetailsDialog({
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Visão geral</TabsTrigger>
             <TabsTrigger value="participants">
               Participantes ({group.participants.length})
             </TabsTrigger>
             <TabsTrigger value="activity">Atividade</TabsTrigger>
+            <TabsTrigger value="growth">Crescimento</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -450,6 +498,10 @@ function GroupDetailsDialog({
               </ul>
             )}
           </TabsContent>
+
+          <TabsContent value="growth">
+            <GrowthTab groupId={group.id} />
+          </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>
@@ -466,6 +518,110 @@ function MiniMetric({ label, value }: { label: string; value: number }) {
     </div>
   );
 }
+
+function GrowthTab({ groupId }: { groupId: string }) {
+  const [days, setDays] = useState<7 | 30 | 90>(30);
+  const { data, isLoading } = useQuery<GroupEventsResponse>({
+    queryKey: ["group-events", groupId, days],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/public/groups/group-events?groupId=${encodeURIComponent(groupId)}&days=${days}`,
+      );
+      if (!res.ok) throw new Error("Falha ao buscar eventos");
+      return res.json();
+    },
+  });
+
+  const chartData = (data?.dailyStats ?? []).map((d) => {
+    const [y, m, day] = d.date.split("-");
+    return { ...d, label: `${day}/${m}`, fullDate: `${day}/${m}/${y}` };
+  });
+
+  const totals = data?.totals ?? { totalAdds: 0, totalRemoves: 0, netGrowth: 0 };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-xs text-muted-foreground">
+          Últimos {days} dias
+        </div>
+        <div className="flex gap-1">
+          {([7, 30, 90] as const).map((d) => (
+            <Button
+              key={d}
+              size="sm"
+              variant={days === d ? "default" : "outline"}
+              className="h-7 px-2 text-[11px]"
+              onClick={() => setDays(d)}
+            >
+              {d}d
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <MiniMetric label="Entradas" value={totals.totalAdds} />
+        <MiniMetric label="Saídas" value={totals.totalRemoves} />
+        <MiniMetric label="Crescimento líquido" value={totals.netGrowth} />
+      </div>
+
+      {isLoading ? (
+        <Skeleton className="h-64 w-full" />
+      ) : chartData.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border py-10 text-center">
+          <TrendingUp className="h-8 w-8 text-muted-foreground" />
+          <p className="max-w-sm text-sm text-muted-foreground">
+            Nenhum dado ainda. O rastreamento começa a partir de agora conforme
+            membros entram e saem do grupo.
+          </p>
+        </div>
+      ) : (
+        <div className="h-64 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis
+                dataKey="label"
+                stroke="hsl(var(--muted-foreground))"
+                tick={{ fontSize: 11 }}
+              />
+              <YAxis
+                stroke="hsl(var(--muted-foreground))"
+                tick={{ fontSize: 11 }}
+                allowDecimals={false}
+              />
+              <RTooltip
+                contentStyle={{
+                  background: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: 8,
+                  fontSize: 12,
+                }}
+                formatter={(value: number, name: string) => {
+                  const labelMap: Record<string, string> = {
+                    adds: "Entradas",
+                    removes: "Saídas",
+                  };
+                  return [value, labelMap[name] ?? name];
+                }}
+                labelFormatter={(_, payload) => {
+                  const p: any = payload?.[0]?.payload;
+                  if (!p) return "";
+                  return `${p.fullDate} · saldo ${p.net >= 0 ? "+" : ""}${p.net}`;
+                }}
+              />
+              <Bar dataKey="adds" fill="#10b981" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="removes" fill="#ef4444" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 
 function GruposPage() {
   const { data, isFetching, refetch, error } = useQuery<GroupsResponse>({
