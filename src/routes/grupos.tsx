@@ -499,6 +499,10 @@ function GroupDetailsDialog({
               </ul>
             )}
           </TabsContent>
+
+          <TabsContent value="growth">
+            <GrowthTab groupId={group.id} />
+          </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>
