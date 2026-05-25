@@ -8,6 +8,7 @@ const CORS = {
 
 type Participant = {
   id: string;
+  phoneNumber?: string;
   admin?: string | null;
 };
 
@@ -57,7 +58,7 @@ export const Route = createFileRoute("/api/groups/fetch-groups")({
           );
         }
 
-        // Descobre o número da instância (best-effort, não bloqueia)
+        // Descobre o número da instância
         let myNumber = "";
         try {
           const infoUrl = `${baseUrl}/instance/fetchInstances?instanceName=${encodeURIComponent(instance)}`;
@@ -78,11 +79,11 @@ export const Route = createFileRoute("/api/groups/fetch-groups")({
           for (const it of arr as Array<Record<string, any> | null>) {
             if (!it) continue;
             const owner =
+              it?.ownerJid ??
               it?.instance?.owner ??
               it?.owner ??
-              it?.instance?.profileName ??
-              it?.ownerJid ??
-              it?.instance?.wuid;
+              it?.instance?.wuid ??
+              it?.number;
             const n = digits(owner);
             if (n) {
               myNumber = n;
@@ -167,41 +168,51 @@ export const Route = createFileRoute("/api/groups/fetch-groups")({
           );
         }
 
-        const mapped = list.map((g) => {
-          const participants = g.participants ?? [];
-          const admins = participants.filter(
-            (p) => p.admin === "admin" || p.admin === "superadmin",
-          );
-          // Filtro de admin desativado temporariamente — retornando todos os grupos
-          // const isCommunityLike = !!g.isCommunity || !!g.isCommunityAnnounce;
-          // const iAmAdmin = isCommunityLike
-          //   ? true
-          //   : myNumber
-          //     ? admins.some((p) => digits(p.id) === myNumber)
-          //     : true;
-          return {
-            id: g.id,
-            name: g.subject ?? "(sem nome)",
-            description: g.desc ?? "",
-            totalParticipants: g.size ?? participants.length ?? 0,
-            admins: admins.length,
-            subject: g.subject ?? "",
-            subjectOwner: g.subjectOwner ?? "",
-            creation: g.creation ?? 0,
-            pictureUrl: g.pictureUrl ?? null,
-            isCommunity: !!g.isCommunity,
-            isCommunityAnnounce: !!g.isCommunityAnnounce,
-            participants: participants.map((p) => ({
-              id: p.id,
-              phone: digits(p.id),
-              admin: p.admin ?? null,
-            })),
-          };
-        });
+        // Filtro: incluir apenas grupos onde a instância é admin/superadmin
+        // Comparar pelo campo phoneNumber (formato @s.whatsapp.net), não pelo id (@lid)
+        const mapped = list
+          .map((g) => {
+            const participants = g.participants ?? [];
+            const admins = participants.filter(
+              (p) => p.admin === "admin" || p.admin === "superadmin",
+            );
+
+            const me = myNumber
+              ? participants.find(
+                  (p) => digits(p.phoneNumber) === myNumber,
+                )
+              : null;
+            const iAmAdmin = me
+              ? me.admin === "admin" || me.admin === "superadmin"
+              : !myNumber; // se não conseguimos resolver myNumber, não filtra
+
+            return {
+              id: g.id,
+              name: g.subject ?? "(sem nome)",
+              description: g.desc ?? "",
+              totalParticipants: g.size ?? participants.length ?? 0,
+              admins: admins.length,
+              subject: g.subject ?? "",
+              subjectOwner: g.subjectOwner ?? "",
+              creation: g.creation ?? 0,
+              pictureUrl: g.pictureUrl ?? null,
+              isCommunity: !!g.isCommunity,
+              isCommunityAnnounce: !!g.isCommunityAnnounce,
+              participants: participants.map((p) => ({
+                id: p.id,
+                phone: digits(p.phoneNumber || p.id),
+                admin: p.admin ?? null,
+              })),
+              _iAmAdmin: iAmAdmin,
+            };
+          })
+          .filter((g) => g._iAmAdmin)
+          .map(({ _iAmAdmin, ...rest }) => rest);
 
         console.log("[fetch-groups] retornando", {
           total: mapped.length,
           usedAttempt,
+          myNumber,
         });
 
         return Response.json(
@@ -209,7 +220,7 @@ export const Route = createFileRoute("/api/groups/fetch-groups")({
             groups: mapped,
             total: mapped.length,
             lastUpdated: new Date().toISOString(),
-            _debug: { usedAttempt, myNumber: myNumber || null },
+            _debug: { usedAttempt, myNumber: myNumber || null, rawCount: list.length },
           },
           { headers: { ...CORS, "Content-Type": "application/json" } },
         );
