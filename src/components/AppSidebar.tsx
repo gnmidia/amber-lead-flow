@@ -77,6 +77,7 @@ const sections: NavSection[] = [
     items: [
       { label: "Transações", to: "/transacoes", icon: ArrowLeftRight },
       { label: "Leads", to: "/leads", icon: Users },
+      { label: "Dash Grupos", to: "/grupos", icon: Users },
       { label: "Tags", to: "/tags", icon: Tag },
       { label: "Público", to: "/publico", icon: UserSquare2 },
       { label: "Financeiro", to: "/financeiro", icon: Wallet },
