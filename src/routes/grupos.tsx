@@ -218,7 +218,7 @@ function GroupsPageInner({
                 <p className="mt-2 max-w-md text-xs text-destructive">
                   {String(data?.error || (error instanceof Error ? error.message : error) || "")}
                 </p>
-              )}
+              ) : null}
               <p className="mt-1 text-[10px] text-muted-foreground">
                 API respondeu total = {data?.total ?? 0}
               </p>
