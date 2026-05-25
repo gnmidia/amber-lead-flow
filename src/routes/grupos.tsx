@@ -133,25 +133,28 @@ function GroupsPageInner({
 
   return (
     <>
-      <PageHeader
-        title="Dash Grupos"
-        subtitle={
-          data?.lastUpdated
-            ? `Atualizado ${relativeTime(data.lastUpdated)}`
-            : "Painel de grupos do WhatsApp"
-        }
-        actions={
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => refetch()}
-            disabled={isFetching}
-          >
-            <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-            Atualizar
-          </Button>
-        }
-      />
+      <header className="flex items-center justify-between border-b border-border/40 bg-card/30 px-8 py-5">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            Dash Grupos
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {data?.lastUpdated
+              ? `Atualizado ${relativeTime(data.lastUpdated)}`
+              : "Painel de grupos do WhatsApp"}
+          </p>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => refetch()}
+          disabled={isFetching}
+        >
+          <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+          Atualizar
+        </Button>
+      </header>
+
 
       <div className="space-y-6 px-8 py-6">
         {/* Banner de erro */}
