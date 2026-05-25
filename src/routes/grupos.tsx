@@ -331,7 +331,7 @@ function GroupDetailsDialog({
     enabled: !!group,
     queryFn: async () => {
       const res = await fetch(
-        `/api/groups/group-messages?groupId=${encodeURIComponent(group!.id)}&limit=50`,
+        `/api/public/groups/group-messages?groupId=${encodeURIComponent(group!.id)}&limit=50`,
       );
       if (!res.ok) throw new Error("Falha ao buscar mensagens");
       return res.json();
