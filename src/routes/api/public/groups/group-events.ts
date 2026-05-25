@@ -26,12 +26,17 @@ export const Route = createFileRoute("/api/public/groups/group-events")({
         try {
           const since = new Date(Date.now() - days * 24 * 3600 * 1000).toISOString();
 
-          const { data, error } = await supabaseAdmin
+          let query = supabaseAdmin
             .from("group_events")
             .select("action, occurred_at")
-            .eq("group_id", groupId)
             .gte("occurred_at", since)
             .order("occurred_at", { ascending: true });
+
+          if (groupId !== "__all__") {
+            query = query.eq("group_id", groupId);
+          }
+
+          const { data, error } = await query;
 
           if (error) {
             return Response.json(
