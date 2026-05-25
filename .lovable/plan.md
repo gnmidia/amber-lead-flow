@@ -1,50 +1,50 @@
-## Adaptar projeto para Node.js (VPS / EasyPanel)
+## Objetivo
 
-**Aviso crítico:** Estas mudanças vão quebrar o preview do Lovable. O wrapper `@lovable.dev/vite-tanstack-config` injeta automaticamente o plugin Cloudflare e é o que faz o preview/sandbox do Lovable funcionar. Ao substituir o `vite.config.ts` por um config Node-target puro, o ambiente Lovable deixa de buildar. Você confirmou que aceita.
+Diagnosticar por que `/api/groups/fetch-groups` pode estar voltando vazio em produção, sem alterar comportamento de outras rotas.
 
-### Arquivos a alterar/criar
+---
 
-1. **`vite.config.ts`** — substituir por config com `tanstackStart({ target: "node-server" })`, `viteReact`, `tailwindcss`, `tsConfigPaths`. Remove a dependência do wrapper Lovable + plugin Cloudflare.
+## 1. `src/routes/api/groups/fetch-groups.ts` — logs temporários
 
-2. **`package.json`** — adicionar:
-   - `"start": "node .output/server/index.mjs"`
-   - remover deps: `@cloudflare/vite-plugin`, `@lovable.dev/vite-tanstack-config` (este injeta o Cloudflare plugin; precisa sair também). `wrangler` não está nas deps hoje, então nada a remover dele.
+Adicionar `console.log` com prefixo `[fetch-groups]` no handler GET para aparecerem nos worker logs:
 
-3. **`Dockerfile`** (raiz) — multi-stage Node 20 alpine, build → runtime, expõe `3000`, `CMD ["node", ".output/server/index.mjs"]`.
+- Config: `EVOLUTION_BASE_URL`, `EVOLUTION_INSTANCE_NAME`, e `apiKey.slice(0, 4) + "..."` (nunca a chave inteira). Flag booleana para cada um indicando se está definido.
+- Após a chamada a `fetchInstances`: `res.status`, `res.ok`, e o corpo bruto (`await res.text()` — depois re-parseado via `JSON.parse` num try/catch para não quebrar o fluxo atual). Também logar o `myNumber` resolvido (ou `"(não resolvido)"`).
+- Após `fetchAllGroups`: `res.status`, `res.ok` e os primeiros 500 chars do corpo bruto.
+- Após o parse: `list.length` (total bruto vindo da Evolution).
+- Após o filtro: `filtered.length` e quantos foram incluídos por serem comunidade vs admin normal.
 
-4. **`.dockerignore`** (raiz) — ignora `node_modules`, `.git`, `dist`, `.output`, `*.log`, `.env*`.
+Os logs são marcados como "temporários" via comentário `// TODO debug` para facilitar remoção depois.
 
-5. **`wrangler.jsonc`** — deletar (config exclusiva de Cloudflare Workers, sem uso em Node).
+## 2. Ajuste do filtro de admin (mesma rota)
 
-### Sobre o output path
+No `.map(...)`, antes de calcular `iAmAdmin`:
 
-O preset `node-server` do TanStack Start v1 emite o servidor em `.output/server/index.mjs` por padrão (Nitro). O `CMD` do Dockerfile e o `start` script já apontam pra lá. Como estou em plan mode não posso rodar `npm run build` para confirmar — se na primeira execução o caminho diferir (ex.: `.output/server/index.js`), basta ajustar o CMD.
+- Se `g.isCommunity === true` **ou** `g.isCommunityAnnounce === true` → marcar `iAmAdmin = true` automaticamente (comunidades não expõem admin via `participants` da mesma forma).
+- Caso contrário, manter a lógica atual: `myNumber ? admins.some(...) : true`.
 
-### Variáveis de ambiente em produção (configurar no EasyPanel)
+Adicionar campo interno `_reason: "community" | "admin" | "fallback"` apenas para o log de contagem (removido antes do retorno, junto com `_iAmAdmin`).
 
-Runtime (server):
-- `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
-- `EVOLUTION_BASE_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE_NAME`
-- `LOVABLE_API_KEY` (se mantiver uso do Lovable AI Gateway)
-- `PORT=3000`, `NODE_ENV=production`
+Comportamento para grupos não-comunidade permanece idêntico.
 
-Build-time (precisam estar disponíveis durante `npm run build` no Docker):
-- `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID`
+## 3. `src/routes/grupos.tsx` — mostrar erro quando lista vazia
 
-→ No EasyPanel, passe os `VITE_*` como build args (ou fixe via `.env` copiado no estágio de build). Hoje seu `.env` aponta pro Supabase do Lovable Cloud (`uzuxxgvpgsqmkolmmqcv`). Para o DashWhats você precisará trocar essas URLs/keys no ambiente da VPS.
+No bloco "Nenhum grupo encontrado" (Card vazio):
 
-### Pós-deploy — passos manuais (fora do escopo desta etapa)
+- Se `data?.error` (campo opcional já tipado em `GroupsResponse`) ou `error` (do `useQuery`) existir, renderizar abaixo do texto principal um `<p>` em `text-destructive` com a mensagem (`data.error` ou `(error as Error).message`).
+- Adicionar também, em texto pequeno `text-muted-foreground`, o `data.total` retornado, para deixar claro se a API respondeu `0` ou se nem respondeu.
 
-- Apontar para o Supabase DashWhats via env vars no EasyPanel.
-- Rodar `schema.sql` + `data.sql` no DashWhats (já gerados).
-- Recriar usuário admin no DashWhats e atualizar `user_profiles`.
-- Configurar domínio + Traefik no EasyPanel apontando para porta 3000 do container.
+Nenhuma mudança no fluxo de busca, refetch ou modal.
 
-### Resumo da entrega
+---
 
-Após aprovação, vou:
-1. Reescrever `vite.config.ts`.
-2. Atualizar `package.json` (script `start` + remover deps Cloudflare/Lovable wrapper).
-3. Criar `Dockerfile` e `.dockerignore` na raiz.
-4. Deletar `wrangler.jsonc`.
-5. Listar todos os arquivos alterados ao final.
+## Arquivos afetados
+
+- `src/routes/api/groups/fetch-groups.ts` (logs + filtro de comunidade)
+- `src/routes/grupos.tsx` (mensagem de erro no estado vazio)
+
+Nenhuma outra rota, tabela ou componente é tocado. O push para o GitHub acontece automaticamente após a aplicação do plano (sync bidirecional do Lovable).
+
+## Próximo passo após aplicar
+
+Você abre `/grupos` em produção, eu puxo os worker logs com `stack_modern--server-function-logs` filtrando por `[fetch-groups]` e respondo o diagnóstico.
