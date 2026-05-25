@@ -216,7 +216,7 @@ function GroupsPageInner({
               </p>
               {(data?.error || error) && (
                 <p className="mt-2 max-w-md text-xs text-destructive">
-                  {data?.error || (error as Error)?.message || String(error)}
+                  {data?.error || (error instanceof Error ? error.message : String(error))}
                 </p>
               )}
               <p className="mt-1 text-[10px] text-muted-foreground">
