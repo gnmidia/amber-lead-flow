@@ -71,6 +71,12 @@ type MessagesResponse = {
   weekMessages: number;
 };
 
+type GroupEventsResponse = {
+  dailyStats: { date: string; adds: number; removes: number; net: number }[];
+  totals: { totalAdds: number; totalRemoves: number; netGrowth: number };
+  period: number;
+};
+
 function formatPhone(p: string): string {
   if (!p) return "—";
   if (p.length === 13 && p.startsWith("55")) {
