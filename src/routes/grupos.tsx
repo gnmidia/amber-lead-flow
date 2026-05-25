@@ -520,6 +520,110 @@ function MiniMetric({ label, value }: { label: string; value: number }) {
   );
 }
 
+function GrowthTab({ groupId }: { groupId: string }) {
+  const [days, setDays] = useState<7 | 30 | 90>(30);
+  const { data, isLoading } = useQuery<GroupEventsResponse>({
+    queryKey: ["group-events", groupId, days],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/public/groups/group-events?groupId=${encodeURIComponent(groupId)}&days=${days}`,
+      );
+      if (!res.ok) throw new Error("Falha ao buscar eventos");
+      return res.json();
+    },
+  });
+
+  const chartData = (data?.dailyStats ?? []).map((d) => {
+    const [y, m, day] = d.date.split("-");
+    return { ...d, label: `${day}/${m}`, fullDate: `${day}/${m}/${y}` };
+  });
+
+  const totals = data?.totals ?? { totalAdds: 0, totalRemoves: 0, netGrowth: 0 };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-xs text-muted-foreground">
+          Últimos {days} dias
+        </div>
+        <div className="flex gap-1">
+          {([7, 30, 90] as const).map((d) => (
+            <Button
+              key={d}
+              size="sm"
+              variant={days === d ? "default" : "outline"}
+              className="h-7 px-2 text-[11px]"
+              onClick={() => setDays(d)}
+            >
+              {d}d
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <MiniMetric label="Entradas" value={totals.totalAdds} />
+        <MiniMetric label="Saídas" value={totals.totalRemoves} />
+        <MiniMetric label="Crescimento líquido" value={totals.netGrowth} />
+      </div>
+
+      {isLoading ? (
+        <Skeleton className="h-64 w-full" />
+      ) : chartData.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border py-10 text-center">
+          <TrendingUp className="h-8 w-8 text-muted-foreground" />
+          <p className="max-w-sm text-sm text-muted-foreground">
+            Nenhum dado ainda. O rastreamento começa a partir de agora conforme
+            membros entram e saem do grupo.
+          </p>
+        </div>
+      ) : (
+        <div className="h-64 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis
+                dataKey="label"
+                stroke="hsl(var(--muted-foreground))"
+                tick={{ fontSize: 11 }}
+              />
+              <YAxis
+                stroke="hsl(var(--muted-foreground))"
+                tick={{ fontSize: 11 }}
+                allowDecimals={false}
+              />
+              <RTooltip
+                contentStyle={{
+                  background: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: 8,
+                  fontSize: 12,
+                }}
+                formatter={(value: number, name: string) => {
+                  const labelMap: Record<string, string> = {
+                    adds: "Entradas",
+                    removes: "Saídas",
+                  };
+                  return [value, labelMap[name] ?? name];
+                }}
+                labelFormatter={(_, payload) => {
+                  const p: any = payload?.[0]?.payload;
+                  if (!p) return "";
+                  return `${p.fullDate} · saldo ${p.net >= 0 ? "+" : ""}${p.net}`;
+                }}
+              />
+              <Bar dataKey="adds" fill="#10b981" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="removes" fill="#ef4444" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+
 function GruposPage() {
   const { data, isFetching, refetch, error } = useQuery<GroupsResponse>({
     queryKey: ["dash-grupos"],
