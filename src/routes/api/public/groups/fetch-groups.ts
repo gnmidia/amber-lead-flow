@@ -33,7 +33,7 @@ function digits(s: string | undefined | null): string {
   return String(s).split("@")[0].replace(/\D/g, "");
 }
 
-export const Route = createFileRoute("/api/groups/fetch-groups")({
+export const Route = createFileRoute("/api/public/groups/fetch-groups")({
   server: {
     handlers: {
       OPTIONS: async () => new Response(null, { status: 204, headers: CORS }),
