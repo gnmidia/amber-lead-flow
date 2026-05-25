@@ -137,18 +137,21 @@ function GroupsPageInner({
 }) {
   const [open, setOpen] = useState<Group | null>(null);
 
-  const { data: todayAdds } = useQuery<{ adds: number }>({
-    queryKey: ["group-events-today-adds"],
+  const { data: addsToday24h } = useQuery<number>({
+    queryKey: ["group-events-adds-24h"],
     queryFn: async () => {
-      const res = await fetch("/api/public/groups/group-events?groupId=__all__&days=1");
-      // Endpoint exige groupId; fazemos um agregado client-side em paralelo.
-      // Como cada grupo é independente, somamos via os grupos visíveis abaixo.
-      if (!res.ok) return { adds: 0 };
-      return { adds: 0 };
+      try {
+        const res = await fetch("/api/public/groups/group-events?groupId=__all__&days=1");
+        if (!res.ok) return 0;
+        const j: GroupEventsResponse = await res.json();
+        return j?.totals?.totalAdds ?? 0;
+      } catch {
+        return 0;
+      }
     },
-    enabled: false,
+    refetchInterval: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
-  void todayAdds;
 
   const summary = useMemo(() => {
     const groups = data?.groups ?? [];
@@ -162,29 +165,6 @@ function GroupsPageInner({
     return { totalGroups, totalParticipants, biggest, communities };
   }, [data]);
 
-  // Total de entradas nas últimas 24h, somando todos os grupos visíveis.
-  const groupIds = (data?.groups ?? []).map((g) => g.id);
-  const { data: addsToday24h } = useQuery<number>({
-    queryKey: ["group-events-adds-24h", groupIds.join(",")],
-    enabled: groupIds.length > 0,
-    queryFn: async () => {
-      const results = await Promise.all(
-        groupIds.map(async (gid) => {
-          try {
-            const res = await fetch(
-              `/api/public/groups/group-events?groupId=${encodeURIComponent(gid)}&days=1`,
-            );
-            if (!res.ok) return 0;
-            const j: GroupEventsResponse = await res.json();
-            return j?.totals?.totalAdds ?? 0;
-          } catch {
-            return 0;
-          }
-        }),
-      );
-      return results.reduce((a, b) => a + b, 0);
-    },
-  });
 
 
   return (
