@@ -8,7 +8,7 @@ const CORS = {
 
 type Participant = {
   id: string;
-  admin?: string | null; // "admin" | "superadmin" | null
+  admin?: string | null;
 };
 
 type EvoGroup = {
@@ -41,7 +41,6 @@ export const Route = createFileRoute("/api/groups/fetch-groups")({
         const apiKey = process.env.EVOLUTION_API_KEY;
         const instance = process.env.EVOLUTION_INSTANCE_NAME;
 
-        // TODO debug — remover depois do diagnóstico
         console.log("[fetch-groups] config", {
           hasBaseUrl: !!baseUrl,
           baseUrl: baseUrl || "(vazio)",
@@ -58,148 +57,162 @@ export const Route = createFileRoute("/api/groups/fetch-groups")({
           );
         }
 
+        // Descobre o número da instância (best-effort, não bloqueia)
+        let myNumber = "";
         try {
-          // Descobre o número da instância para identificar onde sou admin
-          let myNumber = "";
-          try {
-            const infoUrl = `${baseUrl}/instance/fetchInstances?instanceName=${encodeURIComponent(instance)}`;
-            const infoRes = await fetch(infoUrl, { headers: { apikey: apiKey } });
-            const infoRaw = await infoRes.text();
-            // TODO debug
-            console.log("[fetch-groups] fetchInstances", {
-              url: infoUrl,
-              status: infoRes.status,
-              ok: infoRes.ok,
-              bodyPreview: infoRaw.slice(0, 500),
-            });
-            let infoJson: unknown = null;
-            try {
-              infoJson = JSON.parse(infoRaw);
-            } catch {
-              infoJson = null;
-            }
-            const arr = Array.isArray(infoJson) ? infoJson : [infoJson];
-            for (const it of arr as Array<Record<string, any> | null>) {
-              if (!it) continue;
-              const owner =
-                it?.instance?.owner ??
-                it?.owner ??
-                it?.instance?.profileName ??
-                it?.ownerJid ??
-                it?.instance?.wuid;
-              const n = digits(owner);
-              if (n) {
-                myNumber = n;
-                break;
-              }
-            }
-            // TODO debug
-            console.log("[fetch-groups] myNumber", myNumber || "(não resolvido)");
-          } catch (e) {
-            console.log("[fetch-groups] fetchInstances erro", String(e));
-          }
-
-          const url = `${baseUrl}/group/fetchAllGroups/${encodeURIComponent(instance)}?getParticipants=true`;
-          const res = await fetch(url, { headers: { apikey: apiKey } });
-          const rawText = await res.text();
-          // TODO debug
-          console.log("[fetch-groups] fetchAllGroups", {
-            url,
-            status: res.status,
-            ok: res.ok,
-            bodyPreview: rawText.slice(0, 500),
+          const infoUrl = `${baseUrl}/instance/fetchInstances?instanceName=${encodeURIComponent(instance)}`;
+          const infoRes = await fetch(infoUrl, { headers: { apikey: apiKey } });
+          const infoRaw = await infoRes.text();
+          console.log("[fetch-groups] fetchInstances", {
+            status: infoRes.status,
+            ok: infoRes.ok,
+            bodyPreview: infoRaw.slice(0, 500),
           });
-
-          if (!res.ok) {
-            return Response.json(
-              {
-                error: "Falha ao buscar grupos na Evolution API",
-                status: res.status,
-                detail: rawText.slice(0, 300),
-              },
-              { status: 502, headers: CORS },
-            );
-          }
-
-          let raw: EvoGroup[] | { groups?: EvoGroup[] } = [];
+          let infoJson: unknown = null;
           try {
-            raw = JSON.parse(rawText);
+            infoJson = JSON.parse(infoRaw);
           } catch {
-            raw = [];
+            infoJson = null;
           }
-          const list: EvoGroup[] = Array.isArray(raw) ? raw : (raw?.groups ?? []);
-          // TODO debug
-          console.log("[fetch-groups] total bruto", list.length);
-
-          const mapped = list.map((g) => {
-            const participants = g.participants ?? [];
-            const admins = participants.filter(
-              (p) => p.admin === "admin" || p.admin === "superadmin",
-            );
-            const isCommunityLike = !!g.isCommunity || !!g.isCommunityAnnounce;
-            let iAmAdmin: boolean;
-            let reason: "community" | "admin" | "fallback";
-            if (isCommunityLike) {
-              iAmAdmin = true;
-              reason = "community";
-            } else if (myNumber) {
-              iAmAdmin = admins.some((p) => digits(p.id) === myNumber);
-              reason = "admin";
-            } else {
-              iAmAdmin = true;
-              reason = "fallback";
+          const arr = Array.isArray(infoJson) ? infoJson : [infoJson];
+          for (const it of arr as Array<Record<string, any> | null>) {
+            if (!it) continue;
+            const owner =
+              it?.instance?.owner ??
+              it?.owner ??
+              it?.instance?.profileName ??
+              it?.ownerJid ??
+              it?.instance?.wuid;
+            const n = digits(owner);
+            if (n) {
+              myNumber = n;
+              break;
             }
-            return {
-              id: g.id,
-              name: g.subject ?? "(sem nome)",
-              description: g.desc ?? "",
-              totalParticipants: g.size ?? participants.length ?? 0,
-              admins: admins.length,
-              subject: g.subject ?? "",
-              subjectOwner: g.subjectOwner ?? "",
-              creation: g.creation ?? 0,
-              pictureUrl: g.pictureUrl ?? null,
-              isCommunity: !!g.isCommunity,
-              isCommunityAnnounce: !!g.isCommunityAnnounce,
-              participants: participants.map((p) => ({
-                id: p.id,
-                phone: digits(p.id),
-                admin: p.admin ?? null,
-              })),
-              _iAmAdmin: iAmAdmin,
-              _reason: reason,
-            };
-          });
+          }
+          console.log("[fetch-groups] myNumber", myNumber || "(não resolvido)");
+        } catch (e) {
+          console.log("[fetch-groups] fetchInstances erro", String(e));
+        }
 
-          const kept = mapped.filter((g) => g._iAmAdmin);
-          // TODO debug
-          console.log("[fetch-groups] filtro", {
-            total: mapped.length,
-            kept: kept.length,
-            byReason: {
-              community: kept.filter((g) => g._reason === "community").length,
-              admin: kept.filter((g) => g._reason === "admin").length,
-              fallback: kept.filter((g) => g._reason === "fallback").length,
-            },
-          });
+        // Tentativas em sequência
+        const attempts = [
+          {
+            name: "fetchAllGroups?getParticipants=true",
+            url: `${baseUrl}/group/fetchAllGroups/${encodeURIComponent(instance)}?getParticipants=true`,
+          },
+          {
+            name: "fetchAllGroups (sem participants)",
+            url: `${baseUrl}/group/fetchAllGroups/${encodeURIComponent(instance)}`,
+          },
+          {
+            name: "group/list",
+            url: `${baseUrl}/group/list/${encodeURIComponent(instance)}`,
+          },
+        ];
 
-          const filtered = kept.map(({ _iAmAdmin, _reason, ...rest }) => rest);
+        let list: EvoGroup[] = [];
+        let lastStatus = 0;
+        let lastBody = "";
+        let usedAttempt = "";
 
+        for (const attempt of attempts) {
+          try {
+            const res = await fetch(attempt.url, { headers: { apikey: apiKey } });
+            const text = await res.text();
+            lastStatus = res.status;
+            lastBody = text;
+
+            let parsed: any = null;
+            try {
+              parsed = JSON.parse(text);
+            } catch {
+              parsed = null;
+            }
+            const candidate: EvoGroup[] = Array.isArray(parsed)
+              ? parsed
+              : (parsed?.groups ?? parsed?.data ?? []);
+
+            console.log(`[fetch-groups] tentativa "${attempt.name}"`, {
+              url: attempt.url,
+              status: res.status,
+              ok: res.ok,
+              count: Array.isArray(candidate) ? candidate.length : 0,
+              bodyPreview: text.slice(0, 300),
+            });
+
+            if (res.ok && Array.isArray(candidate) && candidate.length > 0) {
+              list = candidate;
+              usedAttempt = attempt.name;
+              break;
+            }
+          } catch (e) {
+            console.log(`[fetch-groups] tentativa "${attempt.name}" erro`, String(e));
+            lastBody = String(e);
+          }
+        }
+
+        console.log("[fetch-groups] resultado tentativas", {
+          usedAttempt: usedAttempt || "(nenhuma)",
+          total: list.length,
+        });
+
+        if (list.length === 0) {
           return Response.json(
             {
-              groups: filtered,
-              total: filtered.length,
-              lastUpdated: new Date().toISOString(),
+              error: "Evolution API error",
+              status: lastStatus,
+              detail: lastBody.slice(0, 1000),
             },
-            { headers: { ...CORS, "Content-Type": "application/json" } },
-          );
-        } catch (err) {
-          console.log("[fetch-groups] erro geral", String(err));
-          return Response.json(
-            { error: "Erro ao consultar Evolution API", detail: String(err) },
             { status: 502, headers: CORS },
           );
         }
+
+        const mapped = list.map((g) => {
+          const participants = g.participants ?? [];
+          const admins = participants.filter(
+            (p) => p.admin === "admin" || p.admin === "superadmin",
+          );
+          // Filtro de admin desativado temporariamente — retornando todos os grupos
+          // const isCommunityLike = !!g.isCommunity || !!g.isCommunityAnnounce;
+          // const iAmAdmin = isCommunityLike
+          //   ? true
+          //   : myNumber
+          //     ? admins.some((p) => digits(p.id) === myNumber)
+          //     : true;
+          return {
+            id: g.id,
+            name: g.subject ?? "(sem nome)",
+            description: g.desc ?? "",
+            totalParticipants: g.size ?? participants.length ?? 0,
+            admins: admins.length,
+            subject: g.subject ?? "",
+            subjectOwner: g.subjectOwner ?? "",
+            creation: g.creation ?? 0,
+            pictureUrl: g.pictureUrl ?? null,
+            isCommunity: !!g.isCommunity,
+            isCommunityAnnounce: !!g.isCommunityAnnounce,
+            participants: participants.map((p) => ({
+              id: p.id,
+              phone: digits(p.id),
+              admin: p.admin ?? null,
+            })),
+          };
+        });
+
+        console.log("[fetch-groups] retornando", {
+          total: mapped.length,
+          usedAttempt,
+        });
+
+        return Response.json(
+          {
+            groups: mapped,
+            total: mapped.length,
+            lastUpdated: new Date().toISOString(),
+            _debug: { usedAttempt, myNumber: myNumber || null },
+          },
+          { headers: { ...CORS, "Content-Type": "application/json" } },
+        );
       },
     },
   },
