@@ -214,6 +214,14 @@ function GroupsPageInner({
               <p className="text-xs text-muted-foreground">
                 Você não é admin de nenhum grupo nesta instância.
               </p>
+              {(data?.error || error) && (
+                <p className="mt-2 max-w-md text-xs text-destructive">
+                  {data?.error || (error as Error)?.message || String(error)}
+                </p>
+              )}
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                API respondeu total = {data?.total ?? 0}
+              </p>
             </CardContent>
           </Card>
         ) : (
