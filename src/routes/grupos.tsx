@@ -333,11 +333,13 @@ function SummaryCard({
   label,
   value,
   sub,
+  extra,
   icon,
 }: {
   label: string;
   value: number | string;
   sub?: string;
+  extra?: React.ReactNode;
   icon: React.ReactNode;
 }) {
   return (
@@ -353,10 +355,12 @@ function SummaryCard({
             {sub}
           </div>
         )}
+        {extra}
       </CardContent>
     </Card>
   );
 }
+
 
 function GroupDetailsDialog({
   group,
