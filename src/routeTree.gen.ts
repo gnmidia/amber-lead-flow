@@ -51,8 +51,8 @@ import { Route as ApiPublicFlowExecutorRouteImport } from './routes/api/public/f
 import { Route as ApiPublicEvolutionStatusRouteImport } from './routes/api/public/evolution-status'
 import { Route as ApiPublicEvolutionDiagRouteImport } from './routes/api/public/evolution-diag'
 import { Route as ApiPublicAgentRunRouteImport } from './routes/api/public/agent-run'
-import { Route as ApiGroupsGroupMessagesRouteImport } from './routes/api/groups/group-messages'
-import { Route as ApiGroupsFetchGroupsRouteImport } from './routes/api/groups/fetch-groups'
+import { Route as ApiPublicGroupsGroupMessagesRouteImport } from './routes/api/public/groups/group-messages'
+import { Route as ApiPublicGroupsFetchGroupsRouteImport } from './routes/api/public/groups/fetch-groups'
 
 const UsuariosRoute = UsuariosRouteImport.update({
   id: '/usuarios',
@@ -268,16 +268,18 @@ const ApiPublicAgentRunRoute = ApiPublicAgentRunRouteImport.update({
   path: '/api/public/agent-run',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiGroupsGroupMessagesRoute = ApiGroupsGroupMessagesRouteImport.update({
-  id: '/api/groups/group-messages',
-  path: '/api/groups/group-messages',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiGroupsFetchGroupsRoute = ApiGroupsFetchGroupsRouteImport.update({
-  id: '/api/groups/fetch-groups',
-  path: '/api/groups/fetch-groups',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const ApiPublicGroupsGroupMessagesRoute =
+  ApiPublicGroupsGroupMessagesRouteImport.update({
+    id: '/api/public/groups/group-messages',
+    path: '/api/public/groups/group-messages',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicGroupsFetchGroupsRoute =
+  ApiPublicGroupsFetchGroupsRouteImport.update({
+    id: '/api/public/groups/fetch-groups',
+    path: '/api/public/groups/fetch-groups',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -311,8 +313,6 @@ export interface FileRoutesByFullPath {
   '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos/': typeof FluxosIndexRoute
-  '/api/groups/fetch-groups': typeof ApiGroupsFetchGroupsRoute
-  '/api/groups/group-messages': typeof ApiGroupsGroupMessagesRoute
   '/api/public/agent-run': typeof ApiPublicAgentRunRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
@@ -324,6 +324,8 @@ export interface FileRoutesByFullPath {
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
   '/api/public/sync-chats': typeof ApiPublicSyncChatsRoute
   '/api/public/webhook-whatsapp': typeof ApiPublicWebhookWhatsappRoute
+  '/api/public/groups/fetch-groups': typeof ApiPublicGroupsFetchGroupsRoute
+  '/api/public/groups/group-messages': typeof ApiPublicGroupsGroupMessagesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -357,8 +359,6 @@ export interface FileRoutesByTo {
   '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos': typeof FluxosIndexRoute
-  '/api/groups/fetch-groups': typeof ApiGroupsFetchGroupsRoute
-  '/api/groups/group-messages': typeof ApiGroupsGroupMessagesRoute
   '/api/public/agent-run': typeof ApiPublicAgentRunRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
@@ -370,6 +370,8 @@ export interface FileRoutesByTo {
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
   '/api/public/sync-chats': typeof ApiPublicSyncChatsRoute
   '/api/public/webhook-whatsapp': typeof ApiPublicWebhookWhatsappRoute
+  '/api/public/groups/fetch-groups': typeof ApiPublicGroupsFetchGroupsRoute
+  '/api/public/groups/group-messages': typeof ApiPublicGroupsGroupMessagesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -404,8 +406,6 @@ export interface FileRoutesById {
   '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos/': typeof FluxosIndexRoute
-  '/api/groups/fetch-groups': typeof ApiGroupsFetchGroupsRoute
-  '/api/groups/group-messages': typeof ApiGroupsGroupMessagesRoute
   '/api/public/agent-run': typeof ApiPublicAgentRunRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
@@ -417,6 +417,8 @@ export interface FileRoutesById {
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
   '/api/public/sync-chats': typeof ApiPublicSyncChatsRoute
   '/api/public/webhook-whatsapp': typeof ApiPublicWebhookWhatsappRoute
+  '/api/public/groups/fetch-groups': typeof ApiPublicGroupsFetchGroupsRoute
+  '/api/public/groups/group-messages': typeof ApiPublicGroupsGroupMessagesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -452,8 +454,6 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos/'
-    | '/api/groups/fetch-groups'
-    | '/api/groups/group-messages'
     | '/api/public/agent-run'
     | '/api/public/evolution-diag'
     | '/api/public/evolution-status'
@@ -465,6 +465,8 @@ export interface FileRouteTypes {
     | '/api/public/send-message'
     | '/api/public/sync-chats'
     | '/api/public/webhook-whatsapp'
+    | '/api/public/groups/fetch-groups'
+    | '/api/public/groups/group-messages'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -498,8 +500,6 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos'
-    | '/api/groups/fetch-groups'
-    | '/api/groups/group-messages'
     | '/api/public/agent-run'
     | '/api/public/evolution-diag'
     | '/api/public/evolution-status'
@@ -511,6 +511,8 @@ export interface FileRouteTypes {
     | '/api/public/send-message'
     | '/api/public/sync-chats'
     | '/api/public/webhook-whatsapp'
+    | '/api/public/groups/fetch-groups'
+    | '/api/public/groups/group-messages'
   id:
     | '__root__'
     | '/'
@@ -544,8 +546,6 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos/'
-    | '/api/groups/fetch-groups'
-    | '/api/groups/group-messages'
     | '/api/public/agent-run'
     | '/api/public/evolution-diag'
     | '/api/public/evolution-status'
@@ -557,6 +557,8 @@ export interface FileRouteTypes {
     | '/api/public/send-message'
     | '/api/public/sync-chats'
     | '/api/public/webhook-whatsapp'
+    | '/api/public/groups/fetch-groups'
+    | '/api/public/groups/group-messages'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -591,8 +593,6 @@ export interface RootRouteChildren {
   UsuariosRoute: typeof UsuariosRoute
   FluxosIdRoute: typeof FluxosIdRoute
   FluxosIndexRoute: typeof FluxosIndexRoute
-  ApiGroupsFetchGroupsRoute: typeof ApiGroupsFetchGroupsRoute
-  ApiGroupsGroupMessagesRoute: typeof ApiGroupsGroupMessagesRoute
   ApiPublicAgentRunRoute: typeof ApiPublicAgentRunRoute
   ApiPublicEvolutionDiagRoute: typeof ApiPublicEvolutionDiagRoute
   ApiPublicEvolutionStatusRoute: typeof ApiPublicEvolutionStatusRoute
@@ -604,6 +604,8 @@ export interface RootRouteChildren {
   ApiPublicSendMessageRoute: typeof ApiPublicSendMessageRoute
   ApiPublicSyncChatsRoute: typeof ApiPublicSyncChatsRoute
   ApiPublicWebhookWhatsappRoute: typeof ApiPublicWebhookWhatsappRoute
+  ApiPublicGroupsFetchGroupsRoute: typeof ApiPublicGroupsFetchGroupsRoute
+  ApiPublicGroupsGroupMessagesRoute: typeof ApiPublicGroupsGroupMessagesRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -902,18 +904,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicAgentRunRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/groups/group-messages': {
-      id: '/api/groups/group-messages'
-      path: '/api/groups/group-messages'
-      fullPath: '/api/groups/group-messages'
-      preLoaderRoute: typeof ApiGroupsGroupMessagesRouteImport
+    '/api/public/groups/group-messages': {
+      id: '/api/public/groups/group-messages'
+      path: '/api/public/groups/group-messages'
+      fullPath: '/api/public/groups/group-messages'
+      preLoaderRoute: typeof ApiPublicGroupsGroupMessagesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/groups/fetch-groups': {
-      id: '/api/groups/fetch-groups'
-      path: '/api/groups/fetch-groups'
-      fullPath: '/api/groups/fetch-groups'
-      preLoaderRoute: typeof ApiGroupsFetchGroupsRouteImport
+    '/api/public/groups/fetch-groups': {
+      id: '/api/public/groups/fetch-groups'
+      path: '/api/public/groups/fetch-groups'
+      fullPath: '/api/public/groups/fetch-groups'
+      preLoaderRoute: typeof ApiPublicGroupsFetchGroupsRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -951,8 +953,6 @@ const rootRouteChildren: RootRouteChildren = {
   UsuariosRoute: UsuariosRoute,
   FluxosIdRoute: FluxosIdRoute,
   FluxosIndexRoute: FluxosIndexRoute,
-  ApiGroupsFetchGroupsRoute: ApiGroupsFetchGroupsRoute,
-  ApiGroupsGroupMessagesRoute: ApiGroupsGroupMessagesRoute,
   ApiPublicAgentRunRoute: ApiPublicAgentRunRoute,
   ApiPublicEvolutionDiagRoute: ApiPublicEvolutionDiagRoute,
   ApiPublicEvolutionStatusRoute: ApiPublicEvolutionStatusRoute,
@@ -964,6 +964,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicSendMessageRoute: ApiPublicSendMessageRoute,
   ApiPublicSyncChatsRoute: ApiPublicSyncChatsRoute,
   ApiPublicWebhookWhatsappRoute: ApiPublicWebhookWhatsappRoute,
+  ApiPublicGroupsFetchGroupsRoute: ApiPublicGroupsFetchGroupsRoute,
+  ApiPublicGroupsGroupMessagesRoute: ApiPublicGroupsGroupMessagesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
