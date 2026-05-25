@@ -10,7 +10,6 @@ import {
   MessageSquare,
   Sparkles,
   TrendingUp,
-  TrendingDown,
   ArrowUpRight,
 } from "lucide-react";
 // PageHeader removido: consumia OperationContext indiretamente e quebrava a página.
