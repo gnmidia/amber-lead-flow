@@ -9,6 +9,9 @@ import {
   AlertCircle,
   MessageSquare,
   Sparkles,
+  TrendingUp,
+  TrendingDown,
+  ArrowUpRight,
 } from "lucide-react";
 // PageHeader removido: consumia OperationContext indiretamente e quebrava a página.
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +27,15 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { dayMonthYearSP, timeSP } from "@/lib/datetime";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip as RTooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 
 export const Route = createFileRoute("/grupos")({
   component: GruposPage,
