@@ -55,7 +55,6 @@ import { Route as ApiPublicGroupsGroupMessagesRouteImport } from './routes/api/p
 import { Route as ApiPublicGroupsGroupEventsRouteImport } from './routes/api/public/groups/group-events'
 import { Route as ApiPublicGroupsFetchGroupsRouteImport } from './routes/api/public/groups/fetch-groups'
 import { Route as ApiPublicGroupsDebugEvoRouteImport } from './routes/api/public/groups/debug-evo'
-import { Route as ApiPublicGroupsGroupEventsRouteImport } from './routes/api/public/groups/group-events'
 
 const UsuariosRoute = UsuariosRouteImport.update({
   id: '/usuarios',
