@@ -214,7 +214,7 @@ function GroupsPageInner({
               <p className="text-xs text-muted-foreground">
                 Você não é admin de nenhum grupo nesta instância.
               </p>
-              {(data?.error || error) && (
+              {(data?.error || error) ? (
                 <p className="mt-2 max-w-md text-xs text-destructive">
                   {String(data?.error || (error instanceof Error ? error.message : error) || "")}
                 </p>
