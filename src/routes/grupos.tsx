@@ -417,12 +417,13 @@ function GroupDetailsDialog({
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Visão geral</TabsTrigger>
             <TabsTrigger value="participants">
               Participantes ({group.participants.length})
             </TabsTrigger>
             <TabsTrigger value="activity">Atividade</TabsTrigger>
+            <TabsTrigger value="growth">Crescimento</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
