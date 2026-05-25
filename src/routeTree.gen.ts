@@ -24,6 +24,7 @@ import { Route as LeadsRouteImport } from './routes/leads'
 import { Route as JarvisRouteImport } from './routes/jarvis'
 import { Route as InteligenciaIaRouteImport } from './routes/inteligencia-ia'
 import { Route as HubRouteImport } from './routes/hub'
+import { Route as GruposRouteImport } from './routes/grupos'
 import { Route as FunilRouteImport } from './routes/funil'
 import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as FilaRouteImport } from './routes/fila'
@@ -50,6 +51,8 @@ import { Route as ApiPublicFlowExecutorRouteImport } from './routes/api/public/f
 import { Route as ApiPublicEvolutionStatusRouteImport } from './routes/api/public/evolution-status'
 import { Route as ApiPublicEvolutionDiagRouteImport } from './routes/api/public/evolution-diag'
 import { Route as ApiPublicAgentRunRouteImport } from './routes/api/public/agent-run'
+import { Route as ApiGroupsGroupMessagesRouteImport } from './routes/api/groups/group-messages'
+import { Route as ApiGroupsFetchGroupsRouteImport } from './routes/api/groups/fetch-groups'
 
 const UsuariosRoute = UsuariosRouteImport.update({
   id: '/usuarios',
@@ -124,6 +127,11 @@ const InteligenciaIaRoute = InteligenciaIaRouteImport.update({
 const HubRoute = HubRouteImport.update({
   id: '/hub',
   path: '/hub',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GruposRoute = GruposRouteImport.update({
+  id: '/grupos',
+  path: '/grupos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FunilRoute = FunilRouteImport.update({
@@ -260,6 +268,16 @@ const ApiPublicAgentRunRoute = ApiPublicAgentRunRouteImport.update({
   path: '/api/public/agent-run',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiGroupsGroupMessagesRoute = ApiGroupsGroupMessagesRouteImport.update({
+  id: '/api/groups/group-messages',
+  path: '/api/groups/group-messages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGroupsFetchGroupsRoute = ApiGroupsFetchGroupsRouteImport.update({
+  id: '/api/groups/fetch-groups',
+  path: '/api/groups/fetch-groups',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -275,6 +293,7 @@ export interface FileRoutesByFullPath {
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
   '/funil': typeof FunilRoute
+  '/grupos': typeof GruposRoute
   '/hub': typeof HubRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
   '/jarvis': typeof JarvisRoute
@@ -292,6 +311,8 @@ export interface FileRoutesByFullPath {
   '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos/': typeof FluxosIndexRoute
+  '/api/groups/fetch-groups': typeof ApiGroupsFetchGroupsRoute
+  '/api/groups/group-messages': typeof ApiGroupsGroupMessagesRoute
   '/api/public/agent-run': typeof ApiPublicAgentRunRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
@@ -318,6 +339,7 @@ export interface FileRoutesByTo {
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
   '/funil': typeof FunilRoute
+  '/grupos': typeof GruposRoute
   '/hub': typeof HubRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
   '/jarvis': typeof JarvisRoute
@@ -335,6 +357,8 @@ export interface FileRoutesByTo {
   '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos': typeof FluxosIndexRoute
+  '/api/groups/fetch-groups': typeof ApiGroupsFetchGroupsRoute
+  '/api/groups/group-messages': typeof ApiGroupsGroupMessagesRoute
   '/api/public/agent-run': typeof ApiPublicAgentRunRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
@@ -362,6 +386,7 @@ export interface FileRoutesById {
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
   '/funil': typeof FunilRoute
+  '/grupos': typeof GruposRoute
   '/hub': typeof HubRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
   '/jarvis': typeof JarvisRoute
@@ -379,6 +404,8 @@ export interface FileRoutesById {
   '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos/': typeof FluxosIndexRoute
+  '/api/groups/fetch-groups': typeof ApiGroupsFetchGroupsRoute
+  '/api/groups/group-messages': typeof ApiGroupsGroupMessagesRoute
   '/api/public/agent-run': typeof ApiPublicAgentRunRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
@@ -407,6 +434,7 @@ export interface FileRouteTypes {
     | '/fila'
     | '/financeiro'
     | '/funil'
+    | '/grupos'
     | '/hub'
     | '/inteligencia-ia'
     | '/jarvis'
@@ -424,6 +452,8 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos/'
+    | '/api/groups/fetch-groups'
+    | '/api/groups/group-messages'
     | '/api/public/agent-run'
     | '/api/public/evolution-diag'
     | '/api/public/evolution-status'
@@ -450,6 +480,7 @@ export interface FileRouteTypes {
     | '/fila'
     | '/financeiro'
     | '/funil'
+    | '/grupos'
     | '/hub'
     | '/inteligencia-ia'
     | '/jarvis'
@@ -467,6 +498,8 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos'
+    | '/api/groups/fetch-groups'
+    | '/api/groups/group-messages'
     | '/api/public/agent-run'
     | '/api/public/evolution-diag'
     | '/api/public/evolution-status'
@@ -493,6 +526,7 @@ export interface FileRouteTypes {
     | '/fila'
     | '/financeiro'
     | '/funil'
+    | '/grupos'
     | '/hub'
     | '/inteligencia-ia'
     | '/jarvis'
@@ -510,6 +544,8 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos/'
+    | '/api/groups/fetch-groups'
+    | '/api/groups/group-messages'
     | '/api/public/agent-run'
     | '/api/public/evolution-diag'
     | '/api/public/evolution-status'
@@ -537,6 +573,7 @@ export interface RootRouteChildren {
   FilaRoute: typeof FilaRoute
   FinanceiroRoute: typeof FinanceiroRoute
   FunilRoute: typeof FunilRoute
+  GruposRoute: typeof GruposRoute
   HubRoute: typeof HubRoute
   InteligenciaIaRoute: typeof InteligenciaIaRoute
   JarvisRoute: typeof JarvisRoute
@@ -554,6 +591,8 @@ export interface RootRouteChildren {
   UsuariosRoute: typeof UsuariosRoute
   FluxosIdRoute: typeof FluxosIdRoute
   FluxosIndexRoute: typeof FluxosIndexRoute
+  ApiGroupsFetchGroupsRoute: typeof ApiGroupsFetchGroupsRoute
+  ApiGroupsGroupMessagesRoute: typeof ApiGroupsGroupMessagesRoute
   ApiPublicAgentRunRoute: typeof ApiPublicAgentRunRoute
   ApiPublicEvolutionDiagRoute: typeof ApiPublicEvolutionDiagRoute
   ApiPublicEvolutionStatusRoute: typeof ApiPublicEvolutionStatusRoute
@@ -672,6 +711,13 @@ declare module '@tanstack/react-router' {
       path: '/hub'
       fullPath: '/hub'
       preLoaderRoute: typeof HubRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/grupos': {
+      id: '/grupos'
+      path: '/grupos'
+      fullPath: '/grupos'
+      preLoaderRoute: typeof GruposRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/funil': {
@@ -856,6 +902,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicAgentRunRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/groups/group-messages': {
+      id: '/api/groups/group-messages'
+      path: '/api/groups/group-messages'
+      fullPath: '/api/groups/group-messages'
+      preLoaderRoute: typeof ApiGroupsGroupMessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/groups/fetch-groups': {
+      id: '/api/groups/fetch-groups'
+      path: '/api/groups/fetch-groups'
+      fullPath: '/api/groups/fetch-groups'
+      preLoaderRoute: typeof ApiGroupsFetchGroupsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -873,6 +933,7 @@ const rootRouteChildren: RootRouteChildren = {
   FilaRoute: FilaRoute,
   FinanceiroRoute: FinanceiroRoute,
   FunilRoute: FunilRoute,
+  GruposRoute: GruposRoute,
   HubRoute: HubRoute,
   InteligenciaIaRoute: InteligenciaIaRoute,
   JarvisRoute: JarvisRoute,
@@ -890,6 +951,8 @@ const rootRouteChildren: RootRouteChildren = {
   UsuariosRoute: UsuariosRoute,
   FluxosIdRoute: FluxosIdRoute,
   FluxosIndexRoute: FluxosIndexRoute,
+  ApiGroupsFetchGroupsRoute: ApiGroupsFetchGroupsRoute,
+  ApiGroupsGroupMessagesRoute: ApiGroupsGroupMessagesRoute,
   ApiPublicAgentRunRoute: ApiPublicAgentRunRoute,
   ApiPublicEvolutionDiagRoute: ApiPublicEvolutionDiagRoute,
   ApiPublicEvolutionStatusRoute: ApiPublicEvolutionStatusRoute,
