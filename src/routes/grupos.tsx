@@ -10,7 +10,7 @@ import {
   MessageSquare,
   Sparkles,
 } from "lucide-react";
-import { PageHeader } from "@/components/PageHeader";
+// PageHeader removido: consumia OperationContext indiretamente e quebrava a página.
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
