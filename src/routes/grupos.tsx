@@ -233,6 +233,14 @@ function GroupsPageInner({
             label="Comunidades"
             value={summary.communities}
             icon={<Sparkles className="h-4 w-4 text-primary" />}
+            extra={
+              typeof addsToday24h === "number" && addsToday24h > 0 ? (
+                <div className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-emerald-500">
+                  <ArrowUpRight className="h-3 w-3" />
+                  {addsToday24h} entrada{addsToday24h === 1 ? "" : "s"} hoje
+                </div>
+              ) : null
+            }
           />
         </div>
 
