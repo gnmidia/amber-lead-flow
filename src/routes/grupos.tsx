@@ -468,7 +468,7 @@ function GruposPage() {
   const { data, isFetching, refetch, error } = useQuery<GroupsResponse>({
     queryKey: ["dash-grupos"],
     queryFn: async () => {
-      const res = await fetch("/api/groups/fetch-groups");
+      const res = await fetch("/api/public/groups/fetch-groups");
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error || "Falha ao buscar grupos");
       return json;
