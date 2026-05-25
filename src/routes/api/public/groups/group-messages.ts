@@ -7,7 +7,7 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-export const Route = createFileRoute("/api/groups/group-messages")({
+export const Route = createFileRoute("/api/public/groups/group-messages")({
   server: {
     handlers: {
       OPTIONS: async () => new Response(null, { status: 204, headers: CORS }),
