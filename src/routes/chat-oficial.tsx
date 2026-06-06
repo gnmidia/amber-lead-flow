@@ -92,6 +92,9 @@ function ChatOficialPage() {
   const [tagFilter, setTagFilter] = useState<Set<string>>(new Set());
   const [unreadLeads, setUnreadLeads] = useState<Set<string>>(new Set());
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
+  // Bump deste contador força a recriação dos canais de realtime (workaround
+  // do bug em que o socket reconecta mas não se reinscreve nos postgres_changes).
+  const [realtimeEpoch, setRealtimeEpoch] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeIdRef = useRef<string | null>(null);
   useEffect(() => { activeIdRef.current = activeId; }, [activeId]);
@@ -179,11 +182,17 @@ function ChatOficialPage() {
       })
       .subscribe((status) => {
         setIsRealtimeConnected(status === "SUBSCRIBED");
+        // Se o canal cair/expirar, recarrega os dados e força recriação do canal.
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          fetchLeads();
+          fetchScheduled();
+          setTimeout(() => setRealtimeEpoch((e) => e + 1), 1000);
+        }
       });
     return () => {
       supabase.removeChannel(ch);
     };
-  }, []);
+  }, [realtimeEpoch]);
 
   // Active conversation: load + realtime
   useEffect(() => {
@@ -206,7 +215,48 @@ function ChatOficialPage() {
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [activeId]);
+  }, [activeId, realtimeEpoch]);
+
+  // Recuperação + rede de segurança. Quando a aba volta ao foco / a internet
+  // reconecta, recarrega tudo e recria os canais (cobre as mensagens perdidas
+  // enquanto a aba esteve em segundo plano). Também faz um polling leve a cada
+  // 20s como fallback caso o WebSocket falhe silenciosamente.
+  useEffect(() => {
+    if (!currentOperationId) return;
+
+    const refreshAll = () => {
+      fetchLeads();
+      fetchScheduled();
+      if (activeIdRef.current) fetchMessages(activeIdRef.current);
+    };
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        refreshAll();
+        setRealtimeEpoch((e) => e + 1); // recria os canais de realtime
+      }
+    };
+    const onOnline = () => {
+      refreshAll();
+      setRealtimeEpoch((e) => e + 1);
+    };
+
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("focus", onVisible);
+
+    const poll = setInterval(() => {
+      if (document.visibilityState === "visible") refreshAll();
+    }, 20000);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("focus", onVisible);
+      clearInterval(poll);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentOperationId]);
 
   const filtered = useMemo(() => {
     let list = leads;

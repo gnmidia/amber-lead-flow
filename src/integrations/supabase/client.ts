@@ -23,7 +23,17 @@ function createSupabaseClient() {
       storage: typeof window !== 'undefined' ? localStorage : undefined,
       persistSession: true,
       autoRefreshToken: true,
-    }
+    },
+    realtime: {
+      // Move o heartbeat do Realtime para um Web Worker. Em abas em segundo
+      // plano o navegador "estrangula" (throttling) os timers do thread
+      // principal, fazendo o heartbeat falhar e o WebSocket cair em silêncio
+      // (perdendo mensagens). O worker roda numa thread separada e não sofre
+      // esse throttling. Só habilita no browser — no SSR não existe Worker.
+      worker: typeof window !== 'undefined',
+      heartbeatIntervalMs: 15000,
+      timeout: 20000,
+    },
   });
 }
 
