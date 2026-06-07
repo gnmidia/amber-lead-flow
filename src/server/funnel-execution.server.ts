@@ -217,6 +217,32 @@ export async function executeFlowForLead({
         .eq("id", lead_id);
       assertNoError(assignErr, "agent assignment failed");
 
+      // Captura mensagens que o lead enviou DURANTE o funil, antes do agente
+      // ativar (race condition: a pergunta chega no intervalo entre o fim do
+      // funil e a ativação do agente). Sem isso, essa pergunta fica sem
+      // resposta para sempre, pois o agente é passivo e só reage a mensagens
+      // novas. Pegamos tudo que o lead disse após a última mensagem nossa.
+      const { data: lastOut } = await supabaseAdmin
+        .from("messages")
+        .select("sent_at")
+        .eq("lead_id", lead_id)
+        .eq("direction", "outbound")
+        .order("sent_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const since = (lastOut as any)?.sent_at || new Date(0).toISOString();
+      const { data: pend } = await supabaseAdmin
+        .from("messages")
+        .select("content")
+        .eq("lead_id", lead_id)
+        .eq("direction", "inbound")
+        .gt("sent_at", since)
+        .order("sent_at", { ascending: true });
+      const pendingText = (pend || [])
+        .map((m: any) => m.content)
+        .filter((c: any) => !!c)
+        .join("\n");
+
       const { error: activeErr } = await supabaseAdmin
         .from("lead_active_agents" as any)
         .upsert(
@@ -228,12 +254,18 @@ export async function executeFlowForLead({
             resume_block_index: i + 1,
             turn_count: 0,
             started_at: new Date().toISOString(),
+            // Se houver pergunta pendente do funil, já deixa no buffer para o
+            // cron de agentes responder no próximo ciclo.
+            pending_messages: pendingText || "",
+            last_message_at: pendingText ? new Date().toISOString() : null,
           },
           { onConflict: "lead_id" } as any,
         );
       assertNoError(activeErr, "lead_active_agents upsert failed");
 
-      console.log(`[flow-executor] agent ${block.reference_id} ativado em modo passivo para lead ${lead_id}`);
+      console.log(
+        `[flow-executor] agent ${block.reference_id} ativado para lead ${lead_id} | pendentes do funil="${pendingText.substring(0, 80)}"`,
+      );
       return { ok: true, paused: "agent_listening" };
     } else if (block.block_type === "tag_assign" && block.reference_id) {
       const { error } = await supabaseAdmin.from("lead_tags").upsert(
