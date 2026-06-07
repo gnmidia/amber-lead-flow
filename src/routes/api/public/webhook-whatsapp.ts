@@ -26,9 +26,13 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
 
             const key = data.key;
             const sourceRemoteJid: string = key.remoteJid ?? "";
-            if (key.fromMe || sourceRemoteJid.endsWith("@g.us")) {
+            // Grupos continuam ignorados. Mensagens fromMe (enviadas pelo próprio
+            // número da empresa, inclusive digitadas direto no celular) agora são
+            // capturadas como "outbound" para sincronizar os dois lados do chat.
+            if (sourceRemoteJid.endsWith("@g.us")) {
               return new Response("ok");
             }
+            const isOutbound = !!key.fromMe;
 
             const identity = resolveLeadIdentity({
               remoteJid: sourceRemoteJid,
@@ -120,21 +124,35 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
               operationId,
               firstContactAt: messageTimestamp,
               isNewLeadDefault: true,
-              defaultTags: ["LEAD_NOVO"],
+              defaultTags: isOutbound ? [] : ["LEAD_NOVO"],
             });
-            const isNewLead = isNew;
+            const isNewLead = isNew && !isOutbound;
             const lead = { id: leadId };
+
+            // Mensagem da empresa pode chegar duas vezes: a que o próprio CRM
+            // enviou (já gravada, com evolution_message_id) e o eco do webhook.
+            // Se já existe pelo mesmo id, não duplica.
+            if (isOutbound && key.id) {
+              const { data: existing } = await supabaseAdmin
+                .from("messages")
+                .select("id")
+                .eq("evolution_message_id", key.id)
+                .maybeSingle();
+              if (existing) {
+                return new Response("ok");
+              }
+            }
 
             await supabaseAdmin.from("messages").insert({
               lead_id: lead!.id,
               evolution_message_id: key.id,
-              direction: "inbound",
+              direction: isOutbound ? "outbound" : "inbound",
               type: messageType.replace("Message", ""),
               content,
               media_url: mediaUrl,
               file_name: fileName,
               is_ai: false,
-              sent_by: "lead",
+              sent_by: isOutbound ? "phone" : "lead",
               sent_at: messageTimestamp,
             });
 
@@ -142,6 +160,12 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
               .from("leads")
               .update({ last_interaction_at: messageTimestamp })
               .eq("id", lead!.id);
+
+            // Mensagens enviadas pela empresa não disparam agente/fluxos —
+            // eles reagem apenas a mensagens recebidas dos leads.
+            if (isOutbound) {
+              return new Response("ok");
+            }
 
             // ───── Agente IA ativo? Se sim, ele responde e pulamos os fluxos ─────
             console.log(`[webhook] inbound recebido | lead=${lead!.id} | content="${(content || "").substring(0, 200)}"`);
