@@ -51,7 +51,14 @@ async function callGoogle(cfg: LLMConfig, system: string, messages: ChatMsg[]) {
   }));
   const body: any = {
     contents,
-    generationConfig: { temperature: cfg.temperature, maxOutputTokens: cfg.max_tokens },
+    generationConfig: {
+      temperature: cfg.temperature,
+      maxOutputTokens: cfg.max_tokens,
+      // Desliga o "thinking" dos modelos Gemini novos. Sem isso, o raciocínio
+      // interno consome o orçamento de tokens e a resposta sai truncada. Para
+      // mensagens de WhatsApp não precisamos desse raciocínio.
+      thinkingConfig: { thinkingBudget: 0 },
+    },
   };
   if (system) body.systemInstruction = { parts: [{ text: system }] };
   const res = await fetch(url, {
