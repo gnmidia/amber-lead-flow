@@ -28,13 +28,28 @@ function lowercaseHuman(text: string): string {
   return result;
 }
 
-// Quebra a resposta do LLM em balões curtos (separador "||"), em minúsculas.
+// Limpa o texto antes de enviar ao lead: remove marcas internas, placeholders
+// de template não renderizados ({{...}}), pontuação solta no fim (ex.: "oii,"
+// quando o nome ficou vazio) e espaços duplicados.
+function sanitizeOutput(text: string): string {
+  return text
+    .replace(/\[AGENTE_CONCLUIDO\]/gi, "")
+    .replace(/\{\{[^}]*\}\}/g, "") // placeholders {{lead_name}} etc. que vazaram
+    .replace(/\s+([,.!?;:])/g, "$1") // espaço antes de pontuação
+    .replace(/^[\s,.;:–—-]+/, "") // lixo de pontuação no começo
+    .replace(/[\s,;:–—-]+$/, "") // vírgula/traço/espaço solto no fim ("oii,")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+// Quebra a resposta do LLM em balões curtos (separador "||"), em minúsculas e
+// limpos. Descarta balões vazios ou sem nenhuma letra/número (lixo puro).
 function splitIntoMessages(raw: string): string[] {
   if (!raw) return [];
   return raw
     .split("||")
-    .map((s) => lowercaseHuman(s.trim()))
-    .filter((s) => s.length > 0)
+    .map((s) => sanitizeOutput(lowercaseHuman(s.trim())))
+    .filter((s) => /[a-zà-ú0-9]/i.test(s)) // precisa ter ao menos uma letra/número
     .slice(0, 6); // trava de segurança
 }
 
@@ -373,19 +388,35 @@ async function sendOutgoingMessages(lead: any, parts: string[]) {
       is_ai: true,
     });
 
+    // Tempo de "digitação" proporcional ao tamanho da mensagem + aleatoriedade,
+    // simulando uma pessoa real digitando. Isso espaça os disparos e reduz muito
+    // o risco de bloqueio por spam (mensagens em rajada são o gatilho clássico).
+    const typingMs = Math.min(8000, 1500 + text.length * 55) + Math.floor(Math.random() * 1500);
+
     if (baseUrl && apiKey && instance && number) {
       try {
+        // Mostra "digitando..." antes de enviar (mais humano).
+        await fetch(`${baseUrl.replace(/\/$/, "")}/chat/sendPresence/${encodeURIComponent(instance)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: apiKey },
+          body: JSON.stringify({ number, presence: "composing", delay: typingMs }),
+        }).catch(() => {});
         await fetch(`${baseUrl.replace(/\/$/, "")}/message/sendText/${encodeURIComponent(instance)}`, {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey: apiKey },
-          body: JSON.stringify({ number, text, delay: 1200 }),
+          body: JSON.stringify({ number, text, delay: typingMs }),
         });
       } catch (e) {
         console.warn("[agent] evolution send failed:", e);
       }
     }
-    // intervalo entre balões para parecer digitação humana
-    if (i < parts.length - 1) await new Promise((r) => setTimeout(r, 900));
+
+    // Pausa entre um balão e o próximo (além do tempo de digitação), também
+    // aleatória, para o ritmo nunca ficar mecânico/rápido demais.
+    if (i < parts.length - 1) {
+      const gap = typingMs + 800 + Math.floor(Math.random() * 1500);
+      await new Promise((r) => setTimeout(r, gap));
+    }
   }
 }
 
