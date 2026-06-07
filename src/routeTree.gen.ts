@@ -41,6 +41,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as FluxosIndexRouteImport } from './routes/fluxos.index'
 import { Route as FluxosIdRouteImport } from './routes/fluxos.$id'
 import { Route as ApiPublicWebhookWhatsappRouteImport } from './routes/api/public/webhook-whatsapp'
+import { Route as ApiPublicVersionRouteImport } from './routes/api/public/version'
 import { Route as ApiPublicSyncChatsRouteImport } from './routes/api/public/sync-chats'
 import { Route as ApiPublicSendMessageRouteImport } from './routes/api/public/send-message'
 import { Route as ApiPublicProcessAgentRouteImport } from './routes/api/public/process-agent'
@@ -218,6 +219,11 @@ const ApiPublicWebhookWhatsappRoute =
     path: '/api/public/webhook-whatsapp',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicVersionRoute = ApiPublicVersionRouteImport.update({
+  id: '/api/public/version',
+  path: '/api/public/version',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicSyncChatsRoute = ApiPublicSyncChatsRouteImport.update({
   id: '/api/public/sync-chats',
   path: '/api/public/sync-chats',
@@ -343,6 +349,7 @@ export interface FileRoutesByFullPath {
   '/api/public/process-agent': typeof ApiPublicProcessAgentRoute
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
   '/api/public/sync-chats': typeof ApiPublicSyncChatsRoute
+  '/api/public/version': typeof ApiPublicVersionRoute
   '/api/public/webhook-whatsapp': typeof ApiPublicWebhookWhatsappRoute
   '/api/public/groups/debug-evo': typeof ApiPublicGroupsDebugEvoRoute
   '/api/public/groups/fetch-groups': typeof ApiPublicGroupsFetchGroupsRoute
@@ -392,6 +399,7 @@ export interface FileRoutesByTo {
   '/api/public/process-agent': typeof ApiPublicProcessAgentRoute
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
   '/api/public/sync-chats': typeof ApiPublicSyncChatsRoute
+  '/api/public/version': typeof ApiPublicVersionRoute
   '/api/public/webhook-whatsapp': typeof ApiPublicWebhookWhatsappRoute
   '/api/public/groups/debug-evo': typeof ApiPublicGroupsDebugEvoRoute
   '/api/public/groups/fetch-groups': typeof ApiPublicGroupsFetchGroupsRoute
@@ -442,6 +450,7 @@ export interface FileRoutesById {
   '/api/public/process-agent': typeof ApiPublicProcessAgentRoute
   '/api/public/send-message': typeof ApiPublicSendMessageRoute
   '/api/public/sync-chats': typeof ApiPublicSyncChatsRoute
+  '/api/public/version': typeof ApiPublicVersionRoute
   '/api/public/webhook-whatsapp': typeof ApiPublicWebhookWhatsappRoute
   '/api/public/groups/debug-evo': typeof ApiPublicGroupsDebugEvoRoute
   '/api/public/groups/fetch-groups': typeof ApiPublicGroupsFetchGroupsRoute
@@ -493,6 +502,7 @@ export interface FileRouteTypes {
     | '/api/public/process-agent'
     | '/api/public/send-message'
     | '/api/public/sync-chats'
+    | '/api/public/version'
     | '/api/public/webhook-whatsapp'
     | '/api/public/groups/debug-evo'
     | '/api/public/groups/fetch-groups'
@@ -542,6 +552,7 @@ export interface FileRouteTypes {
     | '/api/public/process-agent'
     | '/api/public/send-message'
     | '/api/public/sync-chats'
+    | '/api/public/version'
     | '/api/public/webhook-whatsapp'
     | '/api/public/groups/debug-evo'
     | '/api/public/groups/fetch-groups'
@@ -591,6 +602,7 @@ export interface FileRouteTypes {
     | '/api/public/process-agent'
     | '/api/public/send-message'
     | '/api/public/sync-chats'
+    | '/api/public/version'
     | '/api/public/webhook-whatsapp'
     | '/api/public/groups/debug-evo'
     | '/api/public/groups/fetch-groups'
@@ -641,6 +653,7 @@ export interface RootRouteChildren {
   ApiPublicProcessAgentRoute: typeof ApiPublicProcessAgentRoute
   ApiPublicSendMessageRoute: typeof ApiPublicSendMessageRoute
   ApiPublicSyncChatsRoute: typeof ApiPublicSyncChatsRoute
+  ApiPublicVersionRoute: typeof ApiPublicVersionRoute
   ApiPublicWebhookWhatsappRoute: typeof ApiPublicWebhookWhatsappRoute
   ApiPublicGroupsDebugEvoRoute: typeof ApiPublicGroupsDebugEvoRoute
   ApiPublicGroupsFetchGroupsRoute: typeof ApiPublicGroupsFetchGroupsRoute
@@ -874,6 +887,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhookWhatsappRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/version': {
+      id: '/api/public/version'
+      path: '/api/public/version'
+      fullPath: '/api/public/version'
+      preLoaderRoute: typeof ApiPublicVersionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/sync-chats': {
       id: '/api/public/sync-chats'
       path: '/api/public/sync-chats'
@@ -1025,6 +1045,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicProcessAgentRoute: ApiPublicProcessAgentRoute,
   ApiPublicSendMessageRoute: ApiPublicSendMessageRoute,
   ApiPublicSyncChatsRoute: ApiPublicSyncChatsRoute,
+  ApiPublicVersionRoute: ApiPublicVersionRoute,
   ApiPublicWebhookWhatsappRoute: ApiPublicWebhookWhatsappRoute,
   ApiPublicGroupsDebugEvoRoute: ApiPublicGroupsDebugEvoRoute,
   ApiPublicGroupsFetchGroupsRoute: ApiPublicGroupsFetchGroupsRoute,
