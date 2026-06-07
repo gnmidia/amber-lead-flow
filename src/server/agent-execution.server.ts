@@ -424,10 +424,18 @@ async function generateFollowupMessage(agentId: string, lead: any, count: number
       name ? `o nome da pessoa é ${name}; use só se ficar natural.` : "",
       "nada de emojis em excesso, nada de linguagem robótica.",
     ].filter(Boolean).join("\n");
-    const out = await callLLM({ ...cfg, temperature: 0.9, max_tokens: 120 }, sys, [
-      { role: "user", content: "gere a mensagem de follow-up." },
-    ]);
-    return out || fallback;
+    // Usa um orçamento de tokens generoso (igual à conversa normal). Com poucos
+    // tokens, modelos com "thinking" gastam tudo pensando e vazam fragmentos
+    // truncados/em inglês. Temperatura moderada para variar sem alucinar.
+    const out = await callLLM(
+      { ...cfg, temperature: 0.7, max_tokens: Math.max(cfg.max_tokens || 0, 600) },
+      sys,
+      [{ role: "user", content: "gere a mensagem de follow-up." }],
+    );
+    // Salvaguarda: se vier vazio ou suspeito (muito curto/sem letras), usa o fallback.
+    const clean = (out || "").trim();
+    if (clean.length < 3 || !/[a-zà-ú]/i.test(clean)) return fallback;
+    return clean;
   } catch {
     return fallback;
   }
