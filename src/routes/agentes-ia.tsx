@@ -18,6 +18,7 @@ type Agent = {
   tone: string | null;
   exit_condition: string | null;
   prompt: string | null;
+  knowledge_base: string | null;
   is_active: boolean;
   exit_tags: string[];
   llm_connection_id: string | null;
@@ -146,6 +147,7 @@ function AgentModal({ agent, tags, llms, onClose, onSaved }: { agent: Agent | nu
   const [tone, setTone] = useState(agent?.tone || "Misto");
   const [exitCondition, setExitCondition] = useState(agent?.exit_condition || "");
   const [prompt, setPrompt] = useState(agent?.prompt || "");
+  const [knowledgeBase, setKnowledgeBase] = useState(agent?.knowledge_base || "");
   const [isActive, setIsActive] = useState(agent?.is_active ?? true);
   const [exitTags, setExitTags] = useState<Set<string>>(new Set(agent?.exit_tags || []));
   const [llmConnectionId, setLlmConnectionId] = useState<string>(agent?.llm_connection_id || "");
@@ -165,6 +167,7 @@ function AgentModal({ agent, tags, llms, onClose, onSaved }: { agent: Agent | nu
     const payload = {
       name, objective: objective || null, product: product || null, tone,
       exit_condition: exitCondition || null, prompt: prompt || null,
+      knowledge_base: knowledgeBase || null,
       is_active: isActive, exit_tags: Array.from(exitTags),
       llm_connection_id: llmConnectionId || null,
       max_turns: maxTurns,
@@ -214,7 +217,20 @@ function AgentModal({ agent, tags, llms, onClose, onSaved }: { agent: Agent | nu
 
           <Field label="Prompt"><textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={4} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono text-xs" /></Field>
           <p className="text-[10px] text-muted-foreground -mt-2">
-            Variáveis disponíveis: <code className="font-mono text-foreground/80">{"{{lead_name}}"}</code>, <code className="font-mono text-foreground/80">{"{{product}}"}</code>, <code className="font-mono text-foreground/80">{"{{objective}}"}</code>, <code className="font-mono text-foreground/80">{"{{conversation_history}}"}</code>
+            Variáveis disponíveis: <code className="font-mono text-foreground/80">{"{{lead_name}}"}</code>, <code className="font-mono text-foreground/80">{"{{product}}"}</code>, <code className="font-mono text-foreground/80">{"{{objective}}"}</code>
+          </p>
+
+          <Field label="Base de conhecimento">
+            <textarea
+              value={knowledgeBase}
+              onChange={(e) => setKnowledgeBase(e.target.value)}
+              rows={8}
+              placeholder={"Cole aqui TUDO que o agente precisa saber para responder o lead:\n\n- O que é a aula / lançamento e para quem é\n- Data, horário e onde acontece\n- O que será ensinado / agenda\n- Preço, formas de pagamento, garantia\n- Links importantes\n- Perguntas frequentes e respostas\n- Objeções comuns e como contorná-las"}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+            />
+          </Field>
+          <p className="text-[10px] text-muted-foreground -mt-2">
+            Quanto mais completo e específico, melhores e mais confiáveis as respostas. O agente usa <strong>apenas</strong> essas informações como verdade — o que não estiver aqui, ele dirá que vai confirmar com a equipe.
           </p>
 
           <Field label="Atribuir tags ao concluir">

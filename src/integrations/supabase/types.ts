@@ -21,6 +21,7 @@ export type Database = {
           exit_tags: string[]
           id: string
           is_active: boolean
+          knowledge_base: string | null
           llm_connection_id: string | null
           max_turns: number
           name: string
@@ -37,6 +38,7 @@ export type Database = {
           exit_tags?: string[]
           id?: string
           is_active?: boolean
+          knowledge_base?: string | null
           llm_connection_id?: string | null
           max_turns?: number
           name: string
@@ -53,6 +55,7 @@ export type Database = {
           exit_tags?: string[]
           id?: string
           is_active?: boolean
+          knowledge_base?: string | null
           llm_connection_id?: string | null
           max_turns?: number
           name?: string
@@ -493,7 +496,9 @@ export type Database = {
           agent_id: string
           flow_block_id: string | null
           flow_id: string | null
+          follow_up_count: number
           id: string
+          last_follow_up_at: string | null
           last_message_at: string | null
           lead_id: string
           pending_messages: string | null
@@ -505,7 +510,9 @@ export type Database = {
           agent_id: string
           flow_block_id?: string | null
           flow_id?: string | null
+          follow_up_count?: number
           id?: string
+          last_follow_up_at?: string | null
           last_message_at?: string | null
           lead_id: string
           pending_messages?: string | null
@@ -517,7 +524,9 @@ export type Database = {
           agent_id?: string
           flow_block_id?: string | null
           flow_id?: string | null
+          follow_up_count?: number
           id?: string
+          last_follow_up_at?: string | null
           last_message_at?: string | null
           lead_id?: string
           pending_messages?: string | null

@@ -51,6 +51,7 @@ import { Route as ApiPublicFlowExecutorRouteImport } from './routes/api/public/f
 import { Route as ApiPublicEvolutionStatusRouteImport } from './routes/api/public/evolution-status'
 import { Route as ApiPublicEvolutionDiagRouteImport } from './routes/api/public/evolution-diag'
 import { Route as ApiPublicAgentRunRouteImport } from './routes/api/public/agent-run'
+import { Route as ApiPublicAgentFollowupRouteImport } from './routes/api/public/agent-followup'
 import { Route as ApiPublicGroupsGroupMessagesRouteImport } from './routes/api/public/groups/group-messages'
 import { Route as ApiPublicGroupsGroupEventsRouteImport } from './routes/api/public/groups/group-events'
 import { Route as ApiPublicGroupsFetchGroupsRouteImport } from './routes/api/public/groups/fetch-groups'
@@ -270,6 +271,11 @@ const ApiPublicAgentRunRoute = ApiPublicAgentRunRouteImport.update({
   path: '/api/public/agent-run',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAgentFollowupRoute = ApiPublicAgentFollowupRouteImport.update({
+  id: '/api/public/agent-followup',
+  path: '/api/public/agent-followup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicGroupsGroupMessagesRoute =
   ApiPublicGroupsGroupMessagesRouteImport.update({
     id: '/api/public/groups/group-messages',
@@ -326,6 +332,7 @@ export interface FileRoutesByFullPath {
   '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos/': typeof FluxosIndexRoute
+  '/api/public/agent-followup': typeof ApiPublicAgentFollowupRoute
   '/api/public/agent-run': typeof ApiPublicAgentRunRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
@@ -374,6 +381,7 @@ export interface FileRoutesByTo {
   '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos': typeof FluxosIndexRoute
+  '/api/public/agent-followup': typeof ApiPublicAgentFollowupRoute
   '/api/public/agent-run': typeof ApiPublicAgentRunRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
@@ -423,6 +431,7 @@ export interface FileRoutesById {
   '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
   '/fluxos/': typeof FluxosIndexRoute
+  '/api/public/agent-followup': typeof ApiPublicAgentFollowupRoute
   '/api/public/agent-run': typeof ApiPublicAgentRunRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
@@ -473,6 +482,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos/'
+    | '/api/public/agent-followup'
     | '/api/public/agent-run'
     | '/api/public/evolution-diag'
     | '/api/public/evolution-status'
@@ -521,6 +531,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos'
+    | '/api/public/agent-followup'
     | '/api/public/agent-run'
     | '/api/public/evolution-diag'
     | '/api/public/evolution-status'
@@ -569,6 +580,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/fluxos/$id'
     | '/fluxos/'
+    | '/api/public/agent-followup'
     | '/api/public/agent-run'
     | '/api/public/evolution-diag'
     | '/api/public/evolution-status'
@@ -618,6 +630,7 @@ export interface RootRouteChildren {
   UsuariosRoute: typeof UsuariosRoute
   FluxosIdRoute: typeof FluxosIdRoute
   FluxosIndexRoute: typeof FluxosIndexRoute
+  ApiPublicAgentFollowupRoute: typeof ApiPublicAgentFollowupRoute
   ApiPublicAgentRunRoute: typeof ApiPublicAgentRunRoute
   ApiPublicEvolutionDiagRoute: typeof ApiPublicEvolutionDiagRoute
   ApiPublicEvolutionStatusRoute: typeof ApiPublicEvolutionStatusRoute
@@ -931,6 +944,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicAgentRunRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/agent-followup': {
+      id: '/api/public/agent-followup'
+      path: '/api/public/agent-followup'
+      fullPath: '/api/public/agent-followup'
+      preLoaderRoute: typeof ApiPublicAgentFollowupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/groups/group-messages': {
       id: '/api/public/groups/group-messages'
       path: '/api/public/groups/group-messages'
@@ -994,6 +1014,7 @@ const rootRouteChildren: RootRouteChildren = {
   UsuariosRoute: UsuariosRoute,
   FluxosIdRoute: FluxosIdRoute,
   FluxosIndexRoute: FluxosIndexRoute,
+  ApiPublicAgentFollowupRoute: ApiPublicAgentFollowupRoute,
   ApiPublicAgentRunRoute: ApiPublicAgentRunRoute,
   ApiPublicEvolutionDiagRoute: ApiPublicEvolutionDiagRoute,
   ApiPublicEvolutionStatusRoute: ApiPublicEvolutionStatusRoute,
