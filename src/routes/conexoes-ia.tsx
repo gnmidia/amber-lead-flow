@@ -22,7 +22,9 @@ type Conn = {
 
 const MODELS: Record<Provider, string[]> = {
   anthropic: ["claude-sonnet-4-20250514", "claude-haiku-4-5-20251001", "claude-opus-4-20250514"],
-  google: ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"],
+  // Apelidos "-latest" apontam sempre para a versão atual e não quebram quando
+  // o Google descontinua uma versão (ex.: gemini-2.0-flash foi desligado).
+  google: ["gemini-flash-latest", "gemini-2.5-flash", "gemini-2.5-pro", "gemini-pro-latest"],
   openai: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"],
 };
 
