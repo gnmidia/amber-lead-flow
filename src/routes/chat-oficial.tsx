@@ -137,11 +137,13 @@ function ChatOficialPage() {
   const active = leads.find((l) => l.id === activeId) || null;
 
   const fetchLeads = async () => {
+    if (!currentOperationId) return;
     const { data, error } = await supabase
       .from("leads_with_last_message" as any)
       .select("*")
+      .eq("operation_id", currentOperationId)
       .order("last_message_at", { ascending: false, nullsFirst: false })
-      .limit(200);
+      .limit(2000);
     if (error) {
       console.error(error);
       return;
