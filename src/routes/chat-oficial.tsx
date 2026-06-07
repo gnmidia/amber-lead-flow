@@ -70,11 +70,35 @@ function initialsOf(name: string | null, number: string) {
   return base.slice(0, 2).toUpperCase();
 }
 
-function previewOf(l: Lead) {
-  if (l.last_message_type && l.last_message_type !== "text") {
-    return `[${l.last_message_type}]`;
+// Remove mensagens repetidas (mesmo evolution_message_id ou mesmo id). Protege
+// contra eventos de realtime duplicados e contra linhas duplicadas no banco.
+function dedupMessages(list: Message[]): Message[] {
+  const seen = new Set<string>();
+  const out: Message[] = [];
+  for (const m of list) {
+    const key = (m as any).evolution_message_id || m.id;
+    if (key && seen.has(key)) continue;
+    if (key) seen.add(key);
+    out.push(m);
   }
-  return l.last_message_content || "—";
+  return out;
+}
+
+function previewOf(l: Lead) {
+  // Mostra sempre o TEXTO real da última mensagem (seja do lead ou nossa).
+  // Texto recebido do WhatsApp vem com tipo "conversation"; texto enviado vem
+  // como "text"/"Texto". Em ambos os casos há conteúdo — então priorizamos ele.
+  const content = l.last_message_content;
+  if (content && content.trim()) return content;
+
+  // Sem texto = mídia. Mostra um rótulo amigável conforme o tipo.
+  const t = (l.last_message_type || "").toLowerCase();
+  if (t.includes("image") || t.includes("imagem")) return "📷 Imagem";
+  if (t.includes("audio") || t.includes("áudio") || t.includes("ptt")) return "🎤 Áudio";
+  if (t.includes("video") || t.includes("vídeo")) return "🎬 Vídeo";
+  if (t.includes("document") || t.includes("documento")) return "📄 Documento";
+  if (t.includes("sticker")) return "🩷 Figurinha";
+  return "—";
 }
 
 function ChatOficialPage() {
@@ -140,7 +164,7 @@ function ChatOficialPage() {
       .eq("lead_id", leadId)
       .order("sent_at", { ascending: false })
       .limit(200);
-    setMessages(((data || []) as Message[]).slice().reverse());
+    setMessages(dedupMessages(((data || []) as Message[]).slice().reverse()));
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }), 50);
   };
 
@@ -182,11 +206,12 @@ function ChatOficialPage() {
       })
       .subscribe((status) => {
         setIsRealtimeConnected(status === "SUBSCRIBED");
-        // Se o canal cair/expirar, recarrega os dados e força recriação do canal.
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+        // Em erro real recarrega os dados como fallback. NÃO recria o canal aqui:
+        // o CLOSED também acontece no cleanup normal do React, e recriar nele
+        // gera um loop subscribe/close. A recriação fica só no visibilitychange.
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
           fetchLeads();
           fetchScheduled();
-          setTimeout(() => setRealtimeEpoch((e) => e + 1), 1000);
         }
       });
     return () => {
@@ -207,7 +232,7 @@ function ChatOficialPage() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages", filter: `lead_id=eq.${activeId}` },
         (payload) => {
-          setMessages((prev) => [...prev, payload.new as Message]);
+          setMessages((prev) => dedupMessages([...prev, payload.new as Message]));
           setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }), 50);
         }
       )
@@ -243,7 +268,6 @@ function ChatOficialPage() {
 
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("online", onOnline);
-    window.addEventListener("focus", onVisible);
 
     const poll = setInterval(() => {
       if (document.visibilityState === "visible") refreshAll();
@@ -252,7 +276,6 @@ function ChatOficialPage() {
     return () => {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("online", onOnline);
-      window.removeEventListener("focus", onVisible);
       clearInterval(poll);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

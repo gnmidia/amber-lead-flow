@@ -129,10 +129,10 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
             const isNewLead = isNew && !isOutbound;
             const lead = { id: leadId };
 
-            // Mensagem da empresa pode chegar duas vezes: a que o próprio CRM
-            // enviou (já gravada, com evolution_message_id) e o eco do webhook.
-            // Se já existe pelo mesmo id, não duplica.
-            if (isOutbound && key.id) {
+            // Evita duplicar: a Evolution pode reenviar o mesmo evento, e as
+            // mensagens da empresa também chegam pelo eco do webhook além da que
+            // o próprio CRM já gravou. Se já existe pelo mesmo id, ignora.
+            if (key.id) {
               const { data: existing } = await supabaseAdmin
                 .from("messages")
                 .select("id")
