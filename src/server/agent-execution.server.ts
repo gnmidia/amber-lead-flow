@@ -146,7 +146,7 @@ export async function executeAgentForLead(
     .filter((m: any) => (m.content || "").trim().length > 0);
   console.log(`[agent] histórico carregado | ${orderedHistory.length} mensagens | turn=${currentTurn}/${maxTurns}`);
 
-  const leadName = lead.name || lead.push_name || "Cliente";
+  const leadName = lead.name || lead.push_name || "";
 
   const vars: Record<string, string> = {
     lead_name: leadName,
@@ -163,7 +163,7 @@ export async function executeAgentForLead(
   // System prompt = APENAS persona + conhecimento + regras. O diálogo vai
   // separado, como mensagens (evita duplicar o contexto e confundir o modelo).
   const systemPrompt = [
-    `Você é um atendente humano de vendas da equipe, conversando pelo WhatsApp com ${leadName}.`,
+    `Você é um atendente humano de vendas da equipe, conversando pelo WhatsApp${leadName ? ` com ${leadName}` : ""}.`,
     ``,
     `## Sua missão nesta etapa`,
     (agent as any).objective || "(não especificado)",
@@ -191,6 +191,9 @@ export async function executeAgentForLead(
     `- Tom de comunicação: ${(agent as any).tone || "Misto"}.`,
     `- Responda de fato ao que a pessoa disse. Não repita o que já foi dito nem fique enrolando.`,
     `- Nunca diga que é uma IA, a menos que perguntem diretamente.`,
+    leadName
+      ? `- Você pode usar o nome "${leadName}" se ficar natural, mas sem exagero.`
+      : `- Você NÃO sabe o nome da pessoa. NÃO use nome nenhum e NUNCA escreva uma saudação seguida de vírgula esperando um nome (ex.: "eai,", "oi ,"). Cumprimente sem nome.`,
     `- Use apenas as informações da base de conhecimento. Se não souber, diga que vai confirmar com a equipe — nunca invente preço, data, link ou promessa.`,
     ``,
     `## Encerramento`,
@@ -408,22 +411,21 @@ async function loadAgentLLM(agentId: string): Promise<LLMConfig | null> {
 
 // Gera uma mensagem de follow-up natural e variada perguntando, de leve, se a
 // pessoa conseguiu entrar no grupo. É o ÚNICO lugar onde essa pergunta acontece.
-async function generateFollowupMessage(agentId: string, lead: any, count: number): Promise<string> {
+async function generateFollowupMessage(agentId: string, count: number): Promise<string> {
   const fallback = count === 0
     ? "oi! tudo certo?||conseguiu entrar lá no grupo?"
     : "passando aqui rapidinho||deu certo entrar no grupo?";
   try {
     const cfg = await loadAgentLLM(agentId);
     if (!cfg) return fallback;
-    const name = lead.name || lead.push_name || "";
     const sys = [
       "você é um atendente humano no whatsapp.",
       "gere uma mensagem curta, informal, em letras minúsculas, perguntando de forma leve e natural se a pessoa conseguiu entrar no grupo (o link já foi enviado a ela).",
       "varie o jeito de perguntar para não soar repetitivo nem forçado.",
       "divida em 1 a 2 balões curtos separados por '||'.",
-      name ? `o nome da pessoa é ${name}; use só se ficar natural.` : "",
+      "NÃO use o nome da pessoa. Nunca comece com uma saudação seguida de vírgula esperando um nome (ex.: 'eai,'). Cumprimente sem nome nenhum.",
       "nada de emojis em excesso, nada de linguagem robótica.",
-    ].filter(Boolean).join("\n");
+    ].join("\n");
     // Usa um orçamento de tokens generoso (igual à conversa normal). Com poucos
     // tokens, modelos com "thinking" gastam tudo pensando e vazam fragmentos
     // truncados/em inglês. Temperatura moderada para variar sem alucinar.
@@ -504,7 +506,7 @@ export async function runAgentFollowups(): Promise<{ processed: number; sent: nu
         silenceMs >= FOLLOWUP_FIRST_DELAY_MS;
       if (!dueFirst && !dueNext) continue;
 
-      const parts = splitIntoMessages(await generateFollowupMessage(row.agent_id, lead, count));
+      const parts = splitIntoMessages(await generateFollowupMessage(row.agent_id, count));
       if (parts.length) {
         await sendOutgoingMessages(lead, parts);
         await supabaseAdmin
