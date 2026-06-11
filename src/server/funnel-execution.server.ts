@@ -48,6 +48,23 @@ export async function scheduleFunnelForLead({
   assertNoError(pendingError, "pending scheduled messages lookup failed");
   if ((pendingMessages?.length || 0) > 0) return { scheduled: 0, skipped: "already_pending" };
 
+  // TRAVA ANTI-LOOP: não reexecuta o mesmo funil para o mesmo lead se ele já
+  // rodou nas últimas 24h. Sem isso, gatilho/keyword repetido ou reconexão
+  // podem reagendar o funil dezenas de vezes (foi o que mandou 251 mensagens
+  // para um único lead e ajudou a gerar o bloqueio do número).
+  const { data: recentState, error: recentErr } = await supabaseAdmin
+    .from("lead_funnel_states")
+    .select("started_at")
+    .eq("lead_id", lead_id)
+    .eq("funnel_id", funnel_id)
+    .gte("started_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+    .limit(1);
+  assertNoError(recentErr, "recent funnel state lookup failed");
+  if ((recentState?.length || 0) > 0) {
+    console.log(`[funnel] anti-loop: funil ${funnel_id} já rodou para lead ${lead_id} nas últimas 24h — ignorando`);
+    return { scheduled: 0, skipped: "recent_run_24h" };
+  }
+
   // Se há estado ativo mas SEM pendentes, fecha o estado anterior e segue
   const { data: activeStates, error: activeStateError } = await supabaseAdmin
     .from("lead_funnel_states")
