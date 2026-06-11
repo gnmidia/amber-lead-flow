@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { executeFlowForLead } from "@/server/funnel-execution.server";
 import { handleInboundForActiveAgent } from "@/server/agent-execution.server";
-import { getOperationInstance } from "@/server/operations.server";
+import { getOperationInstance, getInstanceCredentials } from "@/server/operations.server";
 import { findOrUpsertLead, resolveLeadIdentity } from "@/server/lead-dedup.server";
 
 async function triggerFlowsForInboundMessage(leadId: string, content: string | null, isNewLead: boolean) {
@@ -36,18 +36,19 @@ export const Route = createFileRoute("/api/public/sync-chats")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const baseUrl = process.env.EVOLUTION_BASE_URL;
-        const apiKey = process.env.EVOLUTION_API_KEY;
         const body = await request.json().catch(() => ({} as any));
         const operationId: string | null = body?.operation_id || null;
         if (!operationId) {
           return Response.json({ error: "operation_id é obrigatório" }, { status: 400 });
         }
-        // Resolve instance from operation; fall back to env (single-instance legacy).
+        // Resolve instância + credenciais próprias da operação (tabela instances),
+        // com fallback no env (single-instance legado).
         const instance = (await getOperationInstance(operationId)) || null;
+        const { baseUrl, apiKey } = await getInstanceCredentials(instance);
         if (!baseUrl || !apiKey || !instance) {
-          return Response.json({ error: "Evolution env/instance not configured" }, { status: 500 });
+          return Response.json({ error: "Evolution não configurada para esta operação" }, { status: 500 });
         }
+        const baseUrlClean = baseUrl.replace(/\/$/, "");
         console.log(`[sync-chats] op=${operationId} instance=${instance}`);
         const headers = { "Content-Type": "application/json", apikey: apiKey };
 
@@ -55,7 +56,7 @@ export const Route = createFileRoute("/api/public/sync-chats")({
         const chatsLimit = Math.max(1, Math.min(parseInt(url.searchParams.get("chats_limit") || "60", 10) || 60, 200));
         const msgsLimit = Math.max(1, Math.min(parseInt(url.searchParams.get("msgs_limit") || "30", 10) || 30, 100));
 
-        const chatsRes = await fetch(`${baseUrl}/chat/findChats/${instance}`, {
+        const chatsRes = await fetch(`${baseUrlClean}/chat/findChats/${instance}`, {
           method: "POST", headers, body: JSON.stringify({}),
         });
         const chatsJson: any = await chatsRes.json().catch(() => []);
@@ -105,7 +106,7 @@ export const Route = createFileRoute("/api/public/sync-chats")({
           if (!leadId) continue;
           const isNewLead = isNew;
 
-          const msgsRes = await fetch(`${baseUrl}/chat/findMessages/${instance}`, {
+          const msgsRes = await fetch(`${baseUrlClean}/chat/findMessages/${instance}`, {
             method: "POST", headers,
             body: JSON.stringify({
               where: { key: { remoteJid: sourceRemoteJid } },

@@ -1,12 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { getOperationInstance, getInstanceCredentials } from "@/server/operations.server";
 
 export const Route = createFileRoute("/api/public/evolution-diag")({
   server: {
     handlers: {
-      GET: async () => {
-        const baseUrl = (process.env.EVOLUTION_BASE_URL || "").replace(/\/$/, "");
-        const apiKey = process.env.EVOLUTION_API_KEY;
-        const instance = process.env.EVOLUTION_INSTANCE_NAME;
+      GET: async ({ request }) => {
+        const url0 = new URL(request.url);
+        // Multi-conexão: instância/credenciais pela operação selecionada (env como fallback).
+        const instance =
+          url0.searchParams.get("instance") ||
+          (await getOperationInstance(url0.searchParams.get("operation")));
+        const { baseUrl: rawBase, apiKey } = await getInstanceCredentials(instance);
+        const baseUrl = (rawBase || "").replace(/\/$/, "");
         if (!baseUrl || !apiKey || !instance) {
           return Response.json({ error: "env missing", baseUrl: !!baseUrl, apiKey: !!apiKey, instance });
         }

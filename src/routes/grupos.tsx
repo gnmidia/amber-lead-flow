@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useOperation } from "@/contexts/OperationContext";
 import {
   Users,
   RefreshCw,
@@ -624,10 +625,12 @@ function GrowthTab({ groupId }: { groupId: string }) {
 
 
 function GruposPage() {
+  const { currentOperationId } = useOperation();
   const { data, isFetching, refetch, error } = useQuery<GroupsResponse>({
-    queryKey: ["dash-grupos"],
+    queryKey: ["dash-grupos", currentOperationId],
     queryFn: async () => {
-      const res = await fetch("/api/public/groups/fetch-groups");
+      const opQuery = currentOperationId ? `?operation=${currentOperationId}` : "";
+      const res = await fetch(`/api/public/groups/fetch-groups${opQuery}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error || "Falha ao buscar grupos");
       return json;

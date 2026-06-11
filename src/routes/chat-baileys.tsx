@@ -3,6 +3,7 @@ import { PageHeader } from "../components/PageHeader";
 import { useEffect, useState } from "react";
 import { RefreshCw, QrCode } from "lucide-react";
 import { toast } from "sonner";
+import { useOperation } from "@/contexts/OperationContext";
 
 export const Route = createFileRoute("/chat-baileys")({
   component: ChatBaileysPage,
@@ -18,13 +19,16 @@ const STATE_BADGE: Record<ConnState, { cls: string; label: string }> = {
 };
 
 function ChatBaileysPage() {
+  const { currentOperationId } = useOperation();
   const [state, setState] = useState<ConnState>("unknown");
   const [qr, setQr] = useState<string | null>(null);
   const [loadingQr, setLoadingQr] = useState(false);
 
+  const opQuery = currentOperationId ? `&operation=${currentOperationId}` : "";
+
   const checkState = async () => {
     try {
-      const res = await fetch("/api/public/evolution-status?action=state");
+      const res = await fetch(`/api/public/evolution-status?action=state${opQuery}`);
       const json = await res.json();
       const s = (json?.instance?.state ?? json?.state ?? "unknown") as ConnState;
       setState(s);
@@ -37,7 +41,7 @@ function ChatBaileysPage() {
   const fetchQr = async () => {
     setLoadingQr(true);
     try {
-      const res = await fetch("/api/public/evolution-status?action=connect");
+      const res = await fetch(`/api/public/evolution-status?action=connect${opQuery}`);
       const json = await res.json();
       const base64 = json?.base64 ?? json?.qrcode?.base64 ?? null;
       if (!base64) throw new Error("QR Code não retornado");
@@ -51,10 +55,13 @@ function ChatBaileysPage() {
   };
 
   useEffect(() => {
+    setQr(null);
+    setState("unknown");
     checkState();
     const id = setInterval(checkState, 15000);
     return () => clearInterval(id);
-  }, []);
+    // Refaz a leitura ao trocar de operação (cada uma tem sua instância).
+  }, [currentOperationId]);
 
   const badge = STATE_BADGE[state];
 
