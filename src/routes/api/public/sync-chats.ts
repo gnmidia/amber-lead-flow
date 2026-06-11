@@ -68,14 +68,20 @@ export const Route = createFileRoute("/api/public/sync-chats")({
         chats = chats
           .filter((c) => {
             const rj: string | undefined = c.remoteJid || c.id;
-            return rj && !rj.endsWith("@g.us");
+            if (!rj) return false;
+            // Ignora grupos e JIDs de sistema/broadcast (ex.: "0@s.whatsapp.net"
+            // = mensagem do WhatsApp Business, "status@broadcast"), que não são leads.
+            if (rj.endsWith("@g.us") || rj.endsWith("@broadcast") || rj.startsWith("0@")) return false;
+            return true;
           })
           .sort((a, b) => tsOf(b) - tsOf(a))
           .slice(0, chatsLimit);
 
         let synced = 0;
         let newMessages = 0;
+        let failed = 0;
         for (const chat of chats) {
+         try {
           const sourceRemoteJid: string = chat.remoteJid || chat.id;
           const identity = resolveLeadIdentity({
             remoteJid: sourceRemoteJid,
@@ -172,9 +178,13 @@ export const Route = createFileRoute("/api/public/sync-chats")({
             }
           }
           synced++;
+         } catch (e) {
+           failed++;
+           console.error(`[sync-chats] chat ${chat?.remoteJid || chat?.id} falhou:`, e);
+         }
         }
 
-        return Response.json({ synced, new_messages: newMessages });
+        return Response.json({ synced, new_messages: newMessages, failed });
       },
     },
   },
