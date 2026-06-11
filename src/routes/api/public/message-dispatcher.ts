@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { executeFlowForLead } from "@/server/funnel-execution.server";
 import { processAgentTimer } from "@/server/agent-execution.server";
+import { getInstanceCredentials } from "@/server/operations.server";
 
 function evoHeaders(apiKey: string) {
   return { "Content-Type": "application/json", apikey: apiKey };
@@ -64,11 +65,9 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
   server: {
     handlers: {
       POST: async () => {
-        const baseUrl = process.env.EVOLUTION_BASE_URL;
-        const apiKey = process.env.EVOLUTION_API_KEY;
-        if (!baseUrl || !apiKey) {
-          return Response.json({ error: "Evolution env not configured" }, { status: 500 });
-        }
+        // Credenciais da Evolution são resolvidas POR INSTÂNCIA dentro de
+        // processOne (multi-conexão) — cada mensagem usa a key/url da sua
+        // instância (tabela `instances`, com fallback para o env).
 
         // Recover stuck rows only after a generous timeout. Media/audio are
         // marked failed by the RPC instead of retried because the provider may
@@ -160,6 +159,14 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
             }
             await supabaseAdmin.from("scheduled_messages").update({ status: "sent", dispatch_started_at: null }).eq("id", msg.id);
             return "sent";
+          }
+
+          // Credenciais da instância desta mensagem (multi-conexão).
+          const { baseUrl, apiKey } = await getInstanceCredentials(msg.instance_name);
+          if (!baseUrl || !apiKey) {
+            console.warn(`[dispatcher] sem credenciais para instância ${msg.instance_name} — reagendando`);
+            await requeue(msg.id);
+            return "skipped";
           }
 
           // ───── Áudio: fire-and-forget para não segurar o Worker ─────

@@ -28,6 +28,32 @@ export async function getOperationInstance(
 }
 
 /**
+ * Resolve as credenciais (base_url + api_key) de uma instância da Evolution.
+ * Multi-conexão: cada instância tem suas próprias credenciais na tabela
+ * `instances`. Se a instância não estiver cadastrada lá, cai no env global
+ * (modo single-instance legado). Isso permite vários números/instâncias
+ * ativos ao mesmo tempo, cada um com sua key/url.
+ */
+export async function getInstanceCredentials(
+  instanceName: string | null | undefined,
+): Promise<{ baseUrl: string | null; apiKey: string | null; instance: string | null }> {
+  const envBase = process.env.EVOLUTION_BASE_URL || null;
+  const envKey = process.env.EVOLUTION_API_KEY || null;
+  const inst = instanceName || process.env.EVOLUTION_INSTANCE_NAME || null;
+  if (!inst) return { baseUrl: envBase, apiKey: envKey, instance: null };
+  const { data } = await supabaseAdmin
+    .from("instances")
+    .select("base_url, api_key")
+    .eq("instance_name", inst)
+    .maybeSingle();
+  return {
+    baseUrl: (data as any)?.base_url || envBase,
+    apiKey: (data as any)?.api_key || envKey,
+    instance: inst,
+  };
+}
+
+/**
  * Looks up the operation row that owns a given Evolution instance_name.
  * Used by inbound webhooks to route incoming messages to the correct
  * operation.

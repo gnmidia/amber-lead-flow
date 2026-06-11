@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { callLLM, type ChatMsg, type LLMConfig, type Provider } from "./llm-providers.server";
+import { getInstanceCredentials } from "./operations.server";
 
 const COMPLETION_MARK = "[AGENTE_CONCLUIDO]";
 
@@ -372,9 +373,8 @@ async function applyExitTags(leadId: string, tagIds: string[]) {
 // Envia uma sequência de balões curtos como mensagens separadas no WhatsApp,
 // com um pequeno intervalo entre elas (comportamento humano).
 async function sendOutgoingMessages(lead: any, parts: string[]) {
-  const baseUrl = process.env.EVOLUTION_BASE_URL;
-  const apiKey = process.env.EVOLUTION_API_KEY;
   const instance = lead.instance_name || process.env.EVOLUTION_INSTANCE_NAME;
+  const { baseUrl, apiKey } = await getInstanceCredentials(instance);
   const number = lead.remote_jid || lead.whatsapp_number;
 
   for (let i = 0; i < parts.length; i++) {

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { executeFlowForLead } from "@/server/funnel-execution.server";
 import { handleInboundForActiveAgent } from "@/server/agent-execution.server";
-import { getOperationByInstance } from "@/server/operations.server";
+import { getOperationByInstance, getInstanceCredentials } from "@/server/operations.server";
 import { findOrUpsertLead, resolveLeadIdentity } from "@/server/lead-dedup.server";
 
 export const Route = createFileRoute("/api/public/webhook-whatsapp")({
@@ -81,8 +81,7 @@ export const Route = createFileRoute("/api/public/webhook-whatsapp")({
             // e salva no storage para servir uma URL pública utilizável.
             if (mediaKind && key.id) {
               try {
-                const evoBase = process.env.EVOLUTION_BASE_URL;
-                const evoKey = process.env.EVOLUTION_API_KEY;
+                const { baseUrl: evoBase, apiKey: evoKey } = await getInstanceCredentials(instance);
                 if (evoBase && evoKey) {
                   const res = await fetch(`${evoBase}/chat/getBase64FromMediaMessage/${instance}`, {
                     method: "POST",

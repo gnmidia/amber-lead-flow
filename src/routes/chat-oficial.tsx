@@ -137,12 +137,13 @@ function ChatOficialPage() {
   const active = leads.find((l) => l.id === activeId) || null;
 
   const fetchLeads = async () => {
-    // Sem filtro de operação (ele causava descasamento e escondia os leads do
-    // lançamento). Mostra os mais recentes no topo; limite alto para não perder
-    // leads durante picos de volume.
+    if (!currentOperationId) return;
+    // Filtra pelo projeto (operação) selecionado — cada projeto enxerga apenas
+    // os seus leads, sem misturar conexões/números diferentes.
     const { data, error } = await supabase
       .from("leads_with_last_message" as any)
       .select("*")
+      .eq("operation_id", currentOperationId)
       .order("last_message_at", { ascending: false, nullsFirst: false })
       .limit(1000);
     if (error) {

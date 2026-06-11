@@ -1,16 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { getOperationInstance } from "@/server/operations.server";
+import { getOperationInstance, getInstanceCredentials } from "@/server/operations.server";
 
 export const Route = createFileRoute("/api/public/send-message")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const baseUrl = process.env.EVOLUTION_BASE_URL;
-        const apiKey = process.env.EVOLUTION_API_KEY;
-        if (!baseUrl || !apiKey) {
-          return Response.json({ error: "Evolution env not configured" }, { status: 500 });
-        }
         const body = await request.json().catch(() => ({}));
         const { number, lead_id, type, content, media_url, file_name, mimetype, instance, operation_id } = body || {};
         let target = number;
@@ -30,6 +25,12 @@ export const Route = createFileRoute("/api/public/send-message")({
           || process.env.EVOLUTION_INSTANCE_NAME;
         if ((!number && !lead_id) || !type || !inst) {
           return Response.json({ error: "Missing number/lead_id/type/instance" }, { status: 400 });
+        }
+        // Credenciais POR INSTÂNCIA (multi-conexão): cada instância tem sua
+        // própria api_key/base_url na tabela `instances` (com fallback p/ env).
+        const { baseUrl, apiKey } = await getInstanceCredentials(inst);
+        if (!baseUrl || !apiKey) {
+          return Response.json({ error: `Sem credenciais para a instância ${inst}` }, { status: 500 });
         }
         console.log(`[send-message] op=${leadOperationId} instance=${inst}`);
         const headers = { "Content-Type": "application/json", apikey: apiKey };
