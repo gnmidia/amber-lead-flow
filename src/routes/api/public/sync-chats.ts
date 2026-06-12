@@ -5,7 +5,12 @@ import { handleInboundForActiveAgent } from "@/server/agent-execution.server";
 import { getOperationInstance, getInstanceCredentials } from "@/server/operations.server";
 import { findOrUpsertLead, resolveLeadIdentity } from "@/server/lead-dedup.server";
 
-async function triggerFlowsForInboundMessage(leadId: string, content: string | null, isNewLead: boolean) {
+async function triggerFlowsForInboundMessage(
+  leadId: string,
+  content: string | null,
+  isNewLead: boolean,
+  operationId: string,
+) {
   const triggers: { type: string; valueMatches?: (v: string | null) => boolean }[] = [];
   if (isNewLead) triggers.push({ type: "new_lead" });
   if (content) {
@@ -17,11 +22,14 @@ async function triggerFlowsForInboundMessage(leadId: string, content: string | n
   }
 
   for (const trig of triggers) {
+    // Filtra pela operação do lead — sem isso, fluxos de outras operações
+    // (ex.: Matrix) disparavam para leads da Lançamento e vice-versa.
     const { data: flows, error } = await supabaseAdmin
       .from("flows")
       .select("id, trigger_value")
       .eq("trigger_type", trig.type)
-      .eq("is_active", true);
+      .eq("is_active", true)
+      .eq("operation_id", operationId);
     if (error) throw new Error(`flow trigger lookup failed: ${error.message}`);
 
     for (const flow of (flows || []) as any[]) {
@@ -172,7 +180,7 @@ export const Route = createFileRoute("/api/public/sync-chats")({
               try {
                 const handled = await handleInboundForActiveAgent(leadId, content, identity.realPhone || identity.remoteJid);
                 if (!handled) {
-                  await triggerFlowsForInboundMessage(leadId, content, isNewLead);
+                  await triggerFlowsForInboundMessage(leadId, content, isNewLead, operationId);
                 }
               } catch (e) { console.error("[sync-chats] flow trigger error", e); }
             }
