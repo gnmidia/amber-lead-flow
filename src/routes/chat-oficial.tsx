@@ -221,7 +221,11 @@ function ChatOficialPage() {
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [realtimeEpoch]);
+    // Inclui currentOperationId: sem ele o canal era criado no mount com
+    // currentOperationId=null e os callbacks fechavam sobre um fetchLeads que
+    // saía cedo (if (!currentOperationId) return), fazendo a lista nunca
+    // atualizar ao vivo — só no reload manual.
+  }, [realtimeEpoch, currentOperationId]);
 
   // Active conversation: load + realtime
   useEffect(() => {
