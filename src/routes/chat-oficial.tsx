@@ -351,6 +351,45 @@ function ChatOficialPage() {
     }
   };
 
+  // Auto-sync silencioso: puxa as mensagens novas direto da Evolution em
+  // background (sem spinner/toast). É o caminho confiável de trazer mensagens
+  // reais pro banco — independe do webhook da Evolution (instável neste setup)
+  // e do realtime do Supabase. Após puxar, atualiza a lista e a conversa aberta.
+  const autoSyncBusyRef = useRef(false);
+  const silentSync = async (opId: string) => {
+    if (autoSyncBusyRef.current) return;
+    autoSyncBusyRef.current = true;
+    try {
+      const res = await fetch("/api/public/sync-chats?chats_limit=25&msgs_limit=12", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ operation_id: opId }),
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json) {
+        await fetchLeads();
+        if (activeIdRef.current) await fetchMessages(activeIdRef.current);
+      }
+    } catch {
+      /* silencioso: tenta de novo no próximo ciclo */
+    } finally {
+      autoSyncBusyRef.current = false;
+    }
+  };
+
+  // Dispara o auto-sync a cada 12s enquanto a aba está visível. Também roda
+  // uma vez ao selecionar a operação (catch-up imediato ao abrir a tela).
+  useEffect(() => {
+    if (!currentOperationId) return;
+    const op = currentOperationId;
+    silentSync(op);
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") silentSync(op);
+    }, 12000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentOperationId]);
+
   const togglePause = async () => {
     if (!active) return;
     await supabase.from("leads").update({ ia_paused: !active.ia_paused }).eq("id", active.id);
