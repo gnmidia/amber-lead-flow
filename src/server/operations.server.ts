@@ -62,14 +62,30 @@ export async function getOperationByInstance(
   instanceName: string | null | undefined,
 ): Promise<{ id: string; instance_name: string | null } | null> {
   if (!instanceName) return null;
-  const { data, error } = await supabaseAdmin
+  // 1) Operação cujo instance_name (instância "principal") bate.
+  const { data: op, error } = await supabaseAdmin
     .from("operations")
     .select("id, instance_name")
     .eq("instance_name", instanceName)
     .maybeSingle();
   if (error) {
     console.warn(`[ops] op lookup by instance=${instanceName} failed:`, error.message);
-    return null;
   }
-  return (data as any) || null;
+  if (op) return op as any;
+
+  // 2) Multi-instância: qualquer instância registrada na tabela `instances`
+  // roteia para a sua operação. Permite vários números na mesma operação.
+  const { data: inst } = await supabaseAdmin
+    .from("instances")
+    .select("operation_id")
+    .eq("instance_name", instanceName)
+    .maybeSingle();
+  const opId = (inst as any)?.operation_id;
+  if (!opId) return null;
+  const { data: op2 } = await supabaseAdmin
+    .from("operations")
+    .select("id, instance_name")
+    .eq("id", opId)
+    .maybeSingle();
+  return (op2 as any) || null;
 }
