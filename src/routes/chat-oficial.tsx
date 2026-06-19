@@ -412,7 +412,9 @@ function ChatOficialPage() {
           number: active.whatsapp_number,
           type: "text",
           content: text,
-          instance: active.instance_name,
+          // NÃO força a instância antiga do lead (pode estar morta). Deixa o
+          // backend resolver pela instância ATUAL da operação (multi-conexão).
+          operation_id: currentOperationId,
         }),
       });
       const json = await res.json();
