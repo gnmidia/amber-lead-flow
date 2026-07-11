@@ -47,6 +47,7 @@ import { Route as ApiPublicSendMessageRouteImport } from './routes/api/public/se
 import { Route as ApiPublicProcessAgentRouteImport } from './routes/api/public/process-agent'
 import { Route as ApiPublicMessageDispatcherRouteImport } from './routes/api/public/message-dispatcher'
 import { Route as ApiPublicLlmTestRouteImport } from './routes/api/public/llm-test'
+import { Route as ApiPublicLlmConnectionsRouteImport } from './routes/api/public/llm-connections'
 import { Route as ApiPublicFunnelSchedulerRouteImport } from './routes/api/public/funnel-scheduler'
 import { Route as ApiPublicFlowExecutorRouteImport } from './routes/api/public/flow-executor'
 import { Route as ApiPublicEvolutionStatusRouteImport } from './routes/api/public/evolution-status'
@@ -250,6 +251,11 @@ const ApiPublicLlmTestRoute = ApiPublicLlmTestRouteImport.update({
   path: '/api/public/llm-test',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicLlmConnectionsRoute = ApiPublicLlmConnectionsRouteImport.update({
+  id: '/api/public/llm-connections',
+  path: '/api/public/llm-connections',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicFunnelSchedulerRoute =
   ApiPublicFunnelSchedulerRouteImport.update({
     id: '/api/public/funnel-scheduler',
@@ -344,6 +350,7 @@ export interface FileRoutesByFullPath {
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
+  '/api/public/llm-connections': typeof ApiPublicLlmConnectionsRoute
   '/api/public/llm-test': typeof ApiPublicLlmTestRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
   '/api/public/process-agent': typeof ApiPublicProcessAgentRoute
@@ -394,6 +401,7 @@ export interface FileRoutesByTo {
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
+  '/api/public/llm-connections': typeof ApiPublicLlmConnectionsRoute
   '/api/public/llm-test': typeof ApiPublicLlmTestRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
   '/api/public/process-agent': typeof ApiPublicProcessAgentRoute
@@ -445,6 +453,7 @@ export interface FileRoutesById {
   '/api/public/evolution-status': typeof ApiPublicEvolutionStatusRoute
   '/api/public/flow-executor': typeof ApiPublicFlowExecutorRoute
   '/api/public/funnel-scheduler': typeof ApiPublicFunnelSchedulerRoute
+  '/api/public/llm-connections': typeof ApiPublicLlmConnectionsRoute
   '/api/public/llm-test': typeof ApiPublicLlmTestRoute
   '/api/public/message-dispatcher': typeof ApiPublicMessageDispatcherRoute
   '/api/public/process-agent': typeof ApiPublicProcessAgentRoute
@@ -497,6 +506,7 @@ export interface FileRouteTypes {
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
+    | '/api/public/llm-connections'
     | '/api/public/llm-test'
     | '/api/public/message-dispatcher'
     | '/api/public/process-agent'
@@ -547,6 +557,7 @@ export interface FileRouteTypes {
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
+    | '/api/public/llm-connections'
     | '/api/public/llm-test'
     | '/api/public/message-dispatcher'
     | '/api/public/process-agent'
@@ -597,6 +608,7 @@ export interface FileRouteTypes {
     | '/api/public/evolution-status'
     | '/api/public/flow-executor'
     | '/api/public/funnel-scheduler'
+    | '/api/public/llm-connections'
     | '/api/public/llm-test'
     | '/api/public/message-dispatcher'
     | '/api/public/process-agent'
@@ -648,6 +660,7 @@ export interface RootRouteChildren {
   ApiPublicEvolutionStatusRoute: typeof ApiPublicEvolutionStatusRoute
   ApiPublicFlowExecutorRoute: typeof ApiPublicFlowExecutorRoute
   ApiPublicFunnelSchedulerRoute: typeof ApiPublicFunnelSchedulerRoute
+  ApiPublicLlmConnectionsRoute: typeof ApiPublicLlmConnectionsRoute
   ApiPublicLlmTestRoute: typeof ApiPublicLlmTestRoute
   ApiPublicMessageDispatcherRoute: typeof ApiPublicMessageDispatcherRoute
   ApiPublicProcessAgentRoute: typeof ApiPublicProcessAgentRoute
@@ -929,6 +942,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicLlmTestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/llm-connections': {
+      id: '/api/public/llm-connections'
+      path: '/api/public/llm-connections'
+      fullPath: '/api/public/llm-connections'
+      preLoaderRoute: typeof ApiPublicLlmConnectionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/funnel-scheduler': {
       id: '/api/public/funnel-scheduler'
       path: '/api/public/funnel-scheduler'
@@ -1040,6 +1060,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicEvolutionStatusRoute: ApiPublicEvolutionStatusRoute,
   ApiPublicFlowExecutorRoute: ApiPublicFlowExecutorRoute,
   ApiPublicFunnelSchedulerRoute: ApiPublicFunnelSchedulerRoute,
+  ApiPublicLlmConnectionsRoute: ApiPublicLlmConnectionsRoute,
   ApiPublicLlmTestRoute: ApiPublicLlmTestRoute,
   ApiPublicMessageDispatcherRoute: ApiPublicMessageDispatcherRoute,
   ApiPublicProcessAgentRoute: ApiPublicProcessAgentRoute,

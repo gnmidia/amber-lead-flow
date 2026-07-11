@@ -11,14 +11,18 @@ export const Route = createFileRoute("/conexoes-ia")({ component: Page });
 type Provider = "anthropic" | "google" | "openai";
 type Conn = {
   id: string;
+  operation_id: string;
   name: string;
   provider: Provider;
-  api_key: string;
+  // api_key nunca é carregada para o navegador (segredo). Fica só no servidor.
   model: string;
   max_tokens: number;
   temperature: number;
   is_active: boolean;
 };
+
+const SAFE_COLUMNS =
+  "id, operation_id, name, provider, model, max_tokens, temperature, is_active, created_at";
 
 const MODELS: Record<Provider, string[]> = {
   anthropic: ["claude-sonnet-4-20250514", "claude-haiku-4-5-20251001", "claude-opus-4-20250514"],
@@ -50,7 +54,7 @@ function Page() {
     if (!currentOperationId) return;
     const { data } = await supabase
       .from("llm_connections" as any)
-      .select("*")
+      .select(SAFE_COLUMNS)
       .eq("operation_id", currentOperationId)
       .order("created_at", { ascending: false });
     setItems(((data || []) as unknown) as Conn[]);
@@ -59,8 +63,13 @@ function Page() {
 
   const onDelete = async (c: Conn) => {
     if (!confirm(`Excluir a conexão ${c.name}?`)) return;
-    const { error } = await supabase.from("llm_connections" as any).delete().eq("id", c.id);
-    if (error) toast.error(error.message);
+    const res = await fetch("/api/public/llm-connections", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete", id: c.id, operation_id: c.operation_id }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.error) toast.error(json.error || `HTTP ${res.status}`);
     else { toast.success("Conexão excluída"); load(); }
   };
 
@@ -131,7 +140,9 @@ function ConnModal({ conn, onClose, onSaved }: { conn: Conn | null; onClose: () 
   const { currentOperationId } = useOperation();
   const [name, setName] = useState(conn?.name || "");
   const [provider, setProvider] = useState<Provider>(conn?.provider || "anthropic");
-  const [apiKey, setApiKey] = useState(conn?.api_key || "");
+  // Na edição a key nunca vem do servidor: campo começa vazio e só é enviado
+  // se o usuário digitar uma nova (vazio = mantém a chave atual no banco).
+  const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState(conn?.model || MODELS["anthropic"][0]);
   const [maxTokens, setMaxTokens] = useState(conn?.max_tokens || 1000);
   const [temperature, setTemperature] = useState(conn?.temperature ?? 0.7);
@@ -145,15 +156,33 @@ function ConnModal({ conn, onClose, onSaved }: { conn: Conn | null; onClose: () 
   }, [provider]);
 
   const save = async () => {
-    if (!name.trim() || !apiKey.trim()) { toast.error("Nome e API key obrigatórios"); return; }
-    if (!conn && !currentOperationId) { toast.error("Operação não selecionada"); return; }
+    // Na criação a key é obrigatória; na edição, vazio significa "manter atual".
+    if (!name.trim()) { toast.error("Nome obrigatório"); return; }
+    if (!conn && !apiKey.trim()) { toast.error("API key obrigatória"); return; }
+    const operationId = conn?.operation_id || currentOperationId;
+    if (!operationId) { toast.error("Operação não selecionada"); return; }
     setSaving(true);
-    const payload = { name, provider, api_key: apiKey, model, max_tokens: maxTokens, temperature, is_active: isActive };
-    const { error } = conn
-      ? await supabase.from("llm_connections" as any).update(payload).eq("id", conn.id)
-      : await supabase.from("llm_connections" as any).insert({ ...payload, operation_id: currentOperationId! } as any);
+    const payload: Record<string, unknown> = {
+      action: conn ? "update" : "create",
+      operation_id: operationId,
+      name,
+      provider,
+      model,
+      max_tokens: maxTokens,
+      temperature,
+      is_active: isActive,
+    };
+    if (conn) payload.id = conn.id;
+    // Só inclui api_key se o usuário digitou uma nova.
+    if (apiKey.trim()) payload.api_key = apiKey;
+    const res = await fetch("/api/public/llm-connections", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json().catch(() => ({}));
     setSaving(false);
-    if (error) toast.error(error.message);
+    if (!res.ok || json.error) toast.error(json.error || `HTTP ${res.status}`);
     else { toast.success(conn ? "Conexão atualizada" : "Conexão criada"); onSaved(); }
   };
 
@@ -196,7 +225,18 @@ function ConnModal({ conn, onClose, onSaved }: { conn: Conn | null; onClose: () 
             </select>
           </Field>
           <Field label="API Key">
-            <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="sk-..." className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono" />
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder={conn ? "•••••••• (deixe vazio para manter a atual)" : "sk-..."}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono"
+            />
+            {conn && (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                A chave atual fica protegida no servidor. Preencha apenas se quiser substituí-la.
+              </p>
+            )}
           </Field>
           <Field label="Modelo">
             <select value={model} onChange={(e) => setModel(e.target.value)} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm">
