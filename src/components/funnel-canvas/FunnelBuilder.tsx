@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BlockNode, type BlockNodeData } from "./BlockNode";
 import { AbSplitNode, type AbSplitNodeData } from "./AbSplitNode";
-import { ActionDrawer } from "./ActionDrawer";
+import { BlockEditorDrawer } from "./BlockEditorDrawer";
 import {
   ACTION_LABEL, DND_MIME, PALETTE,
   type ActionType, type AbOutputRow, type FunnelActionRow,
@@ -38,7 +38,7 @@ export function FunnelBuilder({
   const [actions, setActions] = useState<FunnelActionRow[]>([]);
   const [abOutputs, setAbOutputs] = useState<AbOutputRow[]>([]);
   const [dbEdges, setDbEdges] = useState<FunnelEdgeRow[]>([]);
-  const [editingAction, setEditingAction] = useState<FunnelActionRow | null>(null);
+  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   const [nodes, setNodes] = useNodesState<Node>([]);
@@ -138,8 +138,9 @@ export function FunnelBuilder({
       .single();
     if (error) return toast.error(error.message);
     await load();
-    // Abre direto o editor da ação criada (delay/tag/mídia precisam de config).
-    setEditingAction(data as FunnelActionRow);
+    // Abre o editor do BLOCO (todas as ações juntas) para configurar.
+    void data;
+    setEditingBlockId(blockId);
   };
 
   const deleteAction = async (actionId: string) => {
@@ -277,7 +278,7 @@ export function FunnelBuilder({
         onRename: (t) => renameBlock(b.id, t),
         onDeleteBlock: () => deleteBlock(b.id),
         onAddAction: (t) => addAction(b.id, t),
-        onEditAction: (a) => setEditingAction(a),
+        onEditBlock: () => setEditingBlockId(b.id),
         onDeleteAction: (id) => deleteAction(id),
         onReorderActions: (ids) => reorderActions(b.id, ids),
       };
@@ -379,15 +380,21 @@ export function FunnelBuilder({
         </ReactFlow>
       </div>
 
-      {editingAction && (
-        <ActionDrawer
-          action={editingAction}
+      {editingBlockId && (
+        <BlockEditorDrawer
+          blockTitle={blocks.find((b) => b.id === editingBlockId)?.title || "Bloco"}
+          actions={actions
+            .filter((a) => a.block_id === editingBlockId)
+            .sort((x, y) => x.order_index - y.order_index)}
           funnelId={funnelId}
           operationId={operationId}
-          onClose={() => setEditingAction(null)}
+          onClose={() => setEditingBlockId(null)}
           onSaved={() => {
-            setEditingAction(null);
+            setEditingBlockId(null);
             load();
+          }}
+          onDeleteAction={async (id) => {
+            await deleteAction(id);
           }}
         />
       )}

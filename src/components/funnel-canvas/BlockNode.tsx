@@ -2,7 +2,7 @@ import { memo, useState } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import {
   Type, Mic, Image as ImageIcon, Video, FileText, Tag as TagIcon, Clock,
-  Trash2, GripVertical, Plus,
+  Trash2, GripVertical, Pencil,
 } from "lucide-react";
 import {
   DndContext, PointerSensor, closestCenter, useSensor, useSensors,
@@ -28,7 +28,7 @@ export type BlockNodeData = {
   onRename: (title: string) => void;
   onDeleteBlock: () => void;
   onAddAction: (type: ActionType) => void;
-  onEditAction: (action: FunnelActionRow) => void;
+  onEditBlock: () => void;
   onDeleteAction: (actionId: string) => void;
   onReorderActions: (orderedIds: string[]) => void;
 };
@@ -47,7 +47,6 @@ function actionSummary(a: FunnelActionRow): string {
 export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps) {
   const d = data as unknown as BlockNodeData;
   const [dragOver, setDragOver] = useState(false);
-  const [showAdd, setShowAdd] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   const onDragEnd = (e: DragEndEvent) => {
@@ -91,6 +90,13 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps) 
           placeholder="Bloco"
         />
         <button
+          onClick={d.onEditBlock}
+          className="nodrag rounded p-1 text-muted-foreground hover:bg-muted hover:text-primary"
+          title="Editar ações do bloco"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+        <button
           onClick={d.onDeleteBlock}
           className="nodrag rounded p-1 text-destructive hover:bg-destructive/10"
           title="Excluir bloco"
@@ -112,41 +118,13 @@ export const BlockNode = memo(function BlockNode({ data, selected }: NodeProps) 
               <SortableAction
                 key={a.id}
                 action={a}
-                onEdit={() => d.onEditAction(a)}
+                onEdit={d.onEditBlock}
                 onDelete={() => d.onDeleteAction(a.id)}
               />
             ))}
           </SortableContext>
         </DndContext>
 
-        {/* Fallback sem drag: menu "+ ação" */}
-        <div className="relative">
-          <button
-            onClick={() => setShowAdd((v) => !v)}
-            className="mt-1 flex w-full items-center justify-center gap-1 rounded-md border border-dashed border-border py-1.5 text-[11px] text-muted-foreground hover:border-primary/40 hover:text-primary"
-          >
-            <Plus className="h-3 w-3" /> ação
-          </button>
-          {showAdd && (
-            <div className="absolute bottom-8 left-0 z-10 w-full rounded-md border border-border bg-popover p-1 shadow-xl">
-              {PALETTE.map((t) => {
-                const Icon = ACTION_ICON[t];
-                return (
-                  <button
-                    key={t}
-                    onClick={() => {
-                      setShowAdd(false);
-                      d.onAddAction(t);
-                    }}
-                    className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-muted"
-                  >
-                    <Icon className="h-3 w-3 text-muted-foreground" /> {ACTION_LABEL[t]}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
       </div>
 
       <Handle type="source" position={Position.Right} className="!h-3 !w-3 !bg-primary" />
