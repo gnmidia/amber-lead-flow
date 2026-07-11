@@ -27,25 +27,30 @@ function resolveVars(content: string, lead: any): string {
 }
 
 async function sendToEvolution(baseUrl: string, apiKey: string, instance: string, msg: any, lead: any) {
+  // Validação tripla de número (proteção contra envio pro lead errado):
+  // remote_jid do lead → número gravado na fila → número do lead.
   const number = lead.remote_jid || msg.whatsapp_number || lead.whatsapp_number;
-  const delay = 1200;
   try {
     let endpoint = "";
     let body: any = {};
     const t = (msg.message_type || "").toLowerCase();
 
+    // SEM "delay" no payload: o parâmetro de digitação da Evolution foi
+    // removido de propósito — toda espera do funil passa a ser feita por
+    // ações de delay explícitas (agendadas via send_at), nunca embutida
+    // na mensagem.
     if (t === "text" || t === "texto") {
       endpoint = `/message/sendText/${instance}`;
-      body = { number, text: resolveVars(msg.content || "", lead), delay };
+      body = { number, text: resolveVars(msg.content || "", lead) };
     } else if (t === "image" || t === "imagem") {
       endpoint = `/message/sendMedia/${instance}`;
-      body = { number, mediatype: "image", mimetype: msg.mimetype || "image/jpeg", media: msg.media_url, fileName: msg.file_name || "image.jpg", caption: msg.caption || "", delay };
+      body = { number, mediatype: "image", mimetype: msg.mimetype || "image/jpeg", media: msg.media_url, fileName: msg.file_name || "image.jpg", caption: msg.caption || "" };
     } else if (t === "video") {
       endpoint = `/message/sendMedia/${instance}`;
-      body = { number, mediatype: "video", mimetype: msg.mimetype || "video/mp4", media: msg.media_url, fileName: msg.file_name || "video.mp4", caption: msg.caption || "", delay };
+      body = { number, mediatype: "video", mimetype: msg.mimetype || "video/mp4", media: msg.media_url, fileName: msg.file_name || "video.mp4", caption: msg.caption || "" };
     } else if (t === "document" || t === "documento") {
       endpoint = `/message/sendMedia/${instance}`;
-      body = { number, mediatype: "document", mimetype: msg.mimetype || "application/pdf", media: msg.media_url, fileName: msg.file_name || "arquivo.pdf", caption: msg.caption || "", delay };
+      body = { number, mediatype: "document", mimetype: msg.mimetype || "application/pdf", media: msg.media_url, fileName: msg.file_name || "arquivo.pdf", caption: msg.caption || "" };
     } else {
       return { success: false, error: `Unsupported type: ${t}` };
     }
@@ -144,6 +149,27 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
             return "sent";
           }
 
+          // Ação de tag do builder 2D: o config vem no content (JSON),
+          // sem depender de funnel_steps. Ação interna — nada é enviado.
+          if (stepType === "tag_action") {
+            try {
+              const cfg = JSON.parse(msg.content || "{}");
+              if (cfg.tag_id && cfg.tag_operation === "assign") {
+                await supabaseAdmin.from("lead_tags").upsert(
+                  { lead_id: msg.lead_id, tag_id: cfg.tag_id, assigned_by: "funnel" },
+                  { onConflict: "lead_id,tag_id" } as any,
+                );
+              } else if (cfg.tag_id && cfg.tag_operation === "remove") {
+                await supabaseAdmin.from("lead_tags").delete()
+                  .eq("lead_id", msg.lead_id).eq("tag_id", cfg.tag_id);
+              }
+            } catch (error) {
+              console.error("[message-dispatcher] tag_action error", error);
+            }
+            await supabaseAdmin.from("scheduled_messages").update({ status: "sent", dispatch_started_at: null }).eq("id", msg.id);
+            return "sent";
+          }
+
           if (stepType === "tag") {
             const { data: stepRow } = await supabaseAdmin
               .from("funnel_steps").select("tag_id, tag_operation").eq("id", msg.step_id).maybeSingle();
@@ -187,14 +213,12 @@ export const Route = createFileRoute("/api/public/message-dispatcher")({
               sent_by: "system",
               sent_at: new Date().toISOString(),
             });
-            // Presence + envio sem await.
-            fetch(`${baseUrl}/chat/sendPresence/${msg.instance_name}`, {
-              method: "POST", headers: evoHeaders(apiKey),
-              body: JSON.stringify({ number, options: { delay: 1500, presence: "recording", number } }),
-            }).catch(() => {});
+            // Envio sem await (fire-and-forget). Sem sendPresence "recording"
+            // e sem "delay" no payload: a emulação de digitação/gravação foi
+            // removida — esperas são feitas por ações de delay explícitas.
             fetch(`${baseUrl}/message/sendWhatsAppAudio/${msg.instance_name}`, {
               method: "POST", headers: evoHeaders(apiKey),
-              body: JSON.stringify({ number, audio: msg.media_url, delay: 1500 }),
+              body: JSON.stringify({ number, audio: msg.media_url }),
             }).catch(() => {});
             return "sent";
           }

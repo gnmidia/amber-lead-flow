@@ -25,7 +25,6 @@ import { Route as JarvisRouteImport } from './routes/jarvis'
 import { Route as InteligenciaIaRouteImport } from './routes/inteligencia-ia'
 import { Route as HubRouteImport } from './routes/hub'
 import { Route as GruposRouteImport } from './routes/grupos'
-import { Route as FunilRouteImport } from './routes/funil'
 import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as FilaRouteImport } from './routes/fila'
 import { Route as DisparosRouteImport } from './routes/disparos'
@@ -38,7 +37,9 @@ import { Route as AguardandoRouteImport } from './routes/aguardando'
 import { Route as AgentesIaRouteImport } from './routes/agentes-ia'
 import { Route as AgendamentosRouteImport } from './routes/agendamentos'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as FunilIndexRouteImport } from './routes/funil.index'
 import { Route as FluxosIndexRouteImport } from './routes/fluxos.index'
+import { Route as FunilIdRouteImport } from './routes/funil.$id'
 import { Route as FluxosIdRouteImport } from './routes/fluxos.$id'
 import { Route as ApiPublicWebhookWhatsappRouteImport } from './routes/api/public/webhook-whatsapp'
 import { Route as ApiPublicVersionRouteImport } from './routes/api/public/version'
@@ -139,11 +140,6 @@ const GruposRoute = GruposRouteImport.update({
   path: '/grupos',
   getParentRoute: () => rootRouteImport,
 } as any)
-const FunilRoute = FunilRouteImport.update({
-  id: '/funil',
-  path: '/funil',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const FinanceiroRoute = FinanceiroRouteImport.update({
   id: '/financeiro',
   path: '/financeiro',
@@ -204,9 +200,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FunilIndexRoute = FunilIndexRouteImport.update({
+  id: '/funil/',
+  path: '/funil/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FluxosIndexRoute = FluxosIndexRouteImport.update({
   id: '/fluxos/',
   path: '/fluxos/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FunilIdRoute = FunilIdRouteImport.update({
+  id: '/funil/$id',
+  path: '/funil/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FluxosIdRoute = FluxosIdRouteImport.update({
@@ -325,7 +331,6 @@ export interface FileRoutesByFullPath {
   '/disparos': typeof DisparosRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
-  '/funil': typeof FunilRoute
   '/grupos': typeof GruposRoute
   '/hub': typeof HubRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
@@ -343,7 +348,9 @@ export interface FileRoutesByFullPath {
   '/transacoes': typeof TransacoesRoute
   '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
+  '/funil/$id': typeof FunilIdRoute
   '/fluxos/': typeof FluxosIndexRoute
+  '/funil/': typeof FunilIndexRoute
   '/api/public/agent-followup': typeof ApiPublicAgentFollowupRoute
   '/api/public/agent-run': typeof ApiPublicAgentRunRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
@@ -376,7 +383,6 @@ export interface FileRoutesByTo {
   '/disparos': typeof DisparosRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
-  '/funil': typeof FunilRoute
   '/grupos': typeof GruposRoute
   '/hub': typeof HubRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
@@ -394,7 +400,9 @@ export interface FileRoutesByTo {
   '/transacoes': typeof TransacoesRoute
   '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
+  '/funil/$id': typeof FunilIdRoute
   '/fluxos': typeof FluxosIndexRoute
+  '/funil': typeof FunilIndexRoute
   '/api/public/agent-followup': typeof ApiPublicAgentFollowupRoute
   '/api/public/agent-run': typeof ApiPublicAgentRunRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
@@ -428,7 +436,6 @@ export interface FileRoutesById {
   '/disparos': typeof DisparosRoute
   '/fila': typeof FilaRoute
   '/financeiro': typeof FinanceiroRoute
-  '/funil': typeof FunilRoute
   '/grupos': typeof GruposRoute
   '/hub': typeof HubRoute
   '/inteligencia-ia': typeof InteligenciaIaRoute
@@ -446,7 +453,9 @@ export interface FileRoutesById {
   '/transacoes': typeof TransacoesRoute
   '/usuarios': typeof UsuariosRoute
   '/fluxos/$id': typeof FluxosIdRoute
+  '/funil/$id': typeof FunilIdRoute
   '/fluxos/': typeof FluxosIndexRoute
+  '/funil/': typeof FunilIndexRoute
   '/api/public/agent-followup': typeof ApiPublicAgentFollowupRoute
   '/api/public/agent-run': typeof ApiPublicAgentRunRoute
   '/api/public/evolution-diag': typeof ApiPublicEvolutionDiagRoute
@@ -481,7 +490,6 @@ export interface FileRouteTypes {
     | '/disparos'
     | '/fila'
     | '/financeiro'
-    | '/funil'
     | '/grupos'
     | '/hub'
     | '/inteligencia-ia'
@@ -499,7 +507,9 @@ export interface FileRouteTypes {
     | '/transacoes'
     | '/usuarios'
     | '/fluxos/$id'
+    | '/funil/$id'
     | '/fluxos/'
+    | '/funil/'
     | '/api/public/agent-followup'
     | '/api/public/agent-run'
     | '/api/public/evolution-diag'
@@ -532,7 +542,6 @@ export interface FileRouteTypes {
     | '/disparos'
     | '/fila'
     | '/financeiro'
-    | '/funil'
     | '/grupos'
     | '/hub'
     | '/inteligencia-ia'
@@ -550,7 +559,9 @@ export interface FileRouteTypes {
     | '/transacoes'
     | '/usuarios'
     | '/fluxos/$id'
+    | '/funil/$id'
     | '/fluxos'
+    | '/funil'
     | '/api/public/agent-followup'
     | '/api/public/agent-run'
     | '/api/public/evolution-diag'
@@ -583,7 +594,6 @@ export interface FileRouteTypes {
     | '/disparos'
     | '/fila'
     | '/financeiro'
-    | '/funil'
     | '/grupos'
     | '/hub'
     | '/inteligencia-ia'
@@ -601,7 +611,9 @@ export interface FileRouteTypes {
     | '/transacoes'
     | '/usuarios'
     | '/fluxos/$id'
+    | '/funil/$id'
     | '/fluxos/'
+    | '/funil/'
     | '/api/public/agent-followup'
     | '/api/public/agent-run'
     | '/api/public/evolution-diag'
@@ -635,7 +647,6 @@ export interface RootRouteChildren {
   DisparosRoute: typeof DisparosRoute
   FilaRoute: typeof FilaRoute
   FinanceiroRoute: typeof FinanceiroRoute
-  FunilRoute: typeof FunilRoute
   GruposRoute: typeof GruposRoute
   HubRoute: typeof HubRoute
   InteligenciaIaRoute: typeof InteligenciaIaRoute
@@ -653,7 +664,9 @@ export interface RootRouteChildren {
   TransacoesRoute: typeof TransacoesRoute
   UsuariosRoute: typeof UsuariosRoute
   FluxosIdRoute: typeof FluxosIdRoute
+  FunilIdRoute: typeof FunilIdRoute
   FluxosIndexRoute: typeof FluxosIndexRoute
+  FunilIndexRoute: typeof FunilIndexRoute
   ApiPublicAgentFollowupRoute: typeof ApiPublicAgentFollowupRoute
   ApiPublicAgentRunRoute: typeof ApiPublicAgentRunRoute
   ApiPublicEvolutionDiagRoute: typeof ApiPublicEvolutionDiagRoute
@@ -788,13 +801,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GruposRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/funil': {
-      id: '/funil'
-      path: '/funil'
-      fullPath: '/funil'
-      preLoaderRoute: typeof FunilRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/financeiro': {
       id: '/financeiro'
       path: '/financeiro'
@@ -879,11 +885,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/funil/': {
+      id: '/funil/'
+      path: '/funil'
+      fullPath: '/funil/'
+      preLoaderRoute: typeof FunilIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/fluxos/': {
       id: '/fluxos/'
       path: '/fluxos'
       fullPath: '/fluxos/'
       preLoaderRoute: typeof FluxosIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/funil/$id': {
+      id: '/funil/$id'
+      path: '/funil/$id'
+      fullPath: '/funil/$id'
+      preLoaderRoute: typeof FunilIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fluxos/$id': {
@@ -1035,7 +1055,6 @@ const rootRouteChildren: RootRouteChildren = {
   DisparosRoute: DisparosRoute,
   FilaRoute: FilaRoute,
   FinanceiroRoute: FinanceiroRoute,
-  FunilRoute: FunilRoute,
   GruposRoute: GruposRoute,
   HubRoute: HubRoute,
   InteligenciaIaRoute: InteligenciaIaRoute,
@@ -1053,7 +1072,9 @@ const rootRouteChildren: RootRouteChildren = {
   TransacoesRoute: TransacoesRoute,
   UsuariosRoute: UsuariosRoute,
   FluxosIdRoute: FluxosIdRoute,
+  FunilIdRoute: FunilIdRoute,
   FluxosIndexRoute: FluxosIndexRoute,
+  FunilIndexRoute: FunilIndexRoute,
   ApiPublicAgentFollowupRoute: ApiPublicAgentFollowupRoute,
   ApiPublicAgentRunRoute: ApiPublicAgentRunRoute,
   ApiPublicEvolutionDiagRoute: ApiPublicEvolutionDiagRoute,

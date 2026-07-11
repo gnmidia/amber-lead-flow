@@ -25,7 +25,9 @@
       "Bash(mkdir:*)",
       "Edit",
       "Write",
-      "Read"
+      "Read",
+      "Bash(rtk grep *)",
+      "Bash(rtk git *)"
     ],
     "deny": [
       "Bash(git push:*)"

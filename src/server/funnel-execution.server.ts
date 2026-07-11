@@ -9,6 +9,169 @@ function assertNoError(error: { message?: string } | null | undefined, context: 
   if (error) throw new Error(`${context}: ${error.message || "erro desconhecido"}`);
 }
 
+// ────────────────────────────────────────────────────────────────────
+// MOTOR DO BUILDER 2D
+// Caminha o grafo (funnel_blocks/actions/edges/ab_outputs) a partir do
+// bloco inicial e converte tudo em linhas de scheduled_messages com
+// send_at pré-calculado — reutiliza o scheduler existente (pg_cron +
+// message-dispatcher), nenhum scheduler paralelo.
+//   • Ação delay: avança o cursor de tempo (s/m/h) — espera real.
+//   • Ação tag:   vira linha "tag_action" (o dispatcher aplica no CRM).
+//   • Fim do bloco: segue a edge para o próximo nó.
+//   • Nó A/B: sorteia UMA saída conforme os pesos e segue aquela edge.
+// ────────────────────────────────────────────────────────────────────
+const DELAY_UNIT_MS: Record<string, number> = {
+  seconds: 1000,
+  minutes: 60_000,
+  hours: 3_600_000,
+};
+
+async function buildCanvasRows({
+  funnel_id,
+  operation_id,
+  lead_id,
+  blocks,
+  cursorStartMs,
+  instanceName,
+  targetNumber,
+}: {
+  funnel_id: string;
+  operation_id: string;
+  lead_id: string;
+  blocks: any[];
+  cursorStartMs: number;
+  instanceName: string;
+  targetNumber: string;
+}): Promise<any[]> {
+  const blockIds = blocks.map((b) => b.id);
+
+  const [aRes, eRes, oRes] = await Promise.all([
+    supabaseAdmin
+      .from("funnel_actions" as any)
+      .select("*")
+      .eq("operation_id", operation_id)
+      .in("block_id", blockIds)
+      .order("order_index", { ascending: true }),
+    supabaseAdmin
+      .from("funnel_edges" as any)
+      .select("*")
+      .eq("funnel_id", funnel_id)
+      .eq("operation_id", operation_id),
+    supabaseAdmin
+      .from("funnel_ab_outputs" as any)
+      .select("*")
+      .eq("operation_id", operation_id)
+      .in("block_id", blockIds),
+  ]);
+  assertNoError(aRes.error, "canvas actions lookup failed");
+  assertNoError(eRes.error, "canvas edges lookup failed");
+  assertNoError(oRes.error, "canvas ab outputs lookup failed");
+
+  const actions = (aRes.data || []) as any[];
+  const edges = (eRes.data || []) as any[];
+  const abOutputs = (oRes.data || []) as any[];
+
+  const blockById = new Map(blocks.map((b) => [b.id, b]));
+
+  // Bloco inicial: o que NÃO recebe nenhuma edge. Se houver mais de um
+  // (grafo desconexo), usa o mais antigo. Se nenhum (ciclo), o mais antigo.
+  const targets = new Set(edges.map((e) => e.target_block_id));
+  const roots = blocks
+    .filter((b) => !targets.has(b.id))
+    .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+  const start =
+    roots[0] ||
+    [...blocks].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))[0];
+  if (!start) return [];
+
+  const rows: any[] = [];
+  const visited = new Set<string>();
+  let cursorMs = cursorStartMs;
+  let current: any = start;
+
+  while (current) {
+    if (visited.has(current.id)) {
+      console.warn(`[canvas-engine] ciclo detectado no funil ${funnel_id} (bloco ${current.id}) — encerrando caminho`);
+      break;
+    }
+    visited.add(current.id);
+
+    if (current.node_type === "ab_split") {
+      // Sorteia UMA saída conforme os pesos (iguais por padrão = 1/N).
+      const outs = abOutputs
+        .filter((o) => o.block_id === current.id)
+        .sort((a, b) => a.output_index - b.output_index);
+      if (outs.length === 0) break;
+      const total = outs.reduce((s, o) => s + Number(o.weight || 1), 0);
+      let r = Math.random() * total;
+      let chosen = outs[outs.length - 1];
+      for (const o of outs) {
+        r -= Number(o.weight || 1);
+        if (r <= 0) {
+          chosen = o;
+          break;
+        }
+      }
+      console.log(
+        `[canvas-engine] A/B ${current.id}: sorteada saída ${chosen.output_index} de ${outs.length}`,
+      );
+      const edge = edges.find(
+        (e) => e.source_block_id === current.id && e.source_handle === `out-${chosen.output_index}`,
+      );
+      current = edge ? blockById.get(edge.target_block_id) : null;
+      continue;
+    }
+
+    // Bloco comum: roda as ações em ordem (order_index).
+    const blockActions = actions
+      .filter((a) => a.block_id === current.id)
+      .sort((a, b) => a.order_index - b.order_index);
+
+    for (const action of blockActions) {
+      const cfg = action.config || {};
+      if (action.type === "delay") {
+        const unitMs = DELAY_UNIT_MS[cfg.unit || "seconds"] || 1000;
+        cursorMs += Math.max(0, Number(cfg.value || 0)) * unitMs;
+        continue;
+      }
+      if (action.type === "tag") {
+        rows.push({
+          lead_id,
+          funnel_id,
+          instance_name: instanceName,
+          whatsapp_number: targetNumber,
+          message_type: "tag_action",
+          content: JSON.stringify({ tag_id: cfg.tag_id, tag_operation: cfg.tag_operation }),
+          send_at: new Date(cursorMs).toISOString(),
+          status: "pending",
+        });
+        continue;
+      }
+      // texto / audio / imagem / video / documento
+      rows.push({
+        lead_id,
+        funnel_id,
+        instance_name: instanceName,
+        whatsapp_number: targetNumber,
+        message_type: action.type,
+        content: cfg.content ?? null,
+        media_url: cfg.media_url ?? null,
+        file_name: cfg.file_name ?? null,
+        mimetype: cfg.mimetype ?? null,
+        caption: cfg.caption ?? null,
+        send_at: new Date(cursorMs).toISOString(),
+        status: "pending",
+      });
+    }
+
+    // Fim do bloco: segue a edge (saída única → source_handle null).
+    const edge = edges.find((e) => e.source_block_id === current.id && !e.source_handle);
+    current = edge ? blockById.get(edge.target_block_id) : null;
+  }
+
+  return rows;
+}
+
 export async function scheduleFunnelForLead({
   lead_id,
   funnel_id,
@@ -36,6 +199,19 @@ export async function scheduleFunnelForLead({
     .maybeSingle();
   assertNoError(funnelError, "funnel lookup failed");
   if (!funnel) throw new Error("funnel not found");
+
+  // ISOLAMENTO: funil e lead precisam ser da MESMA operação. A UI já impede
+  // (listas escopadas), mas isto barra qualquer caminho indireto (fluxo mal
+  // configurado, chamada manual de API) de disparar funil de um projeto
+  // para lead de outro.
+  const leadOpId = (lead as any).operation_id;
+  const funnelOpId0 = (funnel as any).operation_id;
+  if (leadOpId && funnelOpId0 && leadOpId !== funnelOpId0) {
+    console.error(
+      `[funnel] BLOQUEADO: funil ${funnel_id} (op=${funnelOpId0}) não pertence à operação do lead ${lead_id} (op=${leadOpId})`,
+    );
+    return { scheduled: 0, skipped: "cross_operation_blocked" };
+  }
 
   // Se há mensagens realmente pendentes/dispatching, pula
   const { data: pendingMessages, error: pendingError } = await supabaseAdmin
@@ -82,44 +258,72 @@ export async function scheduleFunnelForLead({
     assertNoError(closeErr, "closing stale active funnel state failed");
   }
 
-  const { data: steps, error: stepsError } = await supabaseAdmin
-    .from("funnel_steps")
-    .select("*")
-    .eq("funnel_id", funnel_id)
-    .order("order_index", { ascending: true });
-  assertNoError(stepsError, "funnel steps lookup failed");
-  if (!steps || steps.length === 0) throw new Error("no steps");
-
   const triggerMs = new Date(trigger_time ?? Date.now()).getTime();
   const startDelayMin = rand((funnel as any).start_min ?? 0, (funnel as any).start_max ?? 0);
-  let cursorMs = triggerMs + startDelayMin * 60_000;
+  const cursorStartMs = triggerMs + startDelayMin * 60_000;
+  const instanceName =
+    opInstance || lead.instance_name || process.env.EVOLUTION_INSTANCE_NAME || "cland-main";
+  const targetNumber = lead.remote_jid || lead.whatsapp_number;
 
-  const rows: any[] = [];
-  for (const step of steps as any[]) {
-    if (step.type === "Delay") {
-      const isFixed = step.delay_type === "fixed" || step.delay_type === "fixo";
-      const delaySec = isFixed
-        ? (step.delay_fixed ?? 30)
-        : rand(step.delay_min ?? 20, step.delay_max ?? 120);
-      cursorMs += delaySec * 1000;
-      continue;
-    }
+  // ───── Estrutura nova (builder 2D)? Se o funil tem blocos no canvas,
+  // caminha o grafo. Senão, cai no caminho legado (funnel_steps). ─────
+  const funnelOpId = (funnel as any).operation_id;
+  const { data: canvasBlocks, error: cbErr } = await supabaseAdmin
+    .from("funnel_blocks" as any)
+    .select("*")
+    .eq("funnel_id", funnel_id)
+    .eq("operation_id", funnelOpId);
+  assertNoError(cbErr, "canvas blocks lookup failed");
 
-    rows.push({
-      lead_id,
+  let rows: any[] = [];
+
+  if ((canvasBlocks?.length || 0) > 0) {
+    rows = await buildCanvasRows({
       funnel_id,
-      step_id: step.id,
-      instance_name: opInstance || lead.instance_name || process.env.EVOLUTION_INSTANCE_NAME || "cland-main",
-      whatsapp_number: lead.remote_jid || lead.whatsapp_number,
-      message_type: step.type,
-      content: step.content,
-      media_url: step.media_url,
-      file_name: step.file_name,
-      mimetype: step.mimetype,
-      caption: step.caption,
-      send_at: new Date(cursorMs).toISOString(),
-      status: "pending",
+      operation_id: funnelOpId,
+      lead_id,
+      blocks: canvasBlocks as any[],
+      cursorStartMs,
+      instanceName,
+      targetNumber,
     });
+  } else {
+    // ───── Caminho LEGADO: passos numerados (funnel_steps) ─────
+    const { data: steps, error: stepsError } = await supabaseAdmin
+      .from("funnel_steps")
+      .select("*")
+      .eq("funnel_id", funnel_id)
+      .order("order_index", { ascending: true });
+    assertNoError(stepsError, "funnel steps lookup failed");
+    if (!steps || steps.length === 0) throw new Error("no steps");
+
+    let cursorMs = cursorStartMs;
+    for (const step of steps as any[]) {
+      if (step.type === "Delay") {
+        const isFixed = step.delay_type === "fixed" || step.delay_type === "fixo";
+        const delaySec = isFixed
+          ? (step.delay_fixed ?? 30)
+          : rand(step.delay_min ?? 20, step.delay_max ?? 120);
+        cursorMs += delaySec * 1000;
+        continue;
+      }
+
+      rows.push({
+        lead_id,
+        funnel_id,
+        step_id: step.id,
+        instance_name: instanceName,
+        whatsapp_number: targetNumber,
+        message_type: step.type,
+        content: step.content,
+        media_url: step.media_url,
+        file_name: step.file_name,
+        mimetype: step.mimetype,
+        caption: step.caption,
+        send_at: new Date(cursorMs).toISOString(),
+        status: "pending",
+      });
+    }
   }
   if (rows.length > 0) {
     const { error: insertError } = await supabaseAdmin.from("scheduled_messages").insert(rows);
