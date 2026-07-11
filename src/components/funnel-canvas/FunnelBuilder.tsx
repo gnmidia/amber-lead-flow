@@ -20,6 +20,7 @@ import {
 
 const nodeTypes = { block: BlockNode, ab_split: AbSplitNode, start: StartNode };
 
+const DND_NODE_MIME = "application/x-funnel-node";
 const START_ID = "__start__";
 const START_EDGE_ID = "__start-edge__";
 
@@ -49,6 +50,7 @@ export function FunnelBuilder({
 
   const [nodes, setNodes] = useNodesState<Node>([]);
   const [edges, setEdges] = useEdgesState<Edge>([]);
+  const [rfInstance, setRfInstance] = useState<any>(null);
 
   // ───── Carga (TUDO escopado por operation_id) ─────
   const load = useCallback(async () => {
@@ -88,15 +90,15 @@ export function FunnelBuilder({
 
   // ───── Mutações ─────
 
-  const addBlock = async (nodeType: "block" | "ab_split") => {
+  const addBlock = async (nodeType: "block" | "ab_split", pos?: { x: number; y: number }) => {
     const { data, error } = await tbl("funnel_blocks")
       .insert({
         funnel_id: funnelId,
         operation_id: operationId,
         title: nodeType === "ab_split" ? "A/B Split" : `Bloco ${blocks.filter((x) => x.node_type === "block").length + 1}`,
         node_type: nodeType,
-        position_x: 80 + blocks.length * 40,
-        position_y: 80 + blocks.length * 40,
+        position_x: pos?.x ?? 80 + blocks.length * 40,
+        position_y: pos?.y ?? 80 + blocks.length * 40,
       })
       .select("*")
       .single();
@@ -228,12 +230,27 @@ export function FunnelBuilder({
     if (c.target === START_ID) return toast.error("Nada pode ligar NO Início");
     // Edge saindo do Início: define o primeiro bloco do funil.
     if (c.source === START_ID) {
+      // Otimista: mostra a seta imediatamente.
+      setStartBlockId(c.target);
+      setEdges((eds) => [
+        ...eds.filter((e) => e.id !== START_EDGE_ID),
+        {
+          id: START_EDGE_ID,
+          source: START_ID,
+          target: c.target,
+          animated: true,
+          style: { stroke: "#22c55e", strokeWidth: 2 },
+        },
+      ]);
       const { error } = await tbl("funnels")
         .update({ start_block_id: c.target })
         .eq("id", funnelId)
         .eq("operation_id", operationId);
-      if (error) return toast.error(error.message);
-      setStartBlockId(c.target);
+      if (error) {
+        setStartBlockId(null);
+        setEdges((eds) => eds.filter((e) => e.id !== START_EDGE_ID));
+        return toast.error(error.message);
+      }
       return;
     }
     const sourceHandle = c.sourceHandle || null;
@@ -353,14 +370,16 @@ export function FunnelBuilder({
         source: START_ID,
         target: startBlockId,
         animated: true,
-        style: { stroke: "hsl(var(--success, 142 71% 45%))", strokeWidth: 2 },
+        style: { stroke: "#22c55e", strokeWidth: 2 },
       });
     }
     return list;
   }, [dbEdges, startBlockId]);
 
-  useEffect(() => setNodes(rfNodes), [rfNodes, setNodes]);
-  useEffect(() => setEdges(rfEdges), [rfEdges, setEdges]);
+  useEffect(() => {
+    setNodes(rfNodes);
+    setEdges(rfEdges);
+  }, [rfNodes, rfEdges, setNodes, setEdges]);
 
   return (
     <div className="flex h-full w-full">
@@ -371,18 +390,30 @@ export function FunnelBuilder({
             Nós
           </p>
           <div className="space-y-1.5">
-            <button
+            <div
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData(DND_NODE_MIME, "block");
+                e.dataTransfer.effectAllowed = "copy";
+              }}
               onClick={() => addBlock("block")}
-              className="flex w-full items-center gap-2 rounded-md border border-border bg-background px-2.5 py-2 text-xs font-medium hover:border-primary/40 hover:text-primary"
+              className="flex w-full cursor-grab items-center gap-2 rounded-md border border-border bg-background px-2.5 py-2 text-xs font-medium hover:border-primary/40 hover:text-primary active:cursor-grabbing"
+              title="Arraste para o canvas (ou clique)"
             >
               <Plus className="h-3.5 w-3.5" /> Bloco
-            </button>
-            <button
+            </div>
+            <div
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData(DND_NODE_MIME, "ab_split");
+                e.dataTransfer.effectAllowed = "copy";
+              }}
               onClick={() => addBlock("ab_split")}
-              className="flex w-full items-center gap-2 rounded-md border border-border bg-background px-2.5 py-2 text-xs font-medium hover:border-info/40 hover:text-info"
+              className="flex w-full cursor-grab items-center gap-2 rounded-md border border-border bg-background px-2.5 py-2 text-xs font-medium hover:border-info/40 hover:text-info active:cursor-grabbing"
+              title="Arraste para o canvas (ou clique)"
             >
               <Shuffle className="h-3.5 w-3.5" /> A/B Split
-            </button>
+            </div>
           </div>
         </div>
         <div>
@@ -415,7 +446,24 @@ export function FunnelBuilder({
       </aside>
 
       {/* Canvas */}
-      <div className="min-w-0 flex-1">
+      <div
+        className="min-w-0 flex-1"
+        onDragOver={(e) => {
+          if (e.dataTransfer.types.includes(DND_NODE_MIME)) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "copy";
+          }
+        }}
+        onDrop={(e) => {
+          const t = e.dataTransfer.getData(DND_NODE_MIME);
+          if (t !== "block" && t !== "ab_split") return;
+          e.preventDefault();
+          const pos = rfInstance
+            ? rfInstance.screenToFlowPosition({ x: e.clientX, y: e.clientY })
+            : undefined;
+          addBlock(t as "block" | "ab_split", pos);
+        }}
+      >
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -423,6 +471,7 @@ export function FunnelBuilder({
           onNodesChange={onNodesChangeHandler}
           onEdgesChange={onEdgesChangeHandler}
           onConnect={onConnect}
+          onInit={setRfInstance}
           onNodeDragStop={(_e, n) => persistPosition(n.id, n.position.x, n.position.y)}
           fitView={loaded && blocks.length > 0}
           proOptions={{ hideAttribution: true }}
