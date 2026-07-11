@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "innova-dev",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "dev", "--port", "5199"],
+      "cwd": "/Users/gabrielnavarro/Downloads/innova-crm-github",
+      "port": 5199
+    }
+  ]
+}
