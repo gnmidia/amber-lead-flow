@@ -34,6 +34,7 @@ async function buildCanvasRows({
   cursorStartMs,
   instanceName,
   targetNumber,
+  startBlockId,
 }: {
   funnel_id: string;
   operation_id: string;
@@ -42,6 +43,7 @@ async function buildCanvasRows({
   cursorStartMs: number;
   instanceName: string;
   targetNumber: string;
+  startBlockId: string | null;
 }): Promise<any[]> {
   const blockIds = blocks.map((b) => b.id);
 
@@ -73,15 +75,26 @@ async function buildCanvasRows({
 
   const blockById = new Map(blocks.map((b) => [b.id, b]));
 
-  // Bloco inicial: o que NÃO recebe nenhuma edge. Se houver mais de um
-  // (grafo desconexo), usa o mais antigo. Se nenhum (ciclo), o mais antigo.
-  const targets = new Set(edges.map((e) => e.target_block_id));
-  const roots = blocks
-    .filter((b) => !targets.has(b.id))
-    .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
-  const start =
-    roots[0] ||
-    [...blocks].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))[0];
+  // Bloco inicial: fonte da verdade é o nó "Início" do canvas
+  // (funnels.start_block_id). Fallback (funis de canvas antigos, sem o
+  // Início conectado): deduz pelo bloco que NÃO recebe nenhuma edge; se
+  // houver mais de um (grafo desconexo), o mais antigo; se nenhum
+  // (ciclo), o mais antigo do funil.
+  let start: any = startBlockId ? blockById.get(startBlockId) : null;
+  if (!start) {
+    const targets = new Set(edges.map((e) => e.target_block_id));
+    const roots = blocks
+      .filter((b) => !targets.has(b.id))
+      .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+    start =
+      roots[0] ||
+      [...blocks].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))[0];
+    if (start) {
+      console.warn(
+        `[canvas-engine] funil ${funnel_id} sem nó Início conectado — usando dedução (bloco ${start.id})`,
+      );
+    }
+  }
   if (!start) return [];
 
   const rows: any[] = [];
@@ -286,6 +299,7 @@ export async function scheduleFunnelForLead({
       cursorStartMs,
       instanceName,
       targetNumber,
+      startBlockId: (funnel as any).start_block_id ?? null,
     });
   } else {
     // ───── Caminho LEGADO: passos numerados (funnel_steps) ─────

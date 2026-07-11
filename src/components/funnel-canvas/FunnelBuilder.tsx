@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BlockNode, type BlockNodeData } from "./BlockNode";
 import { AbSplitNode, type AbSplitNodeData } from "./AbSplitNode";
+import { StartNode } from "./StartNode";
 import { BlockEditorDrawer } from "./BlockEditorDrawer";
 import {
   ACTION_LABEL, DND_MIME, PALETTE,
@@ -17,7 +18,10 @@ import {
   type FunnelBlockRow, type FunnelEdgeRow,
 } from "./types";
 
-const nodeTypes = { block: BlockNode, ab_split: AbSplitNode };
+const nodeTypes = { block: BlockNode, ab_split: AbSplitNode, start: StartNode };
+
+const START_ID = "__start__";
+const START_EDGE_ID = "__start-edge__";
 
 const PALETTE_ICON: Record<ActionType, React.ComponentType<{ className?: string }>> = {
   texto: Type, audio: Mic, imagem: ImageIcon, video: Video,
@@ -39,6 +43,8 @@ export function FunnelBuilder({
   const [abOutputs, setAbOutputs] = useState<AbOutputRow[]>([]);
   const [dbEdges, setDbEdges] = useState<FunnelEdgeRow[]>([]);
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+  const [startBlockId, setStartBlockId] = useState<string | null>(null);
+  const [startPos, setStartPos] = useState({ x: 40, y: 160 });
   const [loaded, setLoaded] = useState(false);
 
   const [nodes, setNodes] = useNodesState<Node>([]);
@@ -46,9 +52,10 @@ export function FunnelBuilder({
 
   // ───── Carga (TUDO escopado por operation_id) ─────
   const load = useCallback(async () => {
-    const [b, e] = await Promise.all([
+    const [b, e, f] = await Promise.all([
       tbl("funnel_blocks").select("*").eq("funnel_id", funnelId).eq("operation_id", operationId),
       tbl("funnel_edges").select("*").eq("funnel_id", funnelId).eq("operation_id", operationId),
+      tbl("funnels").select("start_block_id, start_node_x, start_node_y").eq("id", funnelId).eq("operation_id", operationId).maybeSingle(),
     ]);
     if (b.error || e.error) {
       toast.error(b.error?.message || e.error?.message);
@@ -70,6 +77,8 @@ export function FunnelBuilder({
     setActions(actionRows);
     setAbOutputs(outputRows);
     setDbEdges((e.data || []) as FunnelEdgeRow[]);
+    setStartBlockId((f.data as any)?.start_block_id ?? null);
+    setStartPos({ x: (f.data as any)?.start_node_x ?? 40, y: (f.data as any)?.start_node_y ?? 160 });
     setLoaded(true);
   }, [funnelId, operationId]);
 
@@ -197,6 +206,15 @@ export function FunnelBuilder({
   };
 
   const persistPosition = (blockId: string, x: number, y: number) => {
+    if (blockId === START_ID) {
+      setStartPos({ x, y });
+      tbl("funnels")
+        .update({ start_node_x: x, start_node_y: y })
+        .eq("id", funnelId)
+        .eq("operation_id", operationId)
+        .then(({ error }: any) => error && toast.error(error.message));
+      return;
+    }
     tbl("funnel_blocks")
       .update({ position_x: x, position_y: y })
       .eq("id", blockId)
@@ -207,6 +225,17 @@ export function FunnelBuilder({
   const onConnect = async (c: Connection) => {
     if (!c.source || !c.target) return;
     if (c.source === c.target) return toast.error("Um nó não pode ligar nele mesmo");
+    if (c.target === START_ID) return toast.error("Nada pode ligar NO Início");
+    // Edge saindo do Início: define o primeiro bloco do funil.
+    if (c.source === START_ID) {
+      const { error } = await tbl("funnels")
+        .update({ start_block_id: c.target })
+        .eq("id", funnelId)
+        .eq("operation_id", operationId);
+      if (error) return toast.error(error.message);
+      setStartBlockId(c.target);
+      return;
+    }
     const sourceHandle = c.sourceHandle || null;
     // Uma saída só pode ter UMA ligação: substitui a existente do mesmo handle.
     let del = tbl("funnel_edges")
@@ -231,6 +260,15 @@ export function FunnelBuilder({
     setEdges((eds) => applyEdgeChanges(changes, eds));
     for (const ch of changes) {
       if (ch.type === "remove") {
+        if (ch.id === START_EDGE_ID) {
+          setStartBlockId(null);
+          tbl("funnels")
+            .update({ start_block_id: null })
+            .eq("id", funnelId)
+            .eq("operation_id", operationId)
+            .then(({ error }: any) => error && toast.error(error.message));
+          continue;
+        }
         tbl("funnel_edges")
           .delete().eq("id", ch.id).eq("operation_id", operationId)
           .then(({ error }: any) => error && toast.error(error.message));
@@ -244,6 +282,7 @@ export function FunnelBuilder({
     // aqui é o atalho — mantém consistência do canvas).
     for (const ch of changes) {
       if (ch.type === "remove") {
+        if (ch.id === START_ID) continue;
         tbl("funnel_blocks")
           .delete().eq("id", ch.id).eq("operation_id", operationId)
           .then(({ error }: any) => error && toast.error(error.message));
@@ -253,7 +292,14 @@ export function FunnelBuilder({
 
   // ───── Domínio → React Flow ─────
   const rfNodes = useMemo<Node[]>(() => {
-    return blocks.map((b) => {
+    const startNode: Node = {
+      id: START_ID,
+      type: "start",
+      position: startPos,
+      deletable: false,
+      data: { connected: !!startBlockId } as any,
+    };
+    const blockNodes = blocks.map((b) => {
       if (b.node_type === "ab_split") {
         const data: AbSplitNodeData = {
           title: b.title || "A/B Split",
@@ -289,20 +335,29 @@ export function FunnelBuilder({
         data: data as any,
       };
     });
+    return [startNode, ...blockNodes];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blocks, actions, abOutputs]);
+  }, [blocks, actions, abOutputs, startBlockId, startPos]);
 
-  const rfEdges = useMemo<Edge[]>(
-    () =>
-      dbEdges.map((e) => ({
-        id: e.id,
-        source: e.source_block_id,
-        sourceHandle: e.source_handle || undefined,
-        target: e.target_block_id,
+  const rfEdges = useMemo<Edge[]>(() => {
+    const list: Edge[] = dbEdges.map((e) => ({
+      id: e.id,
+      source: e.source_block_id,
+      sourceHandle: e.source_handle || undefined,
+      target: e.target_block_id,
+      animated: true,
+    }));
+    if (startBlockId) {
+      list.unshift({
+        id: START_EDGE_ID,
+        source: START_ID,
+        target: startBlockId,
         animated: true,
-      })),
-    [dbEdges],
-  );
+        style: { stroke: "hsl(var(--success, 142 71% 45%))", strokeWidth: 2 },
+      });
+    }
+    return list;
+  }, [dbEdges, startBlockId]);
 
   useEffect(() => setNodes(rfNodes), [rfNodes, setNodes]);
   useEffect(() => setEdges(rfEdges), [rfEdges, setEdges]);
